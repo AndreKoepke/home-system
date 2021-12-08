@@ -1,0 +1,5 @@
+image:
+  base: akop/home-system
+  tag: latest
+
+host: telegram.akop.online

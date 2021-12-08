@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-system
+  labels:
+    product: home-system
+    component: backend
+
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      product: home-system
+      component: backend
+
+  template:
+    metadata:
+      labels:
+        product: home-system
+        component: backend
+
+      annotations:
+        # set timestamp to trick k8s to rollout a new version (even when nothing else changed)
+        timstamp: "{{ now | date "20060102150405" }}"
+
+
+    spec:
+      volumes:
+        - name: spring-config
+          configMap:
+            name: home-system-config
+
+      containers:
+        - name: backend
+          image: {{ .Values.image.base }}:{{ .Values.image.tag }}
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /app/resources/
+              name: spring-config
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP

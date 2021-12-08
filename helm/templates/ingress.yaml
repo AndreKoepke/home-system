@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: home-system-api
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+
+
+spec:
+  rules:
+    - host: {{ .Values.host }}
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: home-system-backend
+                port:
+                  number: 8080
+
+  tls:
+    - hosts:
+        - {{ .Values.host }}
+      secretName: home-system

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: home-system-config
+
+data:
+  application.yaml: |-
+    {{ .Files.Get "config/application.yaml" | nindent 4 }}
+
