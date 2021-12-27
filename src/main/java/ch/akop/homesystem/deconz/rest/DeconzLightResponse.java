@@ -1,4 +1,4 @@
-package ch.akop.homesystem.models.deconz.rest;
+package ch.akop.homesystem.deconz.rest;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

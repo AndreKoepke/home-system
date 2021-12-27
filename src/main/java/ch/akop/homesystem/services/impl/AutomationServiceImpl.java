@@ -2,9 +2,13 @@ package ch.akop.homesystem.services.impl;
 
 import ch.akop.homesystem.models.animation.Animation;
 import ch.akop.homesystem.models.animation.AnimationFactory;
+import ch.akop.homesystem.models.config.GoodNightButton;
 import ch.akop.homesystem.models.devices.Device;
+import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.models.devices.sensor.CloseContactState;
+import ch.akop.homesystem.models.states.Event;
+import ch.akop.homesystem.models.states.SleepState;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
@@ -25,17 +29,19 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 @ConfigurationProperties(prefix = "home-automation.sensors")
+@Setter
+@Getter
 public class AutomationServiceImpl implements AutomationService {
 
     private final AnimationFactory animationFactory;
     private final DeviceService deviceService;
     private final MessageService messageService;
+    private final StateServiceImpl stateServiceImpl;
     private final Map<Class<? extends Device>, List<Device<?>>> knownDevices = new HashMap<>();
     private Animation mainDoorOpenAnimation;
 
-    @Setter
-    @Getter
     private String mainDoorName;
+    private GoodNightButton goodNightButton;
 
 
     @Override
@@ -59,24 +65,38 @@ public class AutomationServiceImpl implements AutomationService {
         this.knownDevices.get(device.getClass()).add(device);
 
         if (device instanceof CloseContact closeContact && closeContact.getName().equals(this.mainDoorName)) {
+            //noinspection ResultOfMethodCallIgnored
             closeContact.getState$()
                     // ignore the first state
                     .skip(1)
                     .subscribe(this::mainDoorStateChanged);
         }
+
+        if (device instanceof Button button) {
+            //noinspection ResultOfMethodCallIgnored
+            button.getEvents$()
+                    .subscribe(integer -> this.buttonWasPressed(button.getName(), integer));
+        }
+    }
+
+    private void buttonWasPressed(final String buttonName, final int buttonEvent) {
+        if (this.goodNightButton.getName().equals(buttonName) && this.goodNightButton.getButtonEvent().equals(buttonEvent)) {
+            goodNightButtonPressed();
+            return;
+        }
+
+        this.stateServiceImpl.triggerEvent(buttonName, buttonEvent);
+    }
+
+    private void goodNightButtonPressed() {
+        this.stateServiceImpl.switchState(SleepState.class);
     }
 
     private void mainDoorStateChanged(final CloseContactState state) {
-        switch (state) {
-            case OPENED -> {
-                this.mainDoorOpenAnimation.play();
-                log.info("MAIN-DOOR IS OPENED!");
-                this.messageService.sendMessageToUser("Wohnungstür wurde geöffnet.");
-            }
-            case CLOSED -> {
-                log.info("MAIN-DOOR IS CLOSED!");
-                this.messageService.sendMessageToUser("Wohnungstür wurde geschlossen.");
-            }
+        if (state == CloseContactState.CLOSED) {
+            this.stateServiceImpl.triggerEvent(Event.DOOR_CLOSED);
+        } else {
+            this.stateServiceImpl.triggerEvent(Event.DOOR_OPENED);
         }
     }
 }

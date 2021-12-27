@@ -32,6 +32,11 @@ public class TelegramMessageService implements MessageService {
     @PostConstruct
     @SneakyThrows
     public void turnBotOn() {
+        if (this.botToken == null || this.botPath == null) {
+            log.info("No telegrambot will be started.");
+            return;
+        }
+
         this.bot = new TelegramBot(this.botToken);
 
         final SetWebhook request = new SetWebhook().url(this.botPath);
@@ -43,6 +48,10 @@ public class TelegramMessageService implements MessageService {
 
     @Override
     public void sendMessageToUser(final String message) {
+        if (this.bot == null) {
+            return;
+        }
+
         this.doorUpdatesTo.forEach(chatId -> this.bot.execute(new SendMessage(chatId, message)));
     }
 

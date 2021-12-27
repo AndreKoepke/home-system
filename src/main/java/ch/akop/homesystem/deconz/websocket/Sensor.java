@@ -1,4 +1,4 @@
-package ch.akop.homesystem.models.deconz.websocket;
+package ch.akop.homesystem.deconz.websocket;
 
 import lombok.Data;
 

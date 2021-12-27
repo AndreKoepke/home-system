@@ -1,6 +1,7 @@
 package ch.akop.homesystem.services.impl;
 
 import ch.akop.homesystem.models.devices.Device;
+import ch.akop.homesystem.models.devices.actor.Light;
 import ch.akop.homesystem.services.DeviceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @RequiredArgsConstructor
@@ -32,4 +34,14 @@ public class DeviceServiceImpl implements DeviceService {
     public Collection<Device<?>> getAllDevices() {
         return this.devices.values();
     }
+
+    @Override
+    public Collection<Light> getAllLights() {
+        return this.devices.values().stream()
+                .filter(Light.class::isInstance)
+                .map(Light.class::cast)
+                .collect(Collectors.toSet());
+    }
+
+
 }

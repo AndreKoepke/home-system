@@ -1,4 +1,4 @@
-package ch.akop.homesystem.models.deconz.websocket;
+package ch.akop.homesystem.deconz.websocket;
 
 import lombok.Data;
 
@@ -14,7 +14,9 @@ public class WebSocketUpdate {
     private String uniqueid;
     private String gid;
     private String scid;
-    private Map<String, String> config;
+
+    // "config" can contain a list, so Map<object,object> not fit
+
     private String name;
     private String group;
     private Map<String, String> light;

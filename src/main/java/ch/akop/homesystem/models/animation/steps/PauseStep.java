@@ -1,4 +1,4 @@
-package ch.akop.homesystem.models.animation;
+package ch.akop.homesystem.models.animation.steps;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -8,14 +8,14 @@ import java.time.Duration;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class PauseStep extends  AnimationStep {
+public class PauseStep implements AnimationStep {
 
     private final Duration time;
 
 
     @Override
     @SneakyThrows
-    void play() {
-        Thread.sleep(time.toMillis());
+    public void play() {
+        Thread.sleep(this.time.toMillis());
     }
 }

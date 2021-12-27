@@ -28,6 +28,8 @@ spec:
 
 
     spec:
+      automountServiceAccountToken: false
+
       volumes:
         - name: spring-config
           configMap:
