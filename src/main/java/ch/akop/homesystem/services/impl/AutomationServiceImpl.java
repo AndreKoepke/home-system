@@ -43,7 +43,6 @@ public class AutomationServiceImpl implements AutomationService {
     private String mainDoorName;
     private GoodNightButton goodNightButton;
 
-
     @Override
     @SneakyThrows
     public void discoverNewDevices() {
@@ -67,8 +66,8 @@ public class AutomationServiceImpl implements AutomationService {
         if (device instanceof CloseContact closeContact && closeContact.getName().equals(this.mainDoorName)) {
             //noinspection ResultOfMethodCallIgnored
             closeContact.getState$()
-                    // ignore the first state
-                    .skip(1)
+                    .skip(0)
+                    .distinctUntilChanged()
                     .subscribe(this::mainDoorStateChanged);
         }
 
