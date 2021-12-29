@@ -71,7 +71,7 @@ public class DeconzConnector {
             @Override
             public void onClose(final int code, final String reason, final boolean remote) {
                 log.info("WS-Connection was closed, because of '{}'. Reconnecting ...", reason);
-                connect();
+                DeconzConnector.this.connect();
             }
 
             @Override
