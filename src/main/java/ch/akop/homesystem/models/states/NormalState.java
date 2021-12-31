@@ -38,7 +38,7 @@ public class NormalState implements State {
 
         switch (event) {
             case DOOR_OPENED -> startMainDoorOpenAnimation();
-            case DOOR_CLOSED -> stopMainDoorOpenAnimation();
+            case DOOR_CLOSED -> mainDoorClosed();
         }
     }
 
@@ -66,11 +66,8 @@ public class NormalState implements State {
         this.messageService.sendMessageToUser("Wohnungstür wurde geöffnet.");
     }
 
-    private void stopMainDoorOpenAnimation() {
+    private void mainDoorClosed() {
         log.info("MAIN-DOOR IS CLOSED!");
-        if (this.animationThread != null && this.animationThread.isAlive()) {
-            this.animationThread.interrupt();
-        }
     }
 
     private void createAnimationIfNotExists() {

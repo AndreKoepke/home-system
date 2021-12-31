@@ -52,36 +52,45 @@ public class DeconzConnector {
 
     @SneakyThrows
     private void connect() {
-        final var wsUrl = new URI("ws://%s:%d".formatted(this.deconzConfig.getHost(), this.deconzConfig.getWebsocketPort()));
-        final WebSocketClient wsClient = new WebSocketClient(wsUrl) {
-            @Override
-            public void onOpen(final ServerHandshake handshakedata) {
-                log.info("WebSocket is up and listing.");
-            }
+        try {
+            final var wsUrl = new URI("ws://%s:%d"
+                    .formatted(this.deconzConfig.getHost(), this.deconzConfig.getWebsocketPort()));
 
-            @Override
-            public void onMessage(final String message) {
-                try {
-                    handleMessage(DeconzConnector.this.gson.fromJson(message, WebSocketUpdate.class));
-                } catch (final Exception e) {
-                    log.error("Exception occurred with the message:\n{}", message, e);
+            final WebSocketClient wsClient = new WebSocketClient(wsUrl) {
+                @Override
+                public void onOpen(final ServerHandshake handshakedata) {
+                    log.info("WebSocket is up and listing.");
                 }
-            }
 
-            @Override
-            public void onClose(final int code, final String reason, final boolean remote) {
-                log.info("WS-Connection was closed, because of '{}'. Reconnecting ...", reason);
-                DeconzConnector.this.connect();
-            }
+                @Override
+                public void onMessage(final String message) {
+                    try {
+                        handleMessage(DeconzConnector.this.gson.fromJson(message, WebSocketUpdate.class));
+                    } catch (final Exception e) {
+                        log.error("Exception occurred with the message:\n{}", message, e);
+                    }
+                }
 
-            @Override
-            public void onError(final Exception ex) {
-                log.error("Got exception", ex);
-            }
-        };
+                @Override
+                public void onClose(final int code, final String reason, final boolean remote) {
+                    log.info("WS-Connection was closed, because of '{}'. Reconnecting ...", reason);
+                    DeconzConnector.this.connect();
+                }
 
-        wsClient.setConnectionLostTimeout(0);
-        wsClient.connect();
+                @Override
+                public void onError(final Exception ex) {
+                    log.error("Got exception", ex);
+                }
+            };
+
+            wsClient.setConnectionLostTimeout(25);
+            wsClient.connect();
+        } catch (final Exception e) {
+            log.error("Failed to connect. Retrying ...", e);
+            Thread.sleep(1000);
+            this.connect();
+        }
+
     }
 
 

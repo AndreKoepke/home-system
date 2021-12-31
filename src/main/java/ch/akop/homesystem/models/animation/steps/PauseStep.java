@@ -1,21 +1,16 @@
 package ch.akop.homesystem.models.animation.steps;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.SneakyThrows;
-
 import java.time.Duration;
 
-@Data
-@EqualsAndHashCode(callSuper = false)
-public class PauseStep implements AnimationStep {
 
-    private final Duration time;
-
+public record PauseStep(Duration time) implements AnimationStep {
 
     @Override
-    @SneakyThrows
     public void play() {
-        Thread.sleep(this.time.toMillis());
+        try {
+            Thread.sleep(this.time.toMillis());
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
