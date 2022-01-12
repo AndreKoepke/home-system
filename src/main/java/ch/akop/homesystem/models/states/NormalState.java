@@ -4,20 +4,22 @@ import ch.akop.homesystem.config.HomeConfig;
 import ch.akop.homesystem.models.animation.Animation;
 import ch.akop.homesystem.models.animation.AnimationFactory;
 import ch.akop.homesystem.services.MessageService;
+import ch.akop.homesystem.services.impl.StateServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@Lazy
-@Component
 @RequiredArgsConstructor
+@Component
+@Lazy
 public class NormalState implements State {
 
     private final AnimationFactory animationFactory;
     private final MessageService messageService;
     private final HomeConfig homeConfig;
+    private final StateServiceImpl stateService;
 
     private Animation mainDoorOpenAnimation;
     private Thread animationThread;
@@ -44,14 +46,17 @@ public class NormalState implements State {
 
     @Override
     public void event(final String buttonName, final int buttonEvent) {
-        this.homeConfig.getCentralOffSwitches().stream()
-                .filter(offButton -> buttonName.equals(offButton.getName()) && offButton.getButtonEvent() == buttonEvent)
-                .findAny()
-                .ifPresent(offButton -> {
-                    if (this.animationThread != null && this.animationThread.isAlive()) {
-                        this.animationThread.interrupt();
-                    }
-                });
+
+        if (this.homeConfig.getCentralOffSwitches().stream()
+                .anyMatch(offButton -> offButton.getName().equals(buttonName)
+                        && offButton.getButtonEvent() == buttonEvent)) {
+            if (this.animationThread != null && this.animationThread.isAlive()) {
+                this.animationThread.interrupt();
+            }
+        } else if (buttonName.equals(this.homeConfig.getGoodNightButton().getName())
+                && buttonEvent == this.homeConfig.getGoodNightButton().getButtonEvent()) {
+            this.stateService.switchState(SleepState.class);
+        }
     }
 
     private void startMainDoorOpenAnimation() {

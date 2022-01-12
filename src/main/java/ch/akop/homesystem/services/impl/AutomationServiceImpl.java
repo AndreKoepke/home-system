@@ -1,14 +1,13 @@
 package ch.akop.homesystem.services.impl;
 
+import ch.akop.homesystem.config.HomeConfig;
 import ch.akop.homesystem.models.animation.Animation;
 import ch.akop.homesystem.models.animation.AnimationFactory;
-import ch.akop.homesystem.models.config.GoodNightButton;
 import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.models.devices.sensor.CloseContactState;
 import ch.akop.homesystem.models.states.Event;
-import ch.akop.homesystem.models.states.SleepState;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
@@ -37,11 +36,12 @@ public class AutomationServiceImpl implements AutomationService {
     private final DeviceService deviceService;
     private final MessageService messageService;
     private final StateServiceImpl stateServiceImpl;
+    private final HomeConfig homeConfig;
     private final Map<Class<? extends Device>, List<Device<?>>> knownDevices = new HashMap<>();
     private Animation mainDoorOpenAnimation;
 
     private String mainDoorName;
-    private GoodNightButton goodNightButton;
+
 
     @Override
     @SneakyThrows
@@ -79,17 +79,9 @@ public class AutomationServiceImpl implements AutomationService {
     }
 
     private void buttonWasPressed(final String buttonName, final int buttonEvent) {
-        if (this.goodNightButton.getName().equals(buttonName) && this.goodNightButton.getButtonEvent().equals(buttonEvent)) {
-            goodNightButtonPressed();
-            return;
-        }
-
         this.stateServiceImpl.triggerEvent(buttonName, buttonEvent);
     }
-
-    private void goodNightButtonPressed() {
-        this.stateServiceImpl.switchState(SleepState.class);
-    }
+            
 
     private void mainDoorStateChanged(final CloseContactState state) {
         if (state == CloseContactState.CLOSED) {

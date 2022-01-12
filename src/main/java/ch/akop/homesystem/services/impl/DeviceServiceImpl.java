@@ -43,5 +43,13 @@ public class DeviceServiceImpl implements DeviceService {
                 .collect(Collectors.toSet());
     }
 
+    @Override
+    public <T> Collection<T> getDevicesOfType(final Class<T> clazz) {
+        return this.devices.values().stream()
+                .filter(clazz::isInstance)
+                .map(clazz::cast)
+                .collect(Collectors.toSet());
+    }
+
 
 }

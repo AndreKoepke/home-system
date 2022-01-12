@@ -1,5 +1,6 @@
 package ch.akop.homesystem.config;
 
+import ch.akop.homesystem.models.config.GoodNightButton;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
@@ -13,7 +14,8 @@ public class HomeConfig {
 
     private List<String> nightLights;
     private List<OffButton> centralOffSwitches;
-
+    private String nightRunSceneName;
+    private GoodNightButton goodNightButton;
 
     @Data
     public static class OffButton {

@@ -15,4 +15,6 @@ public interface DeviceService {
 
     Collection<Light> getAllLights();
 
+    <T> Collection<T> getDevicesOfType(Class<T> clazz);
+
 }

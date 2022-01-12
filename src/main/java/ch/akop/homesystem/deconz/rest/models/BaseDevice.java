@@ -1,9 +1,10 @@
-package ch.akop.homesystem.deconz.rest;
+package ch.akop.homesystem.deconz.rest.models;
 
+import ch.akop.homesystem.deconz.rest.State;
 import lombok.Data;
 
 @Data
-public abstract class DeconzBaseDeviceResponse {
+public abstract class BaseDevice {
 
     private String etag;
     private boolean hascolor;

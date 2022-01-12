@@ -2,8 +2,6 @@ package ch.akop.homesystem.deconz.websocket;
 
 import lombok.Data;
 
-import java.util.Map;
-
 @Data
 public class WebSocketUpdate {
 
@@ -16,10 +14,10 @@ public class WebSocketUpdate {
     private String scid;
 
     // "config" can contain a list, so Map<object,object> not fit
+    // "light" can contain objects, so Map<String,String> not fit
 
     private String name;
     private String group;
-    private Map<String, String> light;
     private Sensor sensor;
     private State state;
     private Attribute attr;

@@ -5,7 +5,6 @@ import ch.akop.homesystem.models.states.NormalState;
 import ch.akop.homesystem.models.states.SleepState;
 import ch.akop.homesystem.models.states.State;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
@@ -18,12 +17,10 @@ import java.util.Map;
 public class StateServiceImpl {
 
     @Lazy
-    @Autowired
-    private SleepState sleepState;
+    private final SleepState sleepState;
 
     @Lazy
-    @Autowired
-    private NormalState normalState;
+    private final NormalState normalState;
 
     private final Map<Class<?>, State> states = new HashMap<>();
 
@@ -31,23 +28,25 @@ public class StateServiceImpl {
 
     @PostConstruct
     public void createStateInSomeSeconds() {
-        createStates();
+        this.states.put(SleepState.class, this.sleepState);
+        this.states.put(NormalState.class, this.normalState);
     }
 
 
-    public void createStates() {
-        this.states.put(SleepState.class, this.sleepState);
-        this.states.put(NormalState.class, this.normalState);
-
-        this.currentState = getDefaultState();
-        this.currentState.entered();
+    private void activateDefaultState() {
+        if (this.currentState == null) {
+            this.currentState = getDefaultState();
+            this.currentState.entered();
+        }
     }
 
     public void triggerEvent(final Event event) {
+        activateDefaultState();
         this.currentState.event(event);
     }
 
     public void triggerEvent(final String buttonName, final int buttonEvent) {
+        activateDefaultState();
         this.currentState.event(buttonName, buttonEvent);
     }
 
@@ -56,6 +55,14 @@ public class StateServiceImpl {
     }
 
     public void switchState(final Class<?> toState) {
+
+        activateDefaultState();
+
+        if (this.currentState != null && toState.isAssignableFrom(this.currentState.getClass())) {
+            // NOP
+            return;
+        }
+
         if (this.currentState != null) {
             this.currentState.leave();
         }
