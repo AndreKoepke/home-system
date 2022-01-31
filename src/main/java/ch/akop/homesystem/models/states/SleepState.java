@@ -30,9 +30,8 @@ public class SleepState implements State {
             "Guten Morgen liebe Sorgen, seid ihr auch schon alle wach?",
             "Was hast du geträumt? Ich hab geträumt, dass überall 0en und 1en waren. 0101110110101000010111010");
 
-    private static final Duration DURATION_UNTIL_SWITCH_LIGHTS_OFF = Duration.of(5, MINUTES);
+    private static final Duration DURATION_UNTIL_SWITCH_LIGHTS_OFF = Duration.of(3, MINUTES);
     private static final Duration DURATION_UNTIL_WAKEUP = Duration.of(6, HOURS);
-    public static final Duration DURATION_FOR_LIGHTS_OFF = Duration.of(10, MINUTES);
     public static final Random RANDOM = new Random();
 
     private final StateServiceImpl stateService;
@@ -52,21 +51,22 @@ public class SleepState implements State {
                 .formatted(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes()));
 
         this.timerTurnLightsOff = Observable.timer(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes(), TimeUnit.MINUTES)
-                .subscribe(turnOffAfter -> turnLightsOff(DURATION_FOR_LIGHTS_OFF));
+                .doOnNext(t -> turnLightsOff())
+                .doOnNext(duration -> this.messageService
+                        .sendMessageToUser("Schlaft gut. Die Lichter gehen jetzt aus. :)"))
+                .subscribe();
 
         this.timerLeaveSleepState = Observable.timer(DURATION_UNTIL_WAKEUP.toMinutes(), TimeUnit.MINUTES)
                 .subscribe(a -> this.stateService.switchState(NormalState.class));
     }
 
 
-    public void turnLightsOff(final Duration turnOffAfter) {
-        this.messageService.sendMessageToUser("Schlaft gut. Die Lichter gehen in %dmin aus. :)"
-                .formatted(DURATION_FOR_LIGHTS_OFF.getSeconds()));
-
-        this.deviceService.getAllLights()
+    public void turnLightsOff() {
+        this.deviceService.getDevicesOfType(Group.class)
                 .stream()
-                .filter(light -> !this.homeConfig.getNightLights().contains(light.getName()))
-                .forEach(light -> light.setBrightness(0, turnOffAfter));
+                .flatMap(group -> group.getScenes().stream())
+                .filter(scene -> scene.getName().equals(this.homeConfig.getNightSceneName()))
+                .forEach(Scene::activate);
     }
 
     @Override
@@ -97,7 +97,7 @@ public class SleepState implements State {
                         .filter(scene -> scene.getName().equals(this.homeConfig.getNightRunSceneName()))
                         .forEach(Scene::activate);
             } else {
-                this.turnLightsOff(Duration.ofSeconds(20));
+                this.turnLightsOff();
             }
             this.sleepButtonState = !this.sleepButtonState;
         }

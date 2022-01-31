@@ -16,13 +16,12 @@ public class HomeConfig {
     private List<OffButton> centralOffSwitches;
     private String nightRunSceneName;
     private GoodNightButton goodNightButton;
+    private String nightSceneName;
 
     @Data
     public static class OffButton {
-
         private String name;
         private int buttonEvent;
-
     }
 
 }

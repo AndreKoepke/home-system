@@ -44,6 +44,7 @@ public class DeconzConnector {
 
     @PostConstruct
     public void initialSetup() {
+        //noinspection HttpUrlsUsage
         this.webClient = WebClient.builder()
                 .baseUrl("http://%s:%d/api/%s/".formatted(this.deconzConfig.getHost(),
                         this.deconzConfig.getPort(),
@@ -118,8 +119,6 @@ public class DeconzConnector {
                 .toList());
 
         this.deviceService.registerDevice(newGroup);
-
-        log.info("Registered {}", group);
     }
 
     private void registerSensor(final String id, final Sensor sensor) {
@@ -142,14 +141,16 @@ public class DeconzConnector {
     private void registerLight(final String id, final Light light) {
         if (light.getType().toLowerCase().contains("light")) {
             this.deviceService.registerDevice(
-                    new ch.akop.homesystem.models.devices.actor.Light((bri, duration) -> this.setBrightnessOfLight(id, bri, duration),
+                    new ch.akop.homesystem.models.devices.actor.Light(
+                            (bri, duration) -> this.setBrightnessOfLight(id, bri, duration),
                             onOrOff -> {
                             })
                             .setId("light@" + id)
                             .setName(light.getName()));
         } else if (light.getType().toLowerCase().contains("on/off")) {
             this.deviceService.registerDevice(
-                    new ch.akop.homesystem.models.devices.actor.Light((bri, duration) -> this.turnOnOrOff(id, bri != 0), on -> this.turnOnOrOff(id, on))
+                    new ch.akop.homesystem.models.devices.actor.Light(
+                            (bri, duration) -> this.turnOnOrOff(id, bri != 0), on -> this.turnOnOrOff(id, on))
                             .setId("light@" + id)
                             .setName(light.getName()));
         }
