@@ -9,7 +9,7 @@ public interface DeviceService {
 
     <T extends Device<?>> T getDevice(String id, Class<T> clazz);
 
-    void registerDevice(Device<?> device);
+    <T extends Device<?>> void registerDevice(T device);
 
     Collection<Device<?>> getAllDevices();
 

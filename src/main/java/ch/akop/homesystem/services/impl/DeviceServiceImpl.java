@@ -26,7 +26,7 @@ public class DeviceServiceImpl implements DeviceService {
     }
 
     @Override
-    public void registerDevice(final Device<?> device) {
+    public <T extends Device<?>> void registerDevice(final T device) {
         this.devices.put(device.getId(), device);
     }
 

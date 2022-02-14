@@ -34,6 +34,7 @@ public class DeconzConnector {
 
     public static final String SENSOR_PREFIX = "sensor@";
     public static final String NO_RESPONSE_FROM_RASPBERRY = "No response from raspberry";
+    public static final String LIGHT_PREFIX = "light@";
     private final Gson gson;
     private final DeviceService deviceService;
     private final DeconzConfig deconzConfig;
@@ -145,14 +146,17 @@ public class DeconzConnector {
                             (bri, duration) -> this.setBrightnessOfLight(id, bri, duration),
                             onOrOff -> {
                             })
-                            .setId("light@" + id)
-                            .setName(light.getName()));
+                            .setId(LIGHT_PREFIX + id)
+                            .setName(light.getName())
+                            .setOn(light.getState().isOn()));
+
         } else if (light.getType().toLowerCase().contains("on/off")) {
             this.deviceService.registerDevice(
                     new ch.akop.homesystem.models.devices.actor.Light(
                             (bri, duration) -> this.turnOnOrOff(id, bri != 0), on -> this.turnOnOrOff(id, on))
-                            .setId("light@" + id)
-                            .setName(light.getName()));
+                            .setId(LIGHT_PREFIX + id)
+                            .setName(light.getName())
+                            .setOn(light.getState().isOn()));
         }
 
     }
@@ -211,8 +215,17 @@ public class DeconzConnector {
                 this.deviceService.getDevice(SENSOR_PREFIX + update.getId(), Button.class)
                         .triggerEvent(update.getState().getButtonevent());
             }
-
         }
+
+        if (update.getR().equals("lights")
+                && update.getE().equals("changed")
+                && update.getState() != null
+                && update.getState().getOn() != null) {
+
+            this.deviceService.getDevice(LIGHT_PREFIX + update.getId(), ch.akop.homesystem.models.devices.actor.Light.class)
+                    .setOn(update.getState().getOn());
+        }
+
     }
 
 

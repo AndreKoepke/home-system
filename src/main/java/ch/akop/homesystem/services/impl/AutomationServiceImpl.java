@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -37,8 +38,10 @@ public class AutomationServiceImpl implements AutomationService {
     private final MessageService messageService;
     private final StateServiceImpl stateServiceImpl;
     private final HomeConfig homeConfig;
-    private final Map<Class<? extends Device>, List<Device<?>>> knownDevices = new HashMap<>();
     private Animation mainDoorOpenAnimation;
+
+    @SuppressWarnings("rawtypes")
+    private final Map<Class<? extends Device>, List<Device<?>>> knownDevices = new HashMap<>();
 
     private String mainDoorName;
 
@@ -68,6 +71,7 @@ public class AutomationServiceImpl implements AutomationService {
             closeContact.getState$()
                     .skip(0)
                     .distinctUntilChanged()
+                    .throttleLatest(10, TimeUnit.SECONDS)
                     .subscribe(this::mainDoorStateChanged);
         }
 
@@ -79,9 +83,27 @@ public class AutomationServiceImpl implements AutomationService {
     }
 
     private void buttonWasPressed(final String buttonName, final int buttonEvent) {
-        this.stateServiceImpl.triggerEvent(buttonName, buttonEvent);
+        if (wasCentralOffPressed(buttonName, buttonEvent)) {
+            this.stateServiceImpl.triggerEvent(Event.CENTRAL_OFF_PRESSED);
+        } else if (wasGoodNightButtonPressed(buttonName, buttonEvent)) {
+            this.stateServiceImpl.triggerEvent(Event.GOOD_NIGHT_PRESSED);
+        } else {
+            this.stateServiceImpl.triggerEvent(buttonName, buttonEvent);
+        }
     }
-            
+
+
+    private boolean wasGoodNightButtonPressed(final String buttonName, final int buttonEvent) {
+        return buttonName.equals(this.homeConfig.getGoodNightButton().getName())
+                && buttonEvent == this.homeConfig.getGoodNightButton().getButtonEvent();
+    }
+
+    private boolean wasCentralOffPressed(final String buttonName, final int buttonEvent) {
+        return this.homeConfig.getCentralOffSwitches().stream()
+                .anyMatch(offButton -> offButton.getName().equals(buttonName)
+                        && offButton.getButtonEvent() == buttonEvent);
+    }
+
 
     private void mainDoorStateChanged(final CloseContactState state) {
         if (state == CloseContactState.CLOSED) {

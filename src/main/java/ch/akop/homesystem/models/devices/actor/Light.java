@@ -21,16 +21,10 @@ public class Light extends Device<Light> {
     private final Consumer<Boolean> functionToTurnOnOrOff;
 
 
-    public void setBrightness(int percent, Duration transitionTime) {
+    private boolean on = false;
+
+
+    public void setBrightness(final int percent, final Duration transitionTime) {
         this.getFunctionToSeBrightness().accept(percent, transitionTime);
     }
-
-    public void setOnOrOff(boolean isOn) {
-        this.getFunctionToTurnOnOrOff().accept(isOn);
-    }
-
-    public String toString() {
-        return this.getName();
-    }
-
 }
