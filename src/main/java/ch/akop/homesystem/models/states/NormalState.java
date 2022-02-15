@@ -62,6 +62,9 @@ public class NormalState implements State {
 
     private void startMainDoorOpenAnimation() {
 
+        log.info("MAIN-DOOR IS OPENED!");
+        this.messageService.sendMessageToUser("Wohnungstür wurde geöffnet.");
+
         createAnimationIfNotExists();
 
         if (this.deviceService.getDevicesOfType(Light.class)
@@ -75,8 +78,6 @@ public class NormalState implements State {
             this.animationThread = new Thread(this.mainDoorOpenAnimation::play);
             this.animationThread.start();
         }
-        log.info("MAIN-DOOR IS OPENED!");
-        this.messageService.sendMessageToUser("Wohnungstür wurde geöffnet.");
     }
 
     private void mainDoorClosed() {
