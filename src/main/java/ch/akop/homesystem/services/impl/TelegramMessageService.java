@@ -47,12 +47,13 @@ public class TelegramMessageService implements MessageService {
     }
 
     @Override
-    public void sendMessageToUser(final String message) {
+    public MessageService sendMessageToUser(final String message) {
         if (this.bot == null) {
-            return;
+            return this;
         }
 
         this.doorUpdatesTo.forEach(chatId -> this.bot.execute(new SendMessage(chatId, message)));
+        return this;
     }
 
     public void process(final Update update) {

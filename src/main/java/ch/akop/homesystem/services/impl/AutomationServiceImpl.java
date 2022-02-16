@@ -33,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 @Getter
 public class AutomationServiceImpl implements AutomationService {
 
+    private final int MARCEL_CONSTANT_SECONDS = 30;
+
     private final AnimationFactory animationFactory;
     private final DeviceService deviceService;
     private final MessageService messageService;
@@ -71,7 +73,7 @@ public class AutomationServiceImpl implements AutomationService {
             closeContact.getState$()
                     .skip(0)
                     .distinctUntilChanged()
-                    .throttleLatest(10, TimeUnit.SECONDS)
+                    .throttleLatest(this.MARCEL_CONSTANT_SECONDS, TimeUnit.SECONDS)
                     .subscribe(this::mainDoorStateChanged);
         }
 

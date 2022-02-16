@@ -13,11 +13,13 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static java.time.temporal.ChronoUnit.HOURS;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 @RequiredArgsConstructor
@@ -28,10 +30,11 @@ public class SleepState implements State {
     private static final List<String> POSSIBLE_MORNING_TEXTS = List.of("Naaa, gut geschlafen?",
             "Halli Hallo Hallöchen",
             "Guten Morgen liebe Sorgen, seid ihr auch schon alle wach?",
-            "Was hast du geträumt? Ich hab geträumt, dass überall 0en und 1en waren. 0101110110101000010111010");
+            "Was hast du geträumt? Ich hab geträumt, dass überall 0en und 1en waren. 0101110110101000010111010",
+            "Hi :)");
 
     private static final Duration DURATION_UNTIL_SWITCH_LIGHTS_OFF = Duration.of(3, MINUTES);
-    private static final Duration DURATION_UNTIL_WAKEUP = Duration.of(6, HOURS);
+    private static final LocalTime WAKEUP_TIME = LocalTime.of(7, 0);
     public static final Random RANDOM = new Random();
 
     private final StateServiceImpl stateService;
@@ -53,11 +56,20 @@ public class SleepState implements State {
         this.timerTurnLightsOff = Observable.timer(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes(), TimeUnit.MINUTES)
                 .doOnNext(t -> turnLightsOff())
                 .doOnNext(duration -> this.messageService
-                        .sendMessageToUser("Schlaft gut. Die Lichter gehen jetzt aus. :)"))
+                        .sendMessageToUser("Schlaft gut. Die Lichter gehen jetzt aus. :)")
+                        .sendMessageToUser("Ich lege mich auch hin und stehe um %s wieder auf.".formatted(WAKEUP_TIME)))
                 .subscribe();
 
-        this.timerLeaveSleepState = Observable.timer(DURATION_UNTIL_WAKEUP.toMinutes(), TimeUnit.MINUTES)
+        this.timerLeaveSleepState = Observable.timer(getDurationToWakeupAsSeconds(), TimeUnit.SECONDS)
                 .subscribe(a -> this.stateService.switchState(NormalState.class));
+    }
+
+    private long getDurationToWakeupAsSeconds() {
+        return Duration.between(getWakeUpDateTime(), LocalDateTime.now()).toSeconds();
+    }
+
+    private LocalDateTime getWakeUpDateTime() {
+        return LocalDateTime.of(LocalDate.now().plusDays(1), WAKEUP_TIME);
     }
 
 
