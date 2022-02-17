@@ -65,7 +65,7 @@ public class SleepState implements State {
     }
 
     private long getDurationToWakeupAsSeconds() {
-        return Duration.between(getWakeUpDateTime(), LocalDateTime.now()).toSeconds();
+        return Duration.between(LocalDateTime.now(), getWakeUpDateTime()).toSeconds();
     }
 
     private LocalDateTime getWakeUpDateTime() {
@@ -95,6 +95,9 @@ public class SleepState implements State {
         switch (event) {
             case DOOR_CLOSED -> stopDoorOpenTimer();
             case DOOR_OPENED -> startDoorOpenTimer();
+            default -> {
+                // nop
+            }
         }
     }
 
