@@ -1,4 +1,4 @@
-package ch.akop.homesystem.models.states;
+package ch.akop.homesystem.states;
 
 public interface State {
 

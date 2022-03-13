@@ -7,10 +7,10 @@ import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.models.devices.sensor.CloseContactState;
-import ch.akop.homesystem.models.states.Event;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
+import ch.akop.homesystem.states.Event;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 @Getter
 public class AutomationServiceImpl implements AutomationService {
 
-    private final int MARCEL_CONSTANT_SECONDS = 30;
+    private static final int MARCEL_CONSTANT_SECONDS = 30;
 
     private final AnimationFactory animationFactory;
     private final DeviceService deviceService;
@@ -73,7 +73,7 @@ public class AutomationServiceImpl implements AutomationService {
             closeContact.getState$()
                     .skip(0)
                     .distinctUntilChanged()
-                    .throttleLatest(this.MARCEL_CONSTANT_SECONDS, TimeUnit.SECONDS)
+                    .throttleLatest(MARCEL_CONSTANT_SECONDS, TimeUnit.SECONDS)
                     .subscribe(this::mainDoorStateChanged);
         }
 

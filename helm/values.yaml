@@ -3,3 +3,4 @@ image:
   tag: latest
 
 host: telegram.akop.online
+timezone: Europe/Berlin

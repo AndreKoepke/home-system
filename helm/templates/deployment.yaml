@@ -39,6 +39,9 @@ spec:
         - name: backend
           image: {{ .Values.image.base }}:{{ .Values.image.tag }}
           imagePullPolicy: Always
+          env:
+            - name: TZ
+              value: {{ .Values.timezone }}
           volumeMounts:
             - mountPath: /app/resources/
               name: spring-config

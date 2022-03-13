@@ -1,4 +1,4 @@
-package ch.akop.homesystem.models.states;
+package ch.akop.homesystem.states;
 
 public enum Event {
 
@@ -6,5 +6,5 @@ public enum Event {
     DOOR_CLOSED,
     CENTRAL_OFF_PRESSED,
     GOOD_NIGHT_PRESSED
-    
+
 }

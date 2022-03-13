@@ -1,10 +1,11 @@
-package ch.akop.homesystem.models.states;
+package ch.akop.homesystem.states;
 
 import ch.akop.homesystem.config.HomeConfig;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
+import ch.akop.homesystem.services.WeatherService;
 import ch.akop.homesystem.services.impl.StateServiceImpl;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -12,10 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.math.BigDecimal;
+import java.time.*;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +30,8 @@ public class SleepState implements State {
             "Halli Hallo Hallöchen",
             "Guten Morgen liebe Sorgen, seid ihr auch schon alle wach?",
             "Was hast du geträumt? Ich hab geträumt, dass überall 0en und 1en waren. 0101110110101000010111010",
-            "Hi :)");
+            "Hi :)",
+            "Guete morgen mitenand.");
 
     private static final Duration DURATION_UNTIL_SWITCH_LIGHTS_OFF = Duration.of(3, MINUTES);
     private static final LocalTime WAKEUP_TIME = LocalTime.of(7, 0);
@@ -41,6 +41,7 @@ public class SleepState implements State {
     private final MessageService messageService;
     private final DeviceService deviceService;
     private final HomeConfig homeConfig;
+    private final WeatherService weatherService;
 
     private Disposable timerTurnLightsOff;
     private Disposable timerLeaveSleepState;
@@ -65,11 +66,16 @@ public class SleepState implements State {
     }
 
     private long getDurationToWakeupAsSeconds() {
-        return Duration.between(LocalDateTime.now(), getWakeUpDateTime()).toSeconds();
+        return Duration.between(ZonedDateTime.now(), getWakeUpDateTime()).toSeconds();
     }
 
-    private LocalDateTime getWakeUpDateTime() {
-        return LocalDateTime.of(LocalDate.now().plusDays(1), WAKEUP_TIME);
+    private ZonedDateTime getWakeUpDateTime() {
+
+        if (LocalTime.now().isBefore(WAKEUP_TIME)) {
+            return ZonedDateTime.of(LocalDate.now(), WAKEUP_TIME, ZoneId.systemDefault());
+        }
+
+        return ZonedDateTime.of(LocalDate.now().plusDays(1), WAKEUP_TIME, ZoneId.systemDefault());
     }
 
 
@@ -84,6 +90,15 @@ public class SleepState implements State {
     @Override
     public void leave() {
         this.messageService.sendMessageToUser(POSSIBLE_MORNING_TEXTS.get(RANDOM.nextInt(POSSIBLE_MORNING_TEXTS.size())));
+
+        if (this.weatherService.isActive()) {
+            final var weather = this.weatherService.getWeather().blockingFirst();
+            this.messageService.sendMessageToUser("Es ist %s und es regnet%s.".formatted(
+                    weather.getOuterTemperatur(),
+                    weather.getRain().baseValue().compareTo(BigDecimal.ZERO) > 0 ? "" : " nicht"
+            ));
+        }
+
         this.timerTurnLightsOff.dispose();
         this.timerLeaveSleepState.dispose();
 

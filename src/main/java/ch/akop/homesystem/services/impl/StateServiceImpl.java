@@ -1,9 +1,9 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.models.states.Event;
-import ch.akop.homesystem.models.states.NormalState;
-import ch.akop.homesystem.models.states.SleepState;
-import ch.akop.homesystem.models.states.State;
+import ch.akop.homesystem.states.Event;
+import ch.akop.homesystem.states.NormalState;
+import ch.akop.homesystem.states.SleepState;
+import ch.akop.homesystem.states.State;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
