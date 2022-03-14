@@ -18,6 +18,7 @@ public class HomeConfig {
     private GoodNightButton goodNightButton;
     private String nightSceneName;
     private String nearestWeatherCloudStation;
+    private String sunsetSceneName;
 
     @Data
     public static class OffButton {

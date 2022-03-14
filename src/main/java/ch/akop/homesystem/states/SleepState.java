@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 @RequiredArgsConstructor
@@ -92,10 +93,10 @@ public class SleepState implements State {
         this.messageService.sendMessageToUser(POSSIBLE_MORNING_TEXTS.get(RANDOM.nextInt(POSSIBLE_MORNING_TEXTS.size())));
 
         if (this.weatherService.isActive()) {
-            final var weather = this.weatherService.getWeather().blockingFirst();
+            final var weather = this.weatherService.getWeather().blockingLast();
             this.messageService.sendMessageToUser("Es ist %s und es regnet%s.".formatted(
                     weather.getOuterTemperatur(),
-                    weather.getRain().baseValue().compareTo(BigDecimal.ZERO) > 0 ? "" : " nicht"
+                    weather.getRain().isBiggerThan(BigDecimal.ZERO, MILLIMETER_PER_HOUR) ? "" : " nicht"
             ));
         }
 

@@ -11,4 +11,5 @@ public class Group {
     private String id;
     private String type;
     private List<Scene> scenes;
+    private List<String> lights;
 }

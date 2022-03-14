@@ -13,4 +13,5 @@ public class Group extends Device<Group> {
     @EqualsAndHashCode.Exclude
     private List<Scene> scenes;
 
+    private List<String> lights;
 }

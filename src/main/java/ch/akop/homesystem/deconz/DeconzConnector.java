@@ -111,6 +111,7 @@ public class DeconzConnector {
     private void registerGroup(final String id, final Group group) {
         final var newGroup = new ch.akop.homesystem.models.devices.other.Group()
                 .setName(group.getName())
+                .setLights(group.getLights())
                 .setId(id);
 
         newGroup.setScenes(group.getScenes().stream()

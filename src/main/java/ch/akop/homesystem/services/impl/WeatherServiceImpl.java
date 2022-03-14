@@ -5,7 +5,6 @@ import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.scraper.weathercloud.Scraper;
-import ch.akop.weathercloud.temperature.Temperature;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import lombok.Getter;
@@ -17,7 +16,6 @@ import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.Duration;
 
-import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 import static ch.akop.weathercloud.wind.WindSpeedUnit.KILOMETERS_PER_SECOND;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
@@ -31,12 +29,10 @@ public class WeatherServiceImpl implements WeatherService {
     private final MessageService messageService;
 
     @Getter
-    private final Subject<Weather> weather = ReplaySubject.create(1);
+    private final Subject<Weather> weather = ReplaySubject.createWithSize(1);
 
     @Getter
     private boolean active;
-
-    private Temperature lastMeasuredTemperature;
 
     @PostConstruct
     public void startFetchingData() {
@@ -56,17 +52,6 @@ public class WeatherServiceImpl implements WeatherService {
                 this.messageService.sendMessageToUser("Hui, ist das winding. Macht lieber die Stören hoch. Grade weht mit %s."
                         .formatted(weather.getWind()));
             }
-
-            if (this.lastMeasuredTemperature == null) {
-                this.lastMeasuredTemperature = weather.getOuterTemperatur();
-            } else if (this.lastMeasuredTemperature.getAs(DEGREE)
-                    .subtract(weather.getOuterTemperatur().getAs(DEGREE))
-                    .abs()
-                    .compareTo(new BigDecimal(15)) > 0) {
-                this.messageService.sendMessageToUser("Draussen sind grade so etwa %s.".formatted(weather.getOuterTemperatur()));
-                this.lastMeasuredTemperature = weather.getOuterTemperatur();
-            }
-
         });
     }
 }
