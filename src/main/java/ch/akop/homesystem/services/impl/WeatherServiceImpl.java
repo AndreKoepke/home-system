@@ -5,8 +5,8 @@ import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.scraper.weathercloud.Scraper;
-import io.reactivex.rxjava3.subjects.ReplaySubject;
-import io.reactivex.rxjava3.subjects.Subject;
+import com.jakewharton.rx3.ReplayingShare;
+import io.reactivex.rxjava3.core.Flowable;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ public class WeatherServiceImpl implements WeatherService {
     private final MessageService messageService;
 
     @Getter
-    private final Subject<Weather> weather = ReplaySubject.createWithSize(1);
+    private Flowable<Weather> weather;
 
     @Getter
     private boolean active;
@@ -43,13 +43,13 @@ public class WeatherServiceImpl implements WeatherService {
 
         this.active = true;
         log.info("WeatherService will be started.");
-        new Scraper()
+        this.weather = new Scraper()
                 .scrape$(this.config.getNearestWeatherCloudStation(), Duration.of(5, MINUTES))
-                .subscribe(this.weather::onNext);
+                .compose(ReplayingShare.instance());
 
         this.weather.subscribe(weather -> {
             if (weather.getWind().getAs(KILOMETERS_PER_SECOND).compareTo(new BigDecimal(50)) > 0) {
-                this.messageService.sendMessageToUser("Hui, ist das winding. Macht lieber die Stören hoch. Grade weht mit %s."
+                this.messageService.sendMessageToUser("Hui, ist das winding. Macht lieber die Stören hoch. Grade wehts mit %s."
                         .formatted(weather.getWind()));
             }
         });

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +38,7 @@ public class SleepState implements State {
     private static final Duration DURATION_UNTIL_SWITCH_LIGHTS_OFF = Duration.of(3, MINUTES);
     private static final LocalTime WAKEUP_TIME = LocalTime.of(7, 0);
     public static final Random RANDOM = new Random();
+    private final List<Disposable> disposeWhenLeaveState = new ArrayList<>();
 
     private final StateServiceImpl stateService;
     private final MessageService messageService;
@@ -44,26 +46,29 @@ public class SleepState implements State {
     private final HomeConfig homeConfig;
     private final WeatherService weatherService;
 
-    private Disposable timerTurnLightsOff;
-    private Disposable timerLeaveSleepState;
     private Disposable timerDoorOpen;
+
     private boolean sleepButtonState;
 
 
     @Override
     public void entered() {
-        this.messageService.sendMessageToUser("Gute Nacht. Ich mache die Lichter in %dmin aus."
+        this.messageService.sendMessageToUser("Gute Nacht. Ich mache die Lichter in %dmin aus. Falls ich sofort aufwachen soll, schreibt einfach /aufwachen."
                 .formatted(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes()));
 
-        this.timerTurnLightsOff = Observable.timer(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes(), TimeUnit.MINUTES)
+        this.disposeWhenLeaveState.add(Observable.timer(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes(), TimeUnit.MINUTES)
                 .doOnNext(t -> turnLightsOff())
                 .doOnNext(duration -> this.messageService
                         .sendMessageToUser("Schlaft gut. Die Lichter gehen jetzt aus. :)")
                         .sendMessageToUser("Ich lege mich auch hin und stehe um %s wieder auf.".formatted(WAKEUP_TIME)))
-                .subscribe();
+                .subscribe());
 
-        this.timerLeaveSleepState = Observable.timer(getDurationToWakeupAsSeconds(), TimeUnit.SECONDS)
-                .subscribe(a -> this.stateService.switchState(NormalState.class));
+        this.disposeWhenLeaveState.add(Observable.timer(getDurationToWakeupAsSeconds(), TimeUnit.SECONDS)
+                .subscribe(a -> this.stateService.switchState(NormalState.class)));
+
+        this.disposeWhenLeaveState.add(this.messageService.getMessages()
+                .filter(message -> message.equalsIgnoreCase("/aufwachen"))
+                .subscribe(ignored -> this.stateService.switchState(NormalState.class)));
     }
 
     private long getDurationToWakeupAsSeconds() {
@@ -93,15 +98,15 @@ public class SleepState implements State {
         this.messageService.sendMessageToUser(POSSIBLE_MORNING_TEXTS.get(RANDOM.nextInt(POSSIBLE_MORNING_TEXTS.size())));
 
         if (this.weatherService.isActive()) {
-            final var weather = this.weatherService.getWeather().blockingLast();
-            this.messageService.sendMessageToUser("Es ist %s und es regnet%s.".formatted(
+            final var weather = this.weatherService.getWeather().blockingFirst();
+            this.messageService.sendMessageToUser("Es sind %s und es regnet%s.".formatted(
                     weather.getOuterTemperatur(),
                     weather.getRain().isBiggerThan(BigDecimal.ZERO, MILLIMETER_PER_HOUR) ? "" : " nicht"
             ));
         }
 
-        this.timerTurnLightsOff.dispose();
-        this.timerLeaveSleepState.dispose();
+        this.disposeWhenLeaveState.forEach(Disposable::dispose);
+        this.disposeWhenLeaveState.clear();
 
         stopDoorOpenTimer();
     }

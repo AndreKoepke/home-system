@@ -7,8 +7,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Data
@@ -21,11 +21,7 @@ public class AnimationFactory {
 
 
     public Animation buildMainDoorAnimation() {
-        final var allLights = this.deviceService.getAllDevices()
-                .stream()
-                .filter(Light.class::isInstance)
-                .map(Light.class::cast)
-                .collect(Collectors.toSet());
+        final var allLights = new HashSet<>(this.deviceService.getDevicesOfType(Light.class));
 
         return new Animation().setAnimationSteps(this.animation.stream()
                 .map(config -> config.toAnimationStep(allLights))

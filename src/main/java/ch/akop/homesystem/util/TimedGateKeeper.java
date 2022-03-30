@@ -4,6 +4,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static java.time.temporal.ChronoUnit.DAYS;
+
 
 /**
  * This class acts as a GateKeeper.
@@ -30,6 +32,14 @@ public class TimedGateKeeper {
 
         this.blockedUntil = newBlockedUntil;
         this.lock.writeLock().unlock();
+    }
+
+    public void setForever(final boolean blocked) {
+        if (blocked) {
+            this.blockFor(Duration.of(1, DAYS));
+        } else {
+            this.reset();
+        }
     }
 
     /**

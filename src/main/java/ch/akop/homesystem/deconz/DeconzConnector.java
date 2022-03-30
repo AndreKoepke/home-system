@@ -32,9 +32,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class DeconzConnector {
 
-    public static final String SENSOR_PREFIX = "sensor@";
     public static final String NO_RESPONSE_FROM_RASPBERRY = "No response from raspberry";
-    public static final String LIGHT_PREFIX = "light@";
     private final Gson gson;
     private final DeviceService deviceService;
     private final DeconzConfig deconzConfig;
@@ -128,13 +126,13 @@ public class DeconzConnector {
             this.deviceService.registerDevice(new CloseContact()
                     .setOpen(sensor.getState().isOpen())
                     .setName(sensor.getName())
-                    .setId(SENSOR_PREFIX + id)
+                    .setId(id)
                     .setLastChange(LocalDateTime.now()));
         }
 
         if (sensor.getType().equals("ZHASwitch")) {
             this.deviceService.registerDevice(new Button()
-                    .setId(SENSOR_PREFIX + id)
+                    .setId(id)
                     .setName(sensor.getName())
                     .setLastChange(LocalDateTime.now()));
         }
@@ -144,10 +142,8 @@ public class DeconzConnector {
         if (light.getType().toLowerCase().contains("light")) {
             this.deviceService.registerDevice(
                     new ch.akop.homesystem.models.devices.actor.Light(
-                            (bri, duration) -> this.setBrightnessOfLight(id, bri, duration),
-                            onOrOff -> {
-                            })
-                            .setId(LIGHT_PREFIX + id)
+                            (bri, duration) -> this.setBrightnessOfLight(id, bri, duration), onOrOff -> {})
+                            .setId(id)
                             .setName(light.getName())
                             .setOn(light.getState().isOn()));
 
@@ -155,7 +151,7 @@ public class DeconzConnector {
             this.deviceService.registerDevice(
                     new ch.akop.homesystem.models.devices.actor.Light(
                             (bri, duration) -> this.turnOnOrOff(id, bri != 0), on -> this.turnOnOrOff(id, on))
-                            .setId(LIGHT_PREFIX + id)
+                            .setId(id)
                             .setName(light.getName())
                             .setOn(light.getState().isOn()));
         }
@@ -208,12 +204,12 @@ public class DeconzConnector {
                 && update.getState() != null) {
 
             if (update.getState().getOpen() != null) {
-                this.deviceService.getDevice(SENSOR_PREFIX + update.getId(), CloseContact.class)
+                this.deviceService.getDevice(update.getId(), CloseContact.class)
                         .setOpen(update.getState().getOpen());
             }
 
             if (update.getState().getButtonevent() != null) {
-                this.deviceService.getDevice(SENSOR_PREFIX + update.getId(), Button.class)
+                this.deviceService.getDevice(update.getId(), Button.class)
                         .triggerEvent(update.getState().getButtonevent());
             }
         }
@@ -223,7 +219,7 @@ public class DeconzConnector {
                 && update.getState() != null
                 && update.getState().getOn() != null) {
 
-            this.deviceService.getDevice(LIGHT_PREFIX + update.getId(), ch.akop.homesystem.models.devices.actor.Light.class)
+            this.deviceService.getDevice(update.getId(), ch.akop.homesystem.models.devices.actor.Light.class)
                     .setOn(update.getState().getOn());
         }
 

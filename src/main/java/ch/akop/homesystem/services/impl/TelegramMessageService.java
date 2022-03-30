@@ -5,6 +5,8 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SetWebhook;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -28,6 +30,8 @@ public class TelegramMessageService implements MessageService {
 
     @Setter(AccessLevel.NONE)
     private TelegramBot bot;
+
+    private Subject<String> messages = PublishSubject.create();
 
     @PostConstruct
     @SneakyThrows
@@ -60,5 +64,7 @@ public class TelegramMessageService implements MessageService {
         log.info("Message from {}@{}: {}", update.message().from().firstName(),
                 update.message().chat().id(),
                 update.message().text());
+
+        this.messages.onNext(update.message().text());
     }
 }
