@@ -22,6 +22,7 @@ public class SunriseReactor extends Activatable {
     private final WeatherService weatherService;
     private final DeviceService deviceService;
     private final MessageService messageService;
+
     private Weather previousWeather;
 
     @PostConstruct

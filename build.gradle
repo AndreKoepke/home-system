@@ -28,9 +28,8 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
-//    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
-//    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-//    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'com.zaxxer:HikariCP:5.0.1'
     implementation 'org.java-websocket:Java-WebSocket:1.5.2'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'com.google.code.gson:gson:2.9.0'

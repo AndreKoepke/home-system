@@ -9,6 +9,7 @@ import ch.akop.homesystem.models.devices.actor.Light;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
+import ch.akop.homesystem.services.impl.RainDetectorService;
 import ch.akop.homesystem.services.impl.StateServiceImpl;
 import ch.akop.homesystem.util.TimedGateKeeper;
 import ch.akop.weathercloud.Weather;
@@ -43,6 +44,7 @@ public class NormalState extends Activatable implements State {
     private final WeatherService weatherService;
     private final SunsetReactor sunsetReactor;
     private final WeatherPoster weatherPoster;
+    private final RainDetectorService rainDetectorService;
 
     private Animation mainDoorOpenAnimation;
     private Thread animationThread;
@@ -59,6 +61,11 @@ public class NormalState extends Activatable implements State {
     public void entered() {
         super.disposeWhenClosed(this.weatherPoster.start());
         super.disposeWhenClosed(this.sunsetReactor.start());
+
+        if (this.rainDetectorService.noRainFor().toDays() > 1) {
+            this.messageService.sendMessageToUser("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
+                    .formatted(this.rainDetectorService.noRainFor().toDays()));
+        }
     }
 
     @Override
