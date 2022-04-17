@@ -26,6 +26,8 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+import static java.time.temporal.ChronoUnit.SECONDS;
+
 
 @Service
 @Slf4j
@@ -39,6 +41,7 @@ public class DeconzConnector {
     private final AutomationService automationService;
 
     private WebClient webClient;
+    private int connectionRetries = 0;
 
 
     @PostConstruct
@@ -64,6 +67,7 @@ public class DeconzConnector {
             @Override
             public void onOpen(final ServerHandshake handshakedata) {
                 log.info("WebSocket is up and listing.");
+                DeconzConnector.this.connectionRetries = 0;
             }
 
             @Override
@@ -75,15 +79,20 @@ public class DeconzConnector {
                 }
             }
 
+            @SneakyThrows
             @Override
             public void onClose(final int code, final String reason, final boolean remote) {
-                log.info("WS-Connection was closed, because of '{}'. Reconnecting ...", reason);
+                final var retryIn = Duration.of(Math.max(60, DeconzConnector.this.connectionRetries++ * 10), SECONDS);
+                log.warn("WS-Connection was closed, because of '{}'. Reconnecting  in {}s...", reason, retryIn.toSeconds());
+                Thread.sleep(retryIn.toMillis());
                 DeconzConnector.this.connect();
             }
 
             @Override
             public void onError(final Exception ex) {
-                log.error("Got exception", ex);
+                if (DeconzConnector.this.connectionRetries == 0) {
+                    log.error("Got exception", ex);
+                }
             }
         };
 
