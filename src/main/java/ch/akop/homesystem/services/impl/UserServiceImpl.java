@@ -4,6 +4,7 @@ import ch.akop.homesystem.config.HomeConfig;
 import ch.akop.homesystem.models.config.User;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
+import ch.akop.homesystem.util.SleepUtil;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
@@ -21,9 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -32,52 +31,43 @@ public class UserServiceImpl implements UserService {
 
     private final HomeConfig homeConfig;
     private final MessageService messageService;
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(3);
+    private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-    private final Map<User, Boolean> presenceMap = new HashMap<>();
+    private Map<User, Boolean> presenceMap = new HashMap<>();
     private final Subject<Map<User, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
 
 
     @Override
     public void hintCheckPresence() {
-        this.executorService.submit(() -> checkPresenceUntilChangedWithin(Duration.of(10, ChronoUnit.MINUTES)));
+        this.executorService.submit(this::checkPresenceUntilChangedWithin);
     }
 
-
     @SneakyThrows
-    private void checkPresenceUntilChangedWithin(final Duration duration) {
-        var result = this.executorService.schedule(this::checkPresence, 30, SECONDS);
-        long retry = 0;
-        Duration retryDuration = Duration.of(1, ChronoUnit.MINUTES);
+    private void checkPresenceUntilChangedWithin() {
+        var changed = checkPresence();
 
-        while (!result.get() && retryDuration.compareTo(duration) < 0) {
-            retryDuration = Duration.of(++retry * 2, ChronoUnit.MINUTES);
-            result = this.executorService.schedule(this::checkPresence, retryDuration.toSeconds(), SECONDS);
+        for (int i = 0; i < 10 && !changed; i++) {
+            SleepUtil.sleep(Duration.of(1, ChronoUnit.MINUTES));
+            changed = checkPresence();
         }
     }
 
 
     private boolean checkPresence() {
-        final var shouldUpdate = new AtomicBoolean(false);
-        this.homeConfig.getUsers().forEach(user -> {
-            final var isUserAtHome = canPingIp(user.getDeviceIp());
+        final var newPresenceMap = this.homeConfig.getUsers().stream()
+                .collect(Collectors.toMap(
+                        user -> user,
+                        user -> canPingIp(user.getDeviceIp())
+                ));
+        
+        final var hasChanges = !newPresenceMap.equals(this.presenceMap);
 
-            if (this.presenceMap.containsKey(user)) {
-                if (!this.presenceMap.get(user).equals(isUserAtHome)) {
-                    this.presenceMap.put(user, isUserAtHome);
-                    shouldUpdate.set(true);
-                }
-            } else {
-                this.presenceMap.put(user, isUserAtHome);
-            }
-        });
-
-
-        if (shouldUpdate.get()) {
-            this.presenceMap$.onNext(this.presenceMap);
+        if (hasChanges) {
+            this.presenceMap = newPresenceMap;
+            this.presenceMap$.onNext(newPresenceMap);
         }
 
-        return shouldUpdate.get();
+        return hasChanges;
     }
 
     private boolean canPingIp(final String ip) {

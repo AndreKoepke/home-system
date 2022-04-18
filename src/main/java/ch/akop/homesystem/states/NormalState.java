@@ -71,7 +71,7 @@ public class NormalState extends Activatable implements State {
 
     private void gotNewPresenceMap(final Map<User, Boolean> presenceMap) {
         presenceMap.forEach((user, isAtHome) -> {
-            if (this.lastPresenceMap.get(user).equals(isAtHome)) {
+            if (!this.lastPresenceMap.get(user).equals(isAtHome)) {
                 this.messageService.sendMessageToMainChannel("%s ist %s".formatted(user.getName(),
                         isAtHome ? "nach Hause gekommen." : "weggegangen"));
             }
