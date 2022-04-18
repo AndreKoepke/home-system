@@ -42,10 +42,15 @@ spec:
           env:
             - name: TZ
               value: {{ .Values.timezone }}
+            - name: JAVA_TOOL_OPTIONS
+              value: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:62222
           volumeMounts:
             - mountPath: /app/resources/
               name: spring-config
           ports:
             - containerPort: 8080
               name: http
+              protocol: TCP
+            - containerPort: 62222
+              name: jvm-debug
               protocol: TCP

@@ -54,6 +54,18 @@ test {
 
 jib {
 
+    extraDirectories {
+        paths {
+            path {
+                from = file('executables')
+                into = '/bin'
+            }
+        }
+        permissions = [
+                '/bin/*': '755'
+        ]
+    }
+
     from {
         image = 'openjdk:17'
     }
