@@ -9,10 +9,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.time.Duration;
 
 import static ch.akop.homesystem.states.NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON;
+import static ch.akop.homesystem.util.SleepUtil.sleep;
 import static ch.akop.weathercloud.light.LightUnit.WATT_PER_SQUARE_METER;
+import static java.time.Duration.of;
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 @Service
@@ -47,6 +49,9 @@ public class SunriseReactor extends Activatable {
 
         this.messageService.sendMessageToMainChannel("Es wird hell, ich mach mal die Lichter aus.");
         this.deviceService.getDevicesOfType(Light.class)
-                .forEach(light -> light.setBrightness(0, Duration.of(20, SECONDS)));
+                .forEach(light -> {
+                    light.setBrightness(0, of(10, SECONDS));
+                    sleep(of(100, MILLIS));
+                });
     }
 }
