@@ -84,7 +84,7 @@ public class DeconzConnector {
             @SneakyThrows
             @Override
             public void onClose(final int code, final String reason, final boolean remote) {
-                final var retryIn = Duration.of(Math.max(60, DeconzConnector.this.connectionRetries++ * 10), SECONDS);
+                final var retryIn = Duration.of(Math.min(60, ++DeconzConnector.this.connectionRetries * 10), SECONDS);
                 log.warn("WS-Connection was closed, because of '{}'. Reconnecting  in {}s...", reason, retryIn.toSeconds());
                 Thread.sleep(retryIn.toMillis());
                 DeconzConnector.this.connect();
@@ -92,7 +92,7 @@ public class DeconzConnector {
 
             @Override
             public void onError(final Exception ex) {
-                if (DeconzConnector.this.connectionRetries == 0) {
+                if (DeconzConnector.this.connectionRetries <= 1) {
                     DeconzConnector.this.userService.devMessage("Lost connection to raspberry. :(");
                     log.error("Got exception", ex);
                 }
