@@ -94,7 +94,7 @@ public class DeconzConnector {
             public void onError(final Exception ex) {
                 if (DeconzConnector.this.connectionRetries <= 1) {
                     DeconzConnector.this.userService.devMessage("Lost connection to raspberry. :(");
-                    log.error("Got exception", ex);
+                    log.error("Got exception on ws-connection to {}", DeconzConnector.this.deconzConfig.getHost(), ex);
                 }
             }
         };
