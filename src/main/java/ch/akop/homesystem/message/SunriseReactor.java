@@ -45,7 +45,7 @@ public class SunriseReactor extends Activatable {
             return;
         }
 
-        this.messageService.sendMessageToUser("Es wird hell, ich mach mal die Lichter aus.");
+        this.messageService.sendMessageToMainChannel("Es wird hell, ich mach mal die Lichter aus.");
         this.deviceService.getDevicesOfType(Light.class)
                 .forEach(light -> light.setBrightness(0, Duration.of(20, SECONDS)));
     }

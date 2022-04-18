@@ -9,7 +9,7 @@ import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.models.devices.sensor.CloseContactState;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
-import ch.akop.homesystem.services.MessageService;
+import ch.akop.homesystem.services.UserService;
 import ch.akop.homesystem.states.Event;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -37,9 +37,9 @@ public class AutomationServiceImpl implements AutomationService {
 
     private final AnimationFactory animationFactory;
     private final DeviceService deviceService;
-    private final MessageService messageService;
     private final StateServiceImpl stateServiceImpl;
     private final HomeConfig homeConfig;
+    private final UserService userService;
     private Animation mainDoorOpenAnimation;
 
     @SuppressWarnings("rawtypes")
@@ -110,6 +110,7 @@ public class AutomationServiceImpl implements AutomationService {
     private void mainDoorStateChanged(final CloseContactState state) {
         if (state == CloseContactState.CLOSED) {
             this.stateServiceImpl.triggerEvent(Event.DOOR_CLOSED);
+            this.userService.hintCheckPresence();
         } else {
             this.stateServiceImpl.triggerEvent(Event.DOOR_OPENED);
         }

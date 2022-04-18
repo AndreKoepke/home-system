@@ -1,6 +1,7 @@
 package ch.akop.homesystem.config;
 
 import ch.akop.homesystem.models.config.GoodNightButton;
+import ch.akop.homesystem.models.config.User;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ public class HomeConfig {
     private String nightSceneName;
     private String nearestWeatherCloudStation;
     private String sunsetSceneName;
+    private List<User> users;
 
     @Data
     public static class OffButton {

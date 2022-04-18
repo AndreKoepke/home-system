@@ -11,6 +11,7 @@ import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
+import ch.akop.homesystem.services.UserService;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -39,6 +40,7 @@ public class DeconzConnector {
     private final DeviceService deviceService;
     private final DeconzConfig deconzConfig;
     private final AutomationService automationService;
+    private final UserService userService;
 
     private WebClient webClient;
     private int connectionRetries = 0;
@@ -91,6 +93,7 @@ public class DeconzConnector {
             @Override
             public void onError(final Exception ex) {
                 if (DeconzConnector.this.connectionRetries == 0) {
+                    DeconzConnector.this.userService.devMessage("Lost connection to raspberry. :(");
                     log.error("Got exception", ex);
                 }
             }

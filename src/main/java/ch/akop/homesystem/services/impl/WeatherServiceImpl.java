@@ -49,7 +49,7 @@ public class WeatherServiceImpl implements WeatherService {
 
         this.weather.subscribe(weather -> {
             if (weather.getWind().getAs(KILOMETERS_PER_SECOND).compareTo(new BigDecimal(50)) > 0) {
-                this.messageService.sendMessageToUser("Hui, ist das winding. Macht lieber die Stören hoch. Grade wehts mit %s."
+                this.messageService.sendMessageToMainChannel("Hui, ist das winding. Macht lieber die Stören hoch. Grade wehts mit %s."
                         .formatted(weather.getWind()));
             }
         });

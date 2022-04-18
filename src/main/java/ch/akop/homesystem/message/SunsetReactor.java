@@ -43,7 +43,7 @@ public class SunsetReactor extends Activatable {
             return;
         }
 
-        this.messageService.sendMessageToUser("Es wird dunkel ... ich mach mal etwas Licht. Es sei denn ... /keinlicht");
+        this.messageService.sendMessageToMainChannel("Es wird dunkel ... ich mach mal etwas Licht. Es sei denn ... /keinlicht");
 
         super.disposeWhenClosed(this.messageService.getMessages()
                 .filter(message -> message.equalsIgnoreCase("/keinlicht"))

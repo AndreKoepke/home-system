@@ -37,7 +37,7 @@ public class WeatherPoster extends Activatable {
     private boolean shouldPostWeather(final Weather newWeather) {
 
         if (this.lastPosted == null) {
-            return true;
+            return false;
         }
 
         final var oldTemp = this.lastPosted.getOuterTemperatur().getAs(DEGREE);
@@ -47,7 +47,7 @@ public class WeatherPoster extends Activatable {
     }
 
     private void tellWeather(final Weather newWeather) {
-        this.messageService.sendMessageToUser("Es sind grade %s."
+        this.messageService.sendMessageToMainChannel("Es sind grade %s."
                 .formatted(newWeather.getOuterTemperatur()));
 
         this.lastPosted = newWeather;

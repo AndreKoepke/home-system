@@ -26,7 +26,7 @@ public class TelegramMessageService implements MessageService {
     private String botToken;
     private String botUsername;
     private String botPath;
-    private List<String> doorUpdatesTo;
+    private String mainChannel;
 
     @Setter(AccessLevel.NONE)
     private TelegramBot bot;
@@ -51,12 +51,26 @@ public class TelegramMessageService implements MessageService {
     }
 
     @Override
-    public MessageService sendMessageToUser(final String message) {
+    public MessageService sendMessageToMainChannel(final String message) {
+        if (this.mainChannel == null) {
+            return this;
+        }
+
+        return sendMessageToUser(message, this.mainChannel);
+    }
+
+    @Override
+    public MessageService sendMessageToUser(final String message, final String chatId) {
+        return sendMessageToUser(message, List.of(chatId));
+    }
+
+    @Override
+    public MessageService sendMessageToUser(final String message, final List<String> chatIds) {
         if (this.bot == null) {
             return this;
         }
 
-        this.doorUpdatesTo.forEach(chatId -> this.bot.execute(new SendMessage(chatId, message)));
+        chatIds.forEach(chatId -> this.bot.execute(new SendMessage(chatId, message)));
         return this;
     }
 
@@ -65,6 +79,8 @@ public class TelegramMessageService implements MessageService {
                 update.message().chat().id(),
                 update.message().text());
 
-        this.messages.onNext(update.message().text());
+        if (this.mainChannel.equals(update.message().chat().id().toString())) {
+            this.messages.onNext(update.message().text());
+        }
     }
 }

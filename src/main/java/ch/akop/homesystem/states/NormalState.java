@@ -5,9 +5,11 @@ import ch.akop.homesystem.message.SunsetReactor;
 import ch.akop.homesystem.message.WeatherPoster;
 import ch.akop.homesystem.models.animation.Animation;
 import ch.akop.homesystem.models.animation.AnimationFactory;
+import ch.akop.homesystem.models.config.User;
 import ch.akop.homesystem.models.devices.actor.Light;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
+import ch.akop.homesystem.services.UserService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.homesystem.services.impl.RainDetectorService;
 import ch.akop.homesystem.services.impl.StateServiceImpl;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.Map;
 
 import static ch.akop.weathercloud.light.LightUnit.WATT_PER_SQUARE_METER;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -45,9 +48,11 @@ public class NormalState extends Activatable implements State {
     private final SunsetReactor sunsetReactor;
     private final WeatherPoster weatherPoster;
     private final RainDetectorService rainDetectorService;
+    private final UserService userService;
 
     private Animation mainDoorOpenAnimation;
     private Thread animationThread;
+    private Map<User, Boolean> lastPresenceMap;
 
     @PostConstruct
     public void listenToTheWeather() {
@@ -57,13 +62,42 @@ public class NormalState extends Activatable implements State {
                 .subscribe(this.canStartMainDoorAnimation::setForever);
     }
 
+    @PostConstruct
+    public void listenToUserChanges() {
+        super.disposeWhenClosed(this.userService.getPresenceMap$()
+                .filter(this::compareWithLastAndSkipFirst)
+                .subscribe(this::gotNewPresenceMap));
+    }
+
+    private void gotNewPresenceMap(final Map<User, Boolean> presenceMap) {
+        presenceMap.forEach((user, isAtHome) -> {
+            if (this.lastPresenceMap.get(user).equals(isAtHome)) {
+                this.messageService.sendMessageToMainChannel("%s ist %s".formatted(user.getName(),
+                        isAtHome ? "nach Hause gekommen." : "weggegangen"));
+            }
+        });
+
+        this.lastPresenceMap = presenceMap;
+    }
+
+    private boolean compareWithLastAndSkipFirst(final Map<User, Boolean> presenceMap) {
+        if (this.lastPresenceMap == null) {
+            this.lastPresenceMap = presenceMap;
+            return false;
+        }
+
+        return !presenceMap.equals(this.lastPresenceMap);
+    }
+
     @Override
     public void entered() {
         super.disposeWhenClosed(this.weatherPoster.start());
         super.disposeWhenClosed(this.sunsetReactor.start());
 
+        this.lastPresenceMap = null;
+
         if (this.rainDetectorService.noRainFor().toDays() > 1) {
-            this.messageService.sendMessageToUser("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
+            this.messageService.sendMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
                     .formatted(this.rainDetectorService.noRainFor().toDays()));
         }
     }
@@ -101,7 +135,7 @@ public class NormalState extends Activatable implements State {
     private void startMainDoorOpenAnimation() {
 
         log.info("MAIN-DOOR IS OPENED!");
-        this.messageService.sendMessageToUser("Wohnungstür wurde geöffnet.");
+        this.messageService.sendMessageToMainChannel("Wohnungstür wurde geöffnet.");
 
         if (!this.canStartMainDoorAnimation.isGateOpen()) {
             return;
