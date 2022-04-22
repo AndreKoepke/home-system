@@ -125,7 +125,7 @@ public class SleepState implements State {
 
         if (!currentPresence.equals(this.presenceAtBeginning)) {
             currentPresence.forEach((user, isAtHome) -> {
-                if (this.presenceAtBeginning.get(user).equals(isAtHome)) {
+                if (!this.presenceAtBeginning.get(user).equals(isAtHome)) {
                     this.messageService.sendMessageToMainChannel("In der Nacht ist %s %s".formatted(user.getName(),
                             isAtHome ? "nach Hause gekommen." : "weggegangen."));
                 }

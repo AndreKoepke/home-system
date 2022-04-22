@@ -62,13 +62,6 @@ public class NormalState extends Activatable implements State {
                 .subscribe(this.canStartMainDoorAnimation::setForever);
     }
 
-    @PostConstruct
-    public void listenToUserChanges() {
-        super.disposeWhenClosed(this.userService.getPresenceMap$()
-                .filter(this::compareWithLastAndSkipFirst)
-                .subscribe(this::gotNewPresenceMap));
-    }
-
     private void gotNewPresenceMap(final Map<User, Boolean> presenceMap) {
         presenceMap.forEach((user, isAtHome) -> {
             if (!this.lastPresenceMap.get(user).equals(isAtHome)) {
@@ -86,7 +79,7 @@ public class NormalState extends Activatable implements State {
             return false;
         }
 
-        return !presenceMap.equals(this.lastPresenceMap);
+        return true;
     }
 
     @Override
@@ -94,12 +87,16 @@ public class NormalState extends Activatable implements State {
         super.disposeWhenClosed(this.weatherPoster.start());
         super.disposeWhenClosed(this.sunsetReactor.start());
 
-        this.lastPresenceMap = null;
 
         if (this.rainDetectorService.noRainFor().toDays() > 1) {
             this.messageService.sendMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
                     .formatted(this.rainDetectorService.noRainFor().toDays()));
         }
+
+        this.lastPresenceMap = null;
+        super.disposeWhenClosed(this.userService.getPresenceMap$()
+                .filter(this::compareWithLastAndSkipFirst)
+                .subscribe(this::gotNewPresenceMap));
     }
 
     @Override
