@@ -4,12 +4,14 @@ import ch.akop.homesystem.config.HomeConfig;
 import ch.akop.homesystem.models.devices.actor.Light;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.services.DeviceService;
+import io.reactivex.rxjava3.core.Observable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,10 @@ public class MotionSensorReactor extends Activatable {
                         .findFirst()
                         .orElseThrow()
                         .getIsMoving$()
+                        .switchMap(isMoving -> isMoving
+                                ? Observable.just(isMoving)
+                                : Observable.just(isMoving).delay(5, TimeUnit.MINUTES))
+                        .distinct()
                         .subscribe(isMoving -> {
                             if (isMoving) {
                                 turnLightsOn(motionSensorConfig.getLights());

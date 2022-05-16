@@ -180,16 +180,16 @@ public class DeconzConnector {
 
     }
 
-    private void setBrightnessOfLight(final String id, final Integer bri, final Duration duration) {
+    private void setBrightnessOfLight(final String id, final Integer percent, final Duration duration) {
         Specs.setLight(
                         id,
                         new UpdateLightParameters()
                                 .setTransitiontime(duration != null ? (int) duration.toSeconds() * 10 : null)
-                                .setBri(bri)
-                                .setOn(bri > 0),
+                                .setBri((int) Math.round(percent / 100d * 255))
+                                .setOn(percent > 0),
                         this.webClient)
                 .subscribe(
-                        success -> log.debug("Set light %s to %d was status %s".formatted(id, bri, success.getStatusCode())),
+                        success -> log.debug("Set light %s to %d was status %s".formatted(id, percent, success.getStatusCode())),
                         throwable -> {
                             if (!throwable.getClass().equals(InterruptedException.class)) {
                                 log.error("Failed to update light " + id, throwable);

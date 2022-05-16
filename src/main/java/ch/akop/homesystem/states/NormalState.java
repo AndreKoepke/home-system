@@ -99,7 +99,6 @@ public class NormalState extends Activatable implements State {
         super.disposeWhenClosed(this.sunsetReactor.start());
         super.disposeWhenClosed(this.motionSensorReactor.start());
 
-
         if (this.rainDetectorService.noRainFor().toDays() > 1) {
             this.messageService.sendMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
                     .formatted(this.rainDetectorService.noRainFor().toDays()));
