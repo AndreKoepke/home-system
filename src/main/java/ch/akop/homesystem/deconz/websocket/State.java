@@ -13,6 +13,8 @@ public class State {
     private String lastupdated;
     private Boolean open;
     private Boolean tampered;
+    private Boolean presence;
+    private Boolean dark;
 
     private Integer bri;
     private Boolean on;

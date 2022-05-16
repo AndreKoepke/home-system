@@ -9,6 +9,7 @@ import ch.akop.homesystem.deconz.websocket.WebSocketUpdate;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
+import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.UserService;
@@ -36,6 +37,8 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 public class DeconzConnector {
 
     public static final String NO_RESPONSE_FROM_RASPBERRY = "No response from raspberry";
+    public static final String DEVICE_TYPE_CLOSE_CONTACT = "OpenClose";
+    public static final String DEVICE_TYPE_MOTION_SENSOR = "ZHAPresence";
     private final Gson gson;
     private final DeviceService deviceService;
     private final DeconzConfig deconzConfig;
@@ -134,7 +137,7 @@ public class DeconzConnector {
     }
 
     private void registerSensor(final String id, final Sensor sensor) {
-        if (sensor.getType().contains("OpenClose")) {
+        if (sensor.getType().contains(DEVICE_TYPE_CLOSE_CONTACT)) {
             this.deviceService.registerDevice(new CloseContact()
                     .setOpen(sensor.getState().isOpen())
                     .setName(sensor.getName())
@@ -144,6 +147,13 @@ public class DeconzConnector {
 
         if (sensor.getType().equals("ZHASwitch")) {
             this.deviceService.registerDevice(new Button()
+                    .setId(id)
+                    .setName(sensor.getName())
+                    .setLastChange(LocalDateTime.now()));
+        }
+
+        if (sensor.getType().equals(DEVICE_TYPE_MOTION_SENSOR)) {
+            this.deviceService.registerDevice(new MotionSensor()
                     .setId(id)
                     .setName(sensor.getName())
                     .setLastChange(LocalDateTime.now()));
@@ -223,6 +233,11 @@ public class DeconzConnector {
             if (update.getState().getButtonevent() != null) {
                 this.deviceService.getDevice(update.getId(), Button.class)
                         .triggerEvent(update.getState().getButtonevent());
+            }
+
+            if (update.getState().getPresence() != null) {
+                this.deviceService.getDevice(update.getId(), MotionSensor.class)
+                        .updateState(update.getState().getPresence(), update.getState().getDark());
             }
         }
 

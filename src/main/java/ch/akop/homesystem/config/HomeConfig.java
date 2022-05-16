@@ -21,6 +21,14 @@ public class HomeConfig {
     private String nearestWeatherCloudStation;
     private String sunsetSceneName;
     private List<User> users;
+    private List<MotionSensorConfig> motionSensors;
+
+    @Data
+    public static class MotionSensorConfig {
+        private String sensor;
+        private List<String> lights;
+        private boolean ignoreBrightness;
+    }
 
     @Data
     public static class OffButton {

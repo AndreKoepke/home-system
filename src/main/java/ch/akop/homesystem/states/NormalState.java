@@ -1,6 +1,7 @@
 package ch.akop.homesystem.states;
 
 import ch.akop.homesystem.message.Activatable;
+import ch.akop.homesystem.message.MotionSensorReactor;
 import ch.akop.homesystem.message.SunsetReactor;
 import ch.akop.homesystem.message.WeatherPoster;
 import ch.akop.homesystem.models.animation.Animation;
@@ -49,6 +50,7 @@ public class NormalState extends Activatable implements State {
     private final WeatherPoster weatherPoster;
     private final RainDetectorService rainDetectorService;
     private final UserService userService;
+    private final MotionSensorReactor motionSensorReactor;
 
     private Animation mainDoorOpenAnimation;
     private Thread animationThread;
@@ -95,6 +97,7 @@ public class NormalState extends Activatable implements State {
     public void entered() {
         super.disposeWhenClosed(this.weatherPoster.start());
         super.disposeWhenClosed(this.sunsetReactor.start());
+        super.disposeWhenClosed(this.motionSensorReactor.start());
 
 
         if (this.rainDetectorService.noRainFor().toDays() > 1) {
