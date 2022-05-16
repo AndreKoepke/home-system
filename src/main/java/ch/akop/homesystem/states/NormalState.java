@@ -54,6 +54,15 @@ public class NormalState extends Activatable implements State {
     private Thread animationThread;
     private Map<User, Boolean> lastPresenceMap;
 
+
+    @PostConstruct
+    public void reactOnHolidayMessage() {
+        //noinspection ResultOfMethodCallIgnored
+        this.messageService.getMessages()
+                .filter(message -> message.equals("/holiday"))
+                .subscribe(ignored -> this.stateService.switchState(HolidayState.class));
+    }
+
     @PostConstruct
     public void listenToTheWeather() {
         this.weatherService.getWeather()

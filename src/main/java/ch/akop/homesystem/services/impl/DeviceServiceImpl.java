@@ -1,11 +1,15 @@
 package ch.akop.homesystem.services.impl;
 
 import ch.akop.homesystem.models.devices.Device;
+import ch.akop.homesystem.models.devices.actor.Light;
 import ch.akop.homesystem.services.DeviceService;
+import ch.akop.homesystem.util.SleepUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -43,6 +47,14 @@ public class DeviceServiceImpl implements DeviceService {
                 .filter(clazz::isInstance)
                 .map(clazz::cast)
                 .collect(Collectors.toSet());
+    }
+
+    @Override
+    public void turnAllLightsOff() {
+        this.getDevicesOfType(Light.class)
+                .stream()
+                .peek(ignored -> SleepUtil.sleep(Duration.of(100, ChronoUnit.MILLIS)))
+                .forEach(light -> light.setBrightness(0, Duration.of(10, ChronoUnit.SECONDS)));
     }
 
 

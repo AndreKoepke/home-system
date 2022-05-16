@@ -1,9 +1,6 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.states.Event;
-import ch.akop.homesystem.states.NormalState;
-import ch.akop.homesystem.states.SleepState;
-import ch.akop.homesystem.states.State;
+import ch.akop.homesystem.states.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -22,14 +19,18 @@ public class StateServiceImpl {
     @Lazy
     private final NormalState normalState;
 
+    @Lazy
+    private final HolidayState holidayState;
+
     private final Map<Class<?>, State> states = new HashMap<>();
 
     private State currentState;
 
     @PostConstruct
-    public void createStateInSomeSeconds() {
+    public void createStates() {
         this.states.put(SleepState.class, this.sleepState);
         this.states.put(NormalState.class, this.normalState);
+        this.states.put(HolidayState.class, this.holidayState);
     }
 
 

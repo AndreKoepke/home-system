@@ -14,4 +14,6 @@ public interface DeviceService {
 
     <T> Collection<T> getDevicesOfType(Class<T> clazz);
 
+    void turnAllLightsOff();
+
 }
