@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,30 +45,29 @@ public class UserServiceImpl implements UserService {
 
     @SneakyThrows
     private void checkPresenceUntilChangedWithin() {
-        var changed = checkPresence();
+        final var startedAt = LocalDateTime.now();
+        final var stopAt = startedAt.plus(Duration.of(5, ChronoUnit.MINUTES));
 
-        for (int i = 0; i < 10 && !changed; i++) {
+        do {
             SleepUtil.sleep(Duration.of(1, ChronoUnit.MINUTES));
-            changed = checkPresence();
-        }
+            updatePresence();
+        } while (LocalDateTime.now().isBefore(stopAt));
     }
 
 
-    private boolean checkPresence() {
+    private void updatePresence() {
         final var newPresenceMap = this.homeConfig.getUsers().stream()
                 .collect(Collectors.toMap(
                         user -> user,
                         user -> canPingIp(user.getDeviceIp())
                 ));
-        
+
         final var hasChanges = !newPresenceMap.equals(this.presenceMap);
 
         if (hasChanges) {
             this.presenceMap = newPresenceMap;
             this.presenceMap$.onNext(newPresenceMap);
         }
-
-        return hasChanges;
     }
 
     private boolean canPingIp(final String ip) {

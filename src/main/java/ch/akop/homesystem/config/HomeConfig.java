@@ -6,6 +6,8 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @ConfigurationProperties(prefix = "home-automation.special")
@@ -28,6 +30,7 @@ public class HomeConfig {
         private String sensor;
         private List<String> lights;
         private boolean ignoreBrightness;
+        private Duration keepMovingFor = Duration.of(5, ChronoUnit.MINUTES);
     }
 
     @Data

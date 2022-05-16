@@ -20,6 +20,7 @@ public class MotionSensorReactor extends Activatable {
     private final HomeConfig homeConfig;
     private final DeviceService deviceService;
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     protected void started() {
         this.homeConfig.getMotionSensors().forEach(motionSensorConfig -> super
@@ -31,7 +32,8 @@ public class MotionSensorReactor extends Activatable {
                         .getIsMoving$()
                         .switchMap(isMoving -> isMoving
                                 ? Observable.just(isMoving)
-                                : Observable.just(isMoving).delay(5, TimeUnit.MINUTES))
+                                : Observable.just(isMoving)
+                                .delay(motionSensorConfig.getKeepMovingFor().getSeconds(), TimeUnit.SECONDS))
                         .distinct()
                         .subscribe(isMoving -> {
                             if (isMoving) {
