@@ -34,7 +34,7 @@ public class MotionSensorReactor extends Activatable {
                                 ? Observable.just(isMoving)
                                 : Observable.just(isMoving)
                                 .delay(motionSensorConfig.getKeepMovingFor().getSeconds(), TimeUnit.SECONDS))
-                        .distinct()
+                        .distinctUntilChanged()
                         .subscribe(isMoving -> {
                             if (isMoving) {
                                 turnLightsOn(motionSensorConfig.getLights());
