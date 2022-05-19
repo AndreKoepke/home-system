@@ -4,13 +4,14 @@ Smart homes are comming. A home reaches "smartness", when you never have to touc
 This is, what this project is trying to do.
 
 # Feature list
-* Build animations with your light, which will be played when you open your door.
+* Build animations with your lights, which will be played when you open your door.
 * Turn lights automatically off, when it's bright outside.
-* And turn it on again, if's getting dark.
+* And turn it on again, if it's getting dark.
 * Use different states for your home. Like a night- and holiday-state.
-* Stay informed - when somebody opens your door, when it doesn't raining since a few days.
+* Stay informed 
+  * when somebody opens your door
+  * when it doesn't raining since a few days
 * Use motion sensors to control your lights (even with you, [IKEA motion sensor](https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1676))
-
 
 
 # SetUp
