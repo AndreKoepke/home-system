@@ -1,6 +1,7 @@
 # home-system
 
-Smart homes are comming. A home reaches "smartness", when you never have to touch a button or switch again.  
+Smart homes are rising. But often, a home with programmable switches is called "smart".  
+I think, that a home reaches "smartness", when you only rarely have to touch a button.  
 This is, what this project is trying to do.
 
 # Feature list
@@ -8,7 +9,7 @@ This is, what this project is trying to do.
 * Turn lights automatically off, when it's bright outside.
 * And turn it on again, if it's getting dark.
 * Use different states for your home. Like a night- and holiday-state.
-* Stay informed 
+* Stay informed via telegram
   * when somebody opens your door
   * when it doesn't raining since a few days
 * Use motion sensors to control your lights (even with you, [IKEA motion sensor](https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1676))
@@ -31,6 +32,9 @@ Currently there is no user-friendly setup. See this [issue](https://github.com/A
 3. Install the chart with
 
     <!-- language: bash -->
+        git clone project-url
+        cd home-system
+        nano helm/config/applications.yaml
         helm upgrade --install yourHome helm/
 4. Be happy.
 
