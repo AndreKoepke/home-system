@@ -18,7 +18,7 @@ public class SetLightStep implements AnimationStep {
 
     @Override
     public void play() {
-        this.light.setBrightness(this.brightness.multiply(BigDecimal.valueOf(100)).intValue(), this.transitionTime);
+        this.light.setBrightness(this.brightness, this.transitionTime);
     }
 
 }
