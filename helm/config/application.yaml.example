@@ -1,0 +1,121 @@
+server:
+  port: 8080
+  error:
+    include-message: always
+  address: 0.0.0.0
+
+spring:
+  output:
+    ansi:
+      enabled: always
+
+  datasource:
+    url: your-jdbc-url
+    username: your-db-user
+    password: your-db-pass
+
+home-automation:
+
+  telegram:
+    botToken: your-bot-token
+    botPath: https://your-host.com/telegram/your-bot-token
+    mainChannel: your-channel-id
+
+  special:
+    users:
+      # users are optional
+      - name: your-name
+        telegramId: your-telegram-id
+        # use the ip of your handy
+        # if you at home, then your handy is connected to WLAN
+        # the home-system can now recognize, that you are at home (or not)
+        deviceIp: your-ip
+        # activate dev-role for more technical messages
+        dev: true
+
+      # define more users (if you are not living alone)
+
+    # if you have a switch next to your door, then some more extra logic can
+    # prevent, that lights going on, when you leave your home
+    centralOffSwitches:
+      - name: "ZentralAus"
+        buttonEvent: 1002
+
+    # press your goodNightButton again and all scenes with the name "Nachtlauf" will be activated
+    nightRunSceneName: "Nachtlauf"
+
+    # all scenes with the name "Nacht" will be activated, when the home-system is entering the night mode
+    nightSceneName: "Nacht"
+
+    # the button, to trigger the nightMode
+    goodNightButton:
+      name: "Schlafzimmer"
+      buttonEvent: 4000
+
+    # id of nearest weatherCloudStation
+    # see https://app.weathercloud.net/
+    nearestWeatherCloudStation: "7003523537"
+
+    # all scenes with the name "Dämmerung" will be activated, when it is getting dark outside
+    sunsetSceneName: "Dämmerung"
+
+    # define motion-sensors and link them to lights
+    motionSensors:
+      - sensor: "Bewegungsmelder Dusche"
+        ignoreBrightness: true
+        lights:
+          - "Dusche"
+
+  # name of the mainDoor-sensor
+  # use something like this https://www.amazon.de/Aqara-MCCGQ11LM-Window-Sensor-Fensterssensor/dp/B07D37VDM3
+  sensors:
+    mainDoorName: "Haustür"
+
+  # define your animation, when you are coming home
+  when-main-door-opened:
+    animation:
+      - lights:
+          names: [ "Spot 1" ]
+          toBrightness: 1
+          transition-time: 1500ms
+      - pause:
+          wait-for: 1s
+      - lights:
+          names: [ "Spot 2", "Spot rechts 1", "Grün" ]
+          toBrightness: 1
+          transition-time: 1500ms
+      - pause:
+          wait-for: 1s
+      - lights:
+          names: [ "Spot 3", "Spot rechts 2", "Blau" ]
+          toBrightness: 1
+          transition-time: 1500ms
+      - pause:
+          wait-for: 1s
+      - lights:
+          names: [ "Spot 4", "Spot rechts 3", "Gelb" ]
+          toBrightness: 1
+          transition-time: 1500ms
+      - pause:
+          wait-for: 1s
+      - lights:
+          names: [ "Rot" ]
+          toBrightness: 1
+          transition-time: 1500ms
+
+      - pause:
+          wait-for: 2s
+
+      - pause:
+          wait-for: 1s
+      - lights:
+          names: [ "Allstar", "Schirm" ]
+          toBrightness: 1
+          transition-time: 1500ms
+
+  # deCONZ data
+  deconz:
+    host: your-deconz-address
+    port: your-deconz-port (usually just 80)
+    websocket-port: your-deconz-websocket-port (usually just 443)
+    api-key: your-deconz-api-key

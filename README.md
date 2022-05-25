@@ -1,7 +1,7 @@
 # home-system
 
 Smart homes are rising. But often, a home with programmable switches is called "smart".  
-I think, that a home reaches "smartness", when you only rarely have to touch a button.  
+I think, that a home reaches "smartness", when you only have to touch a button rarely.  
 This is, what this project is trying to do.
 
 # Feature list
@@ -11,32 +11,29 @@ This is, what this project is trying to do.
 * Use different states for your home. Like a night- and holiday-state.
 * Stay informed via telegram
   * when somebody opens your door
-  * when it doesn't raining since a few days
+  * when it doesn't rain since a few days
 * Use motion sensors to control your lights (even with you, [IKEA motion sensor](https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1676))
 
 
-# SetUp
+# Installation
 Currently there is no user-friendly setup. See this [issue](https://github.com/AndreKoepke/home-system/issues/2).  
 
 ## Prerequisite
 * [deCONZ aka Phoscon](https://phoscon.de/en/conbee/install)
 * docker
-* (recommended) k8s
-* (recommended) helm
+* (recommended) k8s & helm
 * (recommended) hostname with TLS-cert (for telegram webhook)
 
-## Helm with kubernetes (preffered)
+## Helm with kubernetes (preferred)
 
-1. Checkout this project
-2. Change the default applications.yaml 
-3. Install the chart with
+```bash
+git clone git@github.com:AndreKoepke/home-system.git
+cd home-system
+mv helm/config/applications.yaml.example helm/config/applications.yaml
+nano helm/config/applications.yaml
+helm upgrade --install yourHome helm/
+```
 
-    <!-- language: bash -->
-        git clone project-url
-        cd home-system
-        nano helm/config/applications.yaml
-        helm upgrade --install yourHome helm/
-4. Be happy.
 
 ## Pure docker
 
@@ -44,5 +41,23 @@ You can also start the docker-image directly.
 In that case, you have to mount the `application.yaml` directly.
 
 ```bash
-docker run akop/home-system -v config:/config
+git clone git@github.com:AndreKoepke/home-system.git
+cd home-system
+mv helm/config/applications.yaml.example helm/config/applications.yaml
+nano helm/config/applications.yaml
+docker run -p 8080:8080 -v $(pwd)/helm/config:/app/resources/ akop/home-system
 ```
+For telegram-webhook: Ensure, that your container can be reached from the internet
+and behind a reverse-proxy with a TLS-certificate.
+
+---
+### Some words about quality
+I'm working alone on this project, and I haven't much time for tests.  
+
+<details>
+  <summary>Don't judge me for bugs. :)</summary>
+  
+  ![Meme for testing in production](images/test_in_production.png)
+  
+</details>
+
