@@ -15,7 +15,6 @@ import java.util.List;
 @Data
 public class HomeConfig {
 
-    private List<String> nightLights;
     private List<OffButton> centralOffSwitches;
     private String nightRunSceneName;
     private GoodNightButton goodNightButton;
