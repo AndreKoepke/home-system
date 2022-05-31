@@ -7,7 +7,7 @@ import ch.akop.homesystem.message.WeatherPoster;
 import ch.akop.homesystem.models.animation.Animation;
 import ch.akop.homesystem.models.animation.AnimationFactory;
 import ch.akop.homesystem.models.config.User;
-import ch.akop.homesystem.models.devices.actor.Light;
+import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
@@ -152,9 +152,9 @@ public class NormalState extends Activatable implements State {
         this.canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
         createAnimationIfNotExists();
 
-        if (this.deviceService.getDevicesOfType(Light.class)
+        if (this.deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
-                .anyMatch(Light::isOn)) {
+                .anyMatch(SimpleLight::isOn)) {
             // NOP when any light is on
             return;
         }

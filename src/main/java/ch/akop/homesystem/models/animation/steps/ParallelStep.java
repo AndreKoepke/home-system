@@ -3,17 +3,14 @@ package ch.akop.homesystem.models.animation.steps;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.List;
+import java.util.Collection;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class ParallelStep implements AnimationStep {
 
-    private final List<AnimationStep> steps;
+    private final Collection<AnimationStep> steps;
 
-    public ParallelStep(final List<AnimationStep> steps) {
-        this.steps = steps;
-    }
 
     @Override
     public void play() {

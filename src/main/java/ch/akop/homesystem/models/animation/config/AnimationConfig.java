@@ -1,7 +1,7 @@
 package ch.akop.homesystem.models.animation.config;
 
 import ch.akop.homesystem.models.animation.steps.AnimationStep;
-import ch.akop.homesystem.models.devices.actor.Light;
+import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import lombok.Data;
 
 import java.util.Set;
@@ -13,9 +13,9 @@ public class AnimationConfig {
     private PauseConfig pause;
 
 
-    public AnimationStep toAnimationStep(final Set<Light> allLights) {
+    public AnimationStep toAnimationStep(final Set<SimpleLight> affectedLights) {
         if (this.lights != null && this.pause == null) {
-            return this.lights.toStep(allLights);
+            return this.lights.toStep(affectedLights);
         } else if (this.lights == null && this.pause != null) {
             return this.pause.toPauseStep();
         } else if (this.lights != null) {

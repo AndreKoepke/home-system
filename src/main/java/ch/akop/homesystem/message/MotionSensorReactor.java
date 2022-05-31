@@ -1,7 +1,8 @@
 package ch.akop.homesystem.message;
 
 import ch.akop.homesystem.config.HomeConfig;
-import ch.akop.homesystem.models.devices.actor.Light;
+import ch.akop.homesystem.models.devices.actor.DimmableLight;
+import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.services.DeviceService;
 import io.reactivex.rxjava3.core.Observable;
@@ -45,17 +46,24 @@ public class MotionSensorReactor extends Activatable {
     }
 
     private void turnLightsOn(final List<String> lights) {
-        this.deviceService.getDevicesOfType(Light.class)
+        this.deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
                 .filter(light -> lights.contains(light.getName()))
-                .forEach(light -> light.setBrightness(100, Duration.of(10, ChronoUnit.SECONDS)));
+                .forEach(light -> {
+                    if (light instanceof DimmableLight dimmable) {
+                        dimmable.setBrightness(100, Duration.of(10, ChronoUnit.SECONDS));
+                    } else {
+                        light.turnOn(true);
+                    }
+
+                });
     }
 
     private void turnLightsOff(final List<String> lights) {
-        this.deviceService.getDevicesOfType(Light.class)
+        this.deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
                 .filter(light -> lights.contains(light.getName()))
-                .forEach(light -> light.setBrightness(0, Duration.of(1, ChronoUnit.SECONDS)));
+                .forEach(light -> light.turnOn(false));
 
     }
 

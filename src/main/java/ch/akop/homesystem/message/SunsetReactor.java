@@ -1,7 +1,7 @@
 package ch.akop.homesystem.message;
 
 import ch.akop.homesystem.config.HomeConfig;
-import ch.akop.homesystem.models.devices.actor.Light;
+import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.services.DeviceService;
@@ -61,9 +61,9 @@ public class SunsetReactor extends Activatable {
     }
 
     private boolean areAllLampsAreOff(final Group group) {
-        return this.deviceService.getDevicesOfType(Light.class)
+        return this.deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
                 .filter(light -> group.getLights().contains(light.getId()))
-                .noneMatch(Light::isOn);
+                .noneMatch(SimpleLight::isOn);
     }
 }

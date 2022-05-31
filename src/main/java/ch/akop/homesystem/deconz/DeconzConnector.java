@@ -6,6 +6,10 @@ import ch.akop.homesystem.deconz.rest.models.Group;
 import ch.akop.homesystem.deconz.rest.models.Light;
 import ch.akop.homesystem.deconz.rest.models.Sensor;
 import ch.akop.homesystem.deconz.websocket.WebSocketUpdate;
+import ch.akop.homesystem.models.color.Color;
+import ch.akop.homesystem.models.devices.actor.ColoredLight;
+import ch.akop.homesystem.models.devices.actor.DimmableLight;
+import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
@@ -17,6 +21,7 @@ import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.cfg.NotYetImplementedException;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
@@ -114,7 +119,7 @@ public class DeconzConnector {
 
         Specs.getAllLights(this.webClient).blockOptional()
                 .orElseThrow(() -> new IllegalStateException(NO_RESPONSE_FROM_RASPBERRY))
-                .forEach(this::registerLight);
+                .forEach(this::registerActor);
 
         Specs.getAllGroups(this.webClient).blockOptional()
                 .orElseThrow(() -> new IllegalStateException(NO_RESPONSE_FROM_RASPBERRY))
@@ -160,24 +165,45 @@ public class DeconzConnector {
         }
     }
 
-    private void registerLight(final String id, final Light light) {
-        if (light.getType().toLowerCase().contains("light")) {
-            this.deviceService.registerDevice(
-                    new ch.akop.homesystem.models.devices.actor.Light(
-                            (bri, duration) -> this.setBrightnessOfLight(id, bri, duration), onOrOff -> {})
-                            .setId(id)
-                            .setName(light.getName())
-                            .setOn(light.getState().isOn()));
+    private void registerActor(final String id, final Light light) {
+        var actor = getLightInstanceByType(id, light);
+        actor.setName(light.getName());
+        actor.setId(id);
 
-        } else if (light.getType().toLowerCase().contains("on/off")) {
-            this.deviceService.registerDevice(
-                    new ch.akop.homesystem.models.devices.actor.Light(
-                            (bri, duration) -> this.turnOnOrOff(id, bri != 0), on -> this.turnOnOrOff(id, on))
-                            .setId(id)
-                            .setName(light.getName())
-                            .setOn(light.getState().isOn()));
-        }
+        deviceService.registerDevice(actor);
+    }
 
+    private SimpleLight getLightInstanceByType(String id, Light light) {
+        return switch (light.getType().toLowerCase()) {
+            case "color temperature light", "color light", "extended color light" -> registerColorLight(id, light);
+            case "dimmable light" -> registerDimmableLight(id, light);
+            case "on/off plug-in unit" -> registerSimpleLight(id, light);
+            default -> throw new NotYetImplementedException("Actor of type %s is not implemented".formatted(light.getType()));
+        };
+    }
+
+    private ColoredLight registerColorLight(String id, Light light) {
+        var coloredLight = new ColoredLight(
+                (percent, duration) -> this.setBrightnessOfLight(id, percent, duration),
+                turnOn -> this.turnOnOrOff(id, turnOn),
+                (percent, color, duration) -> this.setColorOfLight(id, percent, color, duration)
+        );
+
+        coloredLight.setOn(light.getState().isOn());
+        return coloredLight;
+    }
+
+    private DimmableLight registerDimmableLight(String id, Light light) {
+        var dimmableLight = new DimmableLight(
+                (percent, duration) -> this.setBrightnessOfLight(id, percent, duration),
+                on -> this.turnOnOrOff(id, on));
+        dimmableLight.setOn(light.getState().isOn());
+        return dimmableLight;
+    }
+
+    private SimpleLight registerSimpleLight(String id, Light light) {
+        return new SimpleLight(on -> this.turnOnOrOff(id, on))
+                .setOn(light.getState().isOn());
     }
 
     private void setBrightnessOfLight(final String id, final Integer percent, final Duration duration) {
@@ -186,6 +212,24 @@ public class DeconzConnector {
                         new UpdateLightParameters()
                                 .setTransitiontime(duration != null ? (int) duration.toSeconds() * 10 : null)
                                 .setBri((int) Math.round(percent / 100d * 255))
+                                .setOn(percent > 0),
+                        this.webClient)
+                .subscribe(
+                        success -> log.debug("Set light %s to %d was status %s".formatted(id, percent, success.getStatusCode())),
+                        throwable -> {
+                            if (!throwable.getClass().equals(InterruptedException.class)) {
+                                log.error("Failed to update light " + id, throwable);
+                            }
+                        });
+    }
+
+    private void setColorOfLight(final String id, final Integer percent, Color color, final Duration duration) {
+        Specs.setLight(
+                        id,
+                        new UpdateLightParameters()
+                                .setTransitiontime(duration != null ? (int) duration.toSeconds() * 10 : null)
+                                .setBri((int) Math.round(percent / 100d * 255))
+                                .setXy(color.toXY())
                                 .setOn(percent > 0),
                         this.webClient)
                 .subscribe(
@@ -246,7 +290,7 @@ public class DeconzConnector {
                 && update.getState() != null
                 && update.getState().getOn() != null) {
 
-            this.deviceService.getDevice(update.getId(), ch.akop.homesystem.models.devices.actor.Light.class)
+            this.deviceService.getDevice(update.getId(), SimpleLight.class)
                     .setOn(update.getState().getOn());
         }
 
