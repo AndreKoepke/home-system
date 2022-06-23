@@ -23,6 +23,7 @@ public class HomeConfig {
     private String sunsetSceneName;
     private List<User> users;
     private List<MotionSensorConfig> motionSensors;
+    private boolean sendMessageWhenTurnLightsOff = true;
 
     @Data
     public static class MotionSensorConfig {

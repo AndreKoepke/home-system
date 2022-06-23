@@ -1,5 +1,6 @@
 package ch.akop.homesystem.message;
 
+import ch.akop.homesystem.config.HomeConfig;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
@@ -19,6 +20,7 @@ public class SunriseReactor extends Activatable {
     private final WeatherService weatherService;
     private final DeviceService deviceService;
     private final MessageService messageService;
+    private final HomeConfig homeConfig;
 
     private Weather previousWeather;
 
@@ -42,7 +44,9 @@ public class SunriseReactor extends Activatable {
             return;
         }
 
-        this.messageService.sendMessageToMainChannel("Es wird hell, ich mach mal die Lichter aus.");
+        if (homeConfig.isSendMessageWhenTurnLightsOff()) {
+            this.messageService.sendMessageToMainChannel("Es wird hell, ich mach mal die Lichter aus.");
+        }
         this.deviceService.turnAllLightsOff();
     }
 }
