@@ -1,6 +1,10 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.states.*;
+import ch.akop.homesystem.states.Event;
+import ch.akop.homesystem.states.HolidayState;
+import ch.akop.homesystem.states.NormalState;
+import ch.akop.homesystem.states.SleepState;
+import ch.akop.homesystem.states.State;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -22,6 +26,7 @@ public class StateServiceImpl {
     @Lazy
     private final HolidayState holidayState;
 
+    private final FanService fanService;
     private final Map<Class<?>, State> states = new HashMap<>();
 
     private State currentState;
@@ -42,13 +47,16 @@ public class StateServiceImpl {
     }
 
     public void triggerEvent(final Event event) {
+        // TODO event-broker?
         activateDefaultState();
         this.currentState.event(event);
     }
 
     public void triggerEvent(final String buttonName, final int buttonEvent) {
+        // TODO event-broker?
         activateDefaultState();
         this.currentState.event(buttonName, buttonEvent);
+        fanService.buttonEventHandler(buttonName, buttonEvent);
     }
 
     public State getDefaultState() {

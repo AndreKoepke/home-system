@@ -1,4 +1,4 @@
-package ch.akop.homesystem.message;
+package ch.akop.homesystem.services.activatable;
 
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;

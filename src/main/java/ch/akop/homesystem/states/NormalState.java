@@ -1,9 +1,5 @@
 package ch.akop.homesystem.states;
 
-import ch.akop.homesystem.message.Activatable;
-import ch.akop.homesystem.message.MotionSensorReactor;
-import ch.akop.homesystem.message.SunsetReactor;
-import ch.akop.homesystem.message.WeatherPoster;
 import ch.akop.homesystem.models.animation.Animation;
 import ch.akop.homesystem.models.animation.AnimationFactory;
 import ch.akop.homesystem.models.config.User;
@@ -12,6 +8,10 @@ import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
 import ch.akop.homesystem.services.WeatherService;
+import ch.akop.homesystem.services.activatable.Activatable;
+import ch.akop.homesystem.services.activatable.MotionSensorReactor;
+import ch.akop.homesystem.services.activatable.SunsetReactor;
+import ch.akop.homesystem.services.activatable.WeatherPoster;
 import ch.akop.homesystem.services.impl.RainDetectorService;
 import ch.akop.homesystem.services.impl.StateServiceImpl;
 import ch.akop.homesystem.util.TimedGateKeeper;

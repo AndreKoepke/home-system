@@ -275,17 +275,17 @@ public class DeconzConnector {
                 && update.getState() != null) {
 
             if (update.getState().getOpen() != null) {
-                this.deviceService.getDevice(update.getId(), CloseContact.class)
+                this.deviceService.getDeviceById(update.getId(), CloseContact.class)
                         .setOpen(update.getState().getOpen());
             }
 
             if (update.getState().getButtonevent() != null) {
-                this.deviceService.getDevice(update.getId(), Button.class)
+                this.deviceService.getDeviceById(update.getId(), Button.class)
                         .triggerEvent(update.getState().getButtonevent());
             }
 
             if (update.getState().getPresence() != null) {
-                this.deviceService.getDevice(update.getId(), MotionSensor.class)
+                this.deviceService.getDeviceById(update.getId(), MotionSensor.class)
                         .updateState(update.getState().getPresence(), update.getState().getDark());
             }
         }
@@ -295,7 +295,7 @@ public class DeconzConnector {
                 && update.getState() != null
                 && update.getState().getOn() != null) {
 
-            this.deviceService.getDevice(update.getId(), SimpleLight.class)
+            this.deviceService.getDeviceById(update.getId(), SimpleLight.class)
                     .setOn(update.getState().getOn());
         }
 

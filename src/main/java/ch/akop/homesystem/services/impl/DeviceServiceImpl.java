@@ -13,6 +13,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -23,12 +24,20 @@ public class DeviceServiceImpl implements DeviceService {
 
     private final List<Device<?>> devices = new ArrayList<>();
 
-    public <T extends Device<?>> T getDevice(final String id, final Class<T> clazz) {
+    public <T extends Device<?>> T getDeviceById(final String id, final Class<T> clazz) {
         return this.getDevicesOfType(clazz)
                 .stream()
                 .filter(device -> device.getId().equals(id))
                 .findFirst()
                 .orElseThrow();
+    }
+
+    @Override
+    public <T extends Device<?>> Optional<T> findDeviceByName(String name, Class<T> clazz) {
+        return this.getDevicesOfType(clazz)
+                .stream()
+                .filter(device -> device.getName().equalsIgnoreCase(name))
+                .findFirst();
     }
 
     @Override
