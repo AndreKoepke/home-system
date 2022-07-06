@@ -21,7 +21,7 @@ public class UpdateLightParameters {
     @Min(1)
     private Integer colorloopspeed;
 
-    private  Integer ct;
+    private Integer ct;
 
     private String effect;
 
@@ -29,11 +29,17 @@ public class UpdateLightParameters {
     @Min(0)
     private Integer hue;
 
+    @Max(255)
+    @Min(0)
+    private Integer sat;
+
     private Boolean on;
 
     private Integer transitiontime;
 
     @Size(min = 2, max = 2)
     private List<BigDecimal> xy;
+
+    private String colormode;
 
 }

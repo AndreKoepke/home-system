@@ -1,18 +1,17 @@
 package ch.akop.homesystem.models.animation.config;
 
 import ch.akop.homesystem.models.animation.steps.AnimationStep;
+import ch.akop.homesystem.models.animation.steps.DimmLightStep;
+import ch.akop.homesystem.models.animation.steps.OnOffStep;
 import ch.akop.homesystem.models.animation.steps.ParallelStep;
-import ch.akop.homesystem.models.animation.steps.SetLightStep;
-import ch.akop.homesystem.models.devices.actor.Light;
+import ch.akop.homesystem.models.devices.actor.DimmableLight;
+import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Data
 public class LightsConfig {
@@ -22,32 +21,29 @@ public class LightsConfig {
     private Duration transitionTime;
 
 
-    public AnimationStep toStep(final Set<Light> allLights) {
-        if (this.names.size() > 1) {
-            return new ParallelStep(this.names.stream()
-                    .map(name -> findLight(name, allLights))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
+    public AnimationStep toStep(final Set<SimpleLight> affectedLights) {
+        if (affectedLights.size() > 1) {
+            return new ParallelStep(affectedLights.stream()
                     .map(this::getLightStep)
-                    .collect(Collectors.toList()));
+                    .toList());
         }
 
-        return getLightStep(findLight(this.names.get(0), allLights)
-                .orElseThrow(() -> new NoSuchElementException("No light found for: %s".formatted(this.names.get(0)))));
+        return getLightStep(affectedLights.stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No light found for %s".formatted(String.join(", ", names)))));
     }
 
-    private SetLightStep getLightStep(final Light light) {
-        return new SetLightStep(light)
-                .setBrightness(this.toBrightness)
-                .setTransitionTime(this.transitionTime);
+    private AnimationStep getLightStep(final SimpleLight light) {
+
+        // new switch pattern can replace this ugly if in future
+        if (light instanceof DimmableLight dimmable) {
+            return new DimmLightStep(dimmable)
+                    .setBrightness(this.toBrightness)
+                    .setTransitionTime(this.transitionTime);
+        }
+
+        return new OnOffStep(light)
+                .setTurnLightOn(this.toBrightness.compareTo(BigDecimal.ZERO) > 0);
     }
-
-
-    private Optional<Light> findLight(final String lightName, final Set<Light> allLights) {
-        return allLights.stream()
-                .filter(light -> light.getName().equals(lightName) || light.getId().equals(lightName))
-                .findFirst();
-    }
-
 
 }

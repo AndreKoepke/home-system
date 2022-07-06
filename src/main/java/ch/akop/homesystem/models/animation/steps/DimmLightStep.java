@@ -1,24 +1,22 @@
 package ch.akop.homesystem.models.animation.steps;
 
-import ch.akop.homesystem.models.devices.actor.Light;
+import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
 @Data
-@EqualsAndHashCode(callSuper = false)
-public class SetLightStep implements AnimationStep {
+public class DimmLightStep implements AnimationStep {
 
-    private final Light light;
+    private final DimmableLight light;
     private Duration transitionTime = Duration.of(2, ChronoUnit.SECONDS);
     private BigDecimal brightness = BigDecimal.ONE;
 
     @Override
     public void play() {
-        this.light.setBrightness(this.brightness.multiply(BigDecimal.valueOf(100)).intValue(), this.transitionTime);
+        this.light.setBrightness(this.brightness, this.transitionTime);
     }
 
 }

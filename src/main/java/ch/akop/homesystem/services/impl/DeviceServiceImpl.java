@@ -1,9 +1,9 @@
 package ch.akop.homesystem.services.impl;
 
 import ch.akop.homesystem.models.devices.Device;
-import ch.akop.homesystem.models.devices.actor.Light;
+import ch.akop.homesystem.models.devices.actor.DimmableLight;
+import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.services.DeviceService;
-import ch.akop.homesystem.util.SleepUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,10 +51,14 @@ public class DeviceServiceImpl implements DeviceService {
 
     @Override
     public void turnAllLightsOff() {
-        this.getDevicesOfType(Light.class)
-                .stream()
-                .peek(ignored -> SleepUtil.sleep(Duration.of(100, ChronoUnit.MILLIS)))
-                .forEach(light -> light.setBrightness(0, Duration.of(10, ChronoUnit.SECONDS)));
+        this.getDevicesOfType(SimpleLight.class)
+                .forEach(light -> {
+                    if (light instanceof DimmableLight dimmable) {
+                        dimmable.setBrightness(0, Duration.of(10, ChronoUnit.SECONDS));
+                    } else {
+                        light.turnOn(false);
+                    }
+                });
     }
 
 
