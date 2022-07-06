@@ -1,6 +1,7 @@
 package ch.akop.homesystem.models.devices;
 
 import lombok.Data;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -10,6 +11,8 @@ public abstract class Device<T> {
 
     private String name;
     private String id;
+    
+    @ToString.Exclude
     private LocalDateTime lastChange;
 
 

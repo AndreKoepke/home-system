@@ -1,9 +1,6 @@
 package ch.akop.homesystem.models.devices.actor;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -11,10 +8,13 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 @NoArgsConstructor
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public class DimmableLight extends SimpleLight {
 
     @Getter(AccessLevel.PROTECTED)
     @Setter(AccessLevel.PROTECTED)
+    @ToString.Exclude
     private BiConsumer<Integer, Duration> functionToSeBrightness;
 
     public DimmableLight(BiConsumer<Integer, Duration> functionToSeBrightness, Consumer<Boolean> functionToTurnOnOrOff) {
@@ -22,11 +22,11 @@ public class DimmableLight extends SimpleLight {
         this.functionToSeBrightness = functionToSeBrightness;
     }
 
-    public void setBrightness(final int percent, final Duration transitionTime) {
+    public void setBrightness(int percent, Duration transitionTime) {
         this.getFunctionToSeBrightness().accept(percent, transitionTime);
     }
 
-    public void setBrightness(final BigDecimal decimal, final Duration transitionTime) {
+    public void setBrightness(BigDecimal decimal, Duration transitionTime) {
         this.getFunctionToSeBrightness().accept(decimal.multiply(BigDecimal.valueOf(100)).intValue(), transitionTime);
     }
 }

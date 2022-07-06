@@ -32,6 +32,7 @@ import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -44,6 +45,7 @@ public class DeconzConnector {
     public static final String NO_RESPONSE_FROM_RASPBERRY = "No response from raspberry";
     public static final String DEVICE_TYPE_CLOSE_CONTACT = "OpenClose";
     public static final String DEVICE_TYPE_MOTION_SENSOR = "ZHAPresence";
+    public static final String LIGHT_UPDATE_FAILED_LABEL = "Failed to update light ";
     private final Gson gson;
     private final DeviceService deviceService;
     private final DeconzConfig deconzConfig;
@@ -66,40 +68,43 @@ public class DeconzConnector {
         registerDevices();
         this.connect();
         this.automationService.discoverNewDevices();
+
+        this.deviceService.getDevicesOfType(ColoredLight.class)
+                .forEach(light -> light.setColor(Color.BLUE(), Duration.ofSeconds(1)));
     }
 
     @SneakyThrows
     private void connect() {
-        final var wsUrl = new URI("ws://%s:%d"
+        var wsUrl = new URI("ws://%s:%d"
                 .formatted(this.deconzConfig.getHost(), this.deconzConfig.getWebsocketPort()));
 
-        final WebSocketClient wsClient = new WebSocketClient(wsUrl, new Draft_6455(), null, 30) {
+        WebSocketClient wsClient = new WebSocketClient(wsUrl, new Draft_6455(), null, 30) {
             @Override
-            public void onOpen(final ServerHandshake handshakedata) {
+            public void onOpen(ServerHandshake handshakedata) {
                 log.info("WebSocket is up and listing.");
                 DeconzConnector.this.connectionRetries = 0;
             }
 
             @Override
-            public void onMessage(final String message) {
+            public void onMessage(String message) {
                 try {
                     handleMessage(DeconzConnector.this.gson.fromJson(message, WebSocketUpdate.class));
-                } catch (final Exception e) {
+                } catch (Exception e) {
                     log.error("Exception occurred with the message:\n{}", message, e);
                 }
             }
 
             @SneakyThrows
             @Override
-            public void onClose(final int code, final String reason, final boolean remote) {
-                final var retryIn = Duration.of(Math.min(60, ++DeconzConnector.this.connectionRetries * 10), SECONDS);
+            public void onClose(int code, String reason, boolean remote) {
+                var retryIn = Duration.of(Math.min(60, ++DeconzConnector.this.connectionRetries * 10), SECONDS);
                 log.warn("WS-Connection was closed, because of '{}'. Reconnecting  in {}s...", reason, retryIn.toSeconds());
                 Thread.sleep(retryIn.toMillis());
                 DeconzConnector.this.connect();
             }
 
             @Override
-            public void onError(final Exception ex) {
+            public void onError(Exception ex) {
                 if (DeconzConnector.this.connectionRetries <= 1) {
                     DeconzConnector.this.userService.devMessage("Lost connection to raspberry. :(");
                     log.error("Got exception on ws-connection to {}", DeconzConnector.this.deconzConfig.getHost(), ex);
@@ -126,8 +131,8 @@ public class DeconzConnector {
                 .forEach(this::registerGroup);
     }
 
-    private void registerGroup(final String id, final Group group) {
-        final var newGroup = new ch.akop.homesystem.models.devices.other.Group()
+    private void registerGroup(String id, Group group) {
+        var newGroup = new ch.akop.homesystem.models.devices.other.Group()
                 .setName(group.getName())
                 .setLights(group.getLights())
                 .setId(id);
@@ -141,7 +146,7 @@ public class DeconzConnector {
         this.deviceService.registerDevice(newGroup);
     }
 
-    private void registerSensor(final String id, final Sensor sensor) {
+    private void registerSensor(String id, Sensor sensor) {
         if (sensor.getType().contains(DEVICE_TYPE_CLOSE_CONTACT)) {
             this.deviceService.registerDevice(new CloseContact()
                     .setOpen(sensor.getState().isOpen())
@@ -165,20 +170,21 @@ public class DeconzConnector {
         }
     }
 
-    private void registerActor(final String id, final Light light) {
-        var actor = getLightInstanceByType(id, light);
-        actor.setName(light.getName());
-        actor.setId(id);
-
-        deviceService.registerDevice(actor);
+    private void registerActor(String id, Light light) {
+        getLightInstanceByType(id, light)
+                .map(newLight -> newLight.setId(id))
+                .map(newLight -> newLight.setName(light.getName()))
+                .ifPresent(this.deviceService::registerDevice);
     }
 
-    private SimpleLight getLightInstanceByType(String id, Light light) {
+    private Optional<SimpleLight> getLightInstanceByType(String id, Light light) {
         return switch (light.getType().toLowerCase()) {
-            case "color temperature light", "color light", "extended color light" -> registerColorLight(id, light);
-            case "dimmable light" -> registerDimmableLight(id, light);
-            case "on/off plug-in unit" -> registerSimpleLight(id, light);
-            default -> throw new NotYetImplementedException("Actor of type %s is not implemented".formatted(light.getType()));
+            case "color light", "extended color light" -> Optional.of(registerColorLight(id, light));
+            case "dimmable light", "color temperature light" -> Optional.of(registerDimmableLight(id, light));
+            case "on/off plug-in unit", "on/off light" -> Optional.of(registerSimpleLight(id, light));
+            case "configuration tool" -> Optional.empty();
+            default ->
+                    throw new NotYetImplementedException("Actor of type %s is not implemented".formatted(light.getType()));
         };
     }
 
@@ -186,7 +192,7 @@ public class DeconzConnector {
         var coloredLight = new ColoredLight(
                 (percent, duration) -> this.setBrightnessOfLight(id, percent, duration),
                 turnOn -> this.turnOnOrOff(id, turnOn),
-                (percent, color, duration) -> this.setColorOfLight(id, percent, color, duration)
+                (color, duration) -> this.setColorOfLight(id, color, duration)
         );
 
         coloredLight.setOn(light.getState().isOn());
@@ -206,7 +212,7 @@ public class DeconzConnector {
                 .setOn(light.getState().isOn());
     }
 
-    private void setBrightnessOfLight(final String id, final Integer percent, final Duration duration) {
+    private void setBrightnessOfLight(String id, Integer percent, Duration duration) {
         Specs.setLight(
                         id,
                         new UpdateLightParameters()
@@ -218,30 +224,29 @@ public class DeconzConnector {
                         success -> log.debug("Set light %s to %d was status %s".formatted(id, percent, success.getStatusCode())),
                         throwable -> {
                             if (!throwable.getClass().equals(InterruptedException.class)) {
-                                log.error("Failed to update light " + id, throwable);
+                                log.error(LIGHT_UPDATE_FAILED_LABEL + id, throwable);
                             }
                         });
     }
 
-    private void setColorOfLight(final String id, final Integer percent, Color color, final Duration duration) {
+    private void setColorOfLight(String id, Color color, Duration duration) {
         Specs.setLight(
                         id,
                         new UpdateLightParameters()
                                 .setTransitiontime(duration != null ? (int) duration.toSeconds() * 10 : null)
-                                .setBri((int) Math.round(percent / 100d * 255))
                                 .setXy(color.toXY())
-                                .setOn(percent > 0),
+                                .setColormode("ct"),
                         this.webClient)
                 .subscribe(
-                        success -> log.debug("Set light %s to %d was status %s".formatted(id, percent, success.getStatusCode())),
+                        success -> log.info("Set color of light %s was status %s".formatted(id, success.getStatusCode())),
                         throwable -> {
                             if (!throwable.getClass().equals(InterruptedException.class)) {
-                                log.error("Failed to update light " + id, throwable);
+                                log.error(LIGHT_UPDATE_FAILED_LABEL + id, throwable);
                             }
                         });
     }
 
-    private void turnOnOrOff(final String id, final boolean on) {
+    private void turnOnOrOff(String id, boolean on) {
         Specs.setLight(id, new UpdateLightParameters().setOn(on), this.webClient)
                 .subscribe(
                         response -> log.debug("Set light %s to %s was status %s"
@@ -249,13 +254,13 @@ public class DeconzConnector {
 
                         throwable -> {
                             if (!throwable.getClass().equals(InterruptedException.class)) {
-                                log.error("Failed to update light " + id, throwable);
+                                log.error(LIGHT_UPDATE_FAILED_LABEL + id, throwable);
                             }
                         }
                 );
     }
 
-    private void activateScene(final String sceneId, final String groupId) {
+    private void activateScene(String sceneId, String groupId) {
         Specs.activateScene(groupId, sceneId, this.webClient)
                 .subscribe(
                         response -> log.debug("Scene %s in group %s activated".formatted(sceneId, groupId)),
@@ -264,7 +269,7 @@ public class DeconzConnector {
     }
 
 
-    private void handleMessage(final WebSocketUpdate update) {
+    private void handleMessage(WebSocketUpdate update) {
         if (update.getR().equals("sensors")
                 && update.getE().equals("changed")
                 && update.getState() != null) {

@@ -21,6 +21,7 @@ public class Color {
     public static final BigDecimal ZERO_POINT_55 = BigDecimal.valueOf(0.055);
     public static final BigDecimal TWO_POINT_4 = BigDecimal.valueOf(2.4);
     public static final BigDecimal TWELFE_POINT_92 = BigDecimal.valueOf(12.92);
+
     @Min(0)
     @Max(255)
     private int r;
@@ -52,19 +53,19 @@ public class Color {
     }
 
     public static BigDecimal makeVivid(BigDecimal value) {
-        if (value.compareTo(BigDecimal.valueOf(0.04045)) > 0) {
-            return pow(value.add(ZERO_POINT_55)
-                    .divide(BigDecimal.ONE.add(ZERO_POINT_55), HALF_UP), TWO_POINT_4, MathContext.DECIMAL64);
+        if (value.compareTo(BigDecimal.valueOf(0.04045)) < 0) {
+            return pow(
+                    value.add(ZERO_POINT_55).divide(BigDecimal.ONE.add(ZERO_POINT_55), HALF_UP),
+                    TWO_POINT_4,
+                    MathContext.DECIMAL64);
         } else {
             return value.divide(TWELFE_POINT_92, HALF_UP);
         }
     }
 
     public List<BigDecimal> toXY() {
-        // For the hue bulb the corners of the triangle are:
-        // -Red: 0.675, 0.322
-        // -Green: 0.4091, 0.518
-        // -Blue: 0.167, 0.04
+        // blue doesn't work correctly
+        // maybe the parameters of Z79-81 are not good
 
         var normalizedRed = normalize(getR());
         var normalizedGreen = normalize(getG());

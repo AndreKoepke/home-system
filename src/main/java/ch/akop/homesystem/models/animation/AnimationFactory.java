@@ -7,6 +7,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,12 +22,13 @@ public class AnimationFactory {
 
 
     public Animation buildMainDoorAnimation() {
-        var allLightNamesOfAnimation = animation.stream()
+        final var allLightNamesOfAnimation = this.animation.stream()
+                .filter(animationConfig -> animationConfig.getLights() != null)
                 .flatMap(animationConfig -> animationConfig.getLights().getNames().stream())
                 .map(String::toLowerCase)
                 .collect(Collectors.toSet());
 
-        var lightsByName = this.deviceService.getDevicesOfType(SimpleLight.class).stream()
+        final var lightsByName = this.deviceService.getDevicesOfType(SimpleLight.class).stream()
                 .filter(light -> allLightNamesOfAnimation.contains(light.getName().toLowerCase()))
                 .collect(Collectors.toMap(
                         light -> light.getName().toLowerCase(),
@@ -34,7 +36,7 @@ public class AnimationFactory {
                 ));
 
         return new Animation().setAnimationSteps(this.animation.stream()
-                .map(config -> config.toAnimationStep(config.getLights().getNames().stream()
+                .map(config -> config.toAnimationStep(config.getLights() == null ? new HashSet<>() : config.getLights().getNames().stream()
                         .map(String::toLowerCase)
                         .map(lightsByName::get)
                         .collect(Collectors.toSet())))
