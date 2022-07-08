@@ -1,4 +1,4 @@
-package ch.akop.homesystem.message;
+package ch.akop.homesystem.services.activatable;
 
 
 import io.reactivex.rxjava3.disposables.Disposable;

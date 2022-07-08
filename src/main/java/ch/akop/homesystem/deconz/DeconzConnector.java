@@ -195,7 +195,7 @@ public class DeconzConnector {
                 (color, duration) -> this.setColorOfLight(id, color, duration)
         );
 
-        coloredLight.setOn(light.getState().isOn());
+        coloredLight.updateState(light.getState().isOn());
         return coloredLight;
     }
 
@@ -203,13 +203,13 @@ public class DeconzConnector {
         var dimmableLight = new DimmableLight(
                 (percent, duration) -> this.setBrightnessOfLight(id, percent, duration),
                 on -> this.turnOnOrOff(id, on));
-        dimmableLight.setOn(light.getState().isOn());
+        dimmableLight.updateState(light.getState().isOn());
         return dimmableLight;
     }
 
     private SimpleLight registerSimpleLight(String id, Light light) {
         return new SimpleLight(on -> this.turnOnOrOff(id, on))
-                .setOn(light.getState().isOn());
+                .updateState(light.getState().isOn());
     }
 
     private void setBrightnessOfLight(String id, Integer percent, Duration duration) {
@@ -238,7 +238,7 @@ public class DeconzConnector {
                                 .setColormode("ct"),
                         this.webClient)
                 .subscribe(
-                        success -> log.info("Set color of light %s was status %s".formatted(id, success.getStatusCode())),
+                        success -> log.debug("Set color of light %s was status %s".formatted(id, success.getStatusCode())),
                         throwable -> {
                             if (!throwable.getClass().equals(InterruptedException.class)) {
                                 log.error(LIGHT_UPDATE_FAILED_LABEL + id, throwable);
@@ -275,17 +275,17 @@ public class DeconzConnector {
                 && update.getState() != null) {
 
             if (update.getState().getOpen() != null) {
-                this.deviceService.getDevice(update.getId(), CloseContact.class)
+                this.deviceService.getDeviceById(update.getId(), CloseContact.class)
                         .setOpen(update.getState().getOpen());
             }
 
             if (update.getState().getButtonevent() != null) {
-                this.deviceService.getDevice(update.getId(), Button.class)
+                this.deviceService.getDeviceById(update.getId(), Button.class)
                         .triggerEvent(update.getState().getButtonevent());
             }
 
             if (update.getState().getPresence() != null) {
-                this.deviceService.getDevice(update.getId(), MotionSensor.class)
+                this.deviceService.getDeviceById(update.getId(), MotionSensor.class)
                         .updateState(update.getState().getPresence(), update.getState().getDark());
             }
         }
@@ -295,8 +295,8 @@ public class DeconzConnector {
                 && update.getState() != null
                 && update.getState().getOn() != null) {
 
-            this.deviceService.getDevice(update.getId(), SimpleLight.class)
-                    .setOn(update.getState().getOn());
+            this.deviceService.getDeviceById(update.getId(), SimpleLight.class)
+                    .updateState(update.getState().getOn());
         }
 
     }

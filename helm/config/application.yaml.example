@@ -65,6 +65,16 @@ home-automation:
         ignoreBrightness: true
         lights:
           - "Dusche"
+    # define fans, which can be triggered by different actions
+    fans:
+      # name of fan
+      - fan: Lüfter
+        buttons:
+          # trigger by button event
+          - name: Scheisse
+            button-event: 1002
+        # turn off, when specific light was turned off (pro-tip: light was turned off by motionSensor)
+        turn-off-when-light-turned-off: Wäscheturm
 
   # name of the mainDoor-sensor
   # use something like this https://www.amazon.de/Aqara-MCCGQ11LM-Window-Sensor-Fensterssensor/dp/B07D37VDM3

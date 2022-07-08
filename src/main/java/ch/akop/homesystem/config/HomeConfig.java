@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 @ConfigurationProperties(prefix = "home-automation.special")
@@ -24,6 +25,7 @@ public class HomeConfig {
     private List<User> users;
     private List<MotionSensorConfig> motionSensors;
     private boolean sendMessageWhenTurnLightsOff = true;
+    private List<FanControlConfig> fans;
 
     @Data
     public static class MotionSensorConfig {
@@ -37,6 +39,15 @@ public class HomeConfig {
     public static class OffButton {
         private String name;
         private int buttonEvent;
+    }
+
+    @Data
+    public static class FanControlConfig {
+
+        private List<OffButton> buttons = new ArrayList<>();
+        private String fan;
+        private String turnOffWhenLightTurnedOff;
+
     }
 
 }
