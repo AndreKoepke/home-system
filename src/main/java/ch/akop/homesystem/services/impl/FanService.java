@@ -1,7 +1,7 @@
 package ch.akop.homesystem.services.impl;
 
 import ch.akop.homesystem.config.HomeConfig;
-import ch.akop.homesystem.models.devices.actor.Light;
+import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.services.DeviceService;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
@@ -21,25 +21,34 @@ public class FanService {
     private final Map<HomeConfig.FanControlConfig, Disposable> subscribeMap = new ConcurrentHashMap<>();
 
     public void buttonEventHandler(String buttonName, int buttonEvent) {
-        homeConfig.getFans()
+        this.homeConfig.getFans()
                 .stream()
-                .filter(fanConfig -> !subscribeMap.containsKey(fanConfig))
-                .filter(fanConfig -> fanConfig.getButtons().stream().anyMatch(button -> button.getName().equalsIgnoreCase(buttonName)
-                        && buttonEvent == button.getButtonEvent()))
-                .forEach(triggeredFan -> deviceService.findDeviceByName(triggeredFan.getFan(), Light.class)
-                        .ifPresent(fan -> {
-                            fan.setOn(true);
+                .filter(fanConfig -> !this.subscribeMap.containsKey(fanConfig))
+                .filter(fanConfig -> isButtonEventMatchingFanConfig(buttonName, buttonEvent, fanConfig))
+                .forEach(triggeredFan -> this.deviceService.findDeviceByName(triggeredFan.getFan(), SimpleLight.class)
+                        .ifPresent(fan -> activateFanConfig(triggeredFan, fan)));
+    }
 
-                            Optional.ofNullable(triggeredFan.getTurnOffWhenLightTurnedOff())
-                                    .flatMap(lightName -> deviceService.findDeviceByName(lightName, Light.class))
-                                    .map(light -> light.getState$()
-                                            .filter(isOn -> !isOn)
-                                            .subscribe(ignore -> {
-                                                fan.setOn(false);
-                                                subscribeMap.remove(triggeredFan);
-                                            }))
-                                    .ifPresent(subscription -> subscribeMap.put(triggeredFan, subscription));
+    private boolean isButtonEventMatchingFanConfig(String buttonName, int buttonEvent, HomeConfig.FanControlConfig fanConfig) {
+        return fanConfig.getButtons()
+                .stream()
+                .anyMatch(button -> button.getName().equalsIgnoreCase(buttonName)
+                        && buttonEvent == button.getButtonEvent());
+    }
 
-                        }));
+    private void activateFanConfig(HomeConfig.FanControlConfig triggeredFan, SimpleLight fan) {
+        fan.turnOn(true);
+
+        Optional.ofNullable(triggeredFan.getTurnOffWhenLightTurnedOff())
+                .flatMap(lightName -> this.deviceService.findDeviceByName(lightName, SimpleLight.class))
+                .map(light -> light.getState$()
+                        .skip(1)
+                        .filter(isOn -> !isOn)
+                        .take(1)
+                        .subscribe(ignore -> {
+                            fan.turnOn(false);
+                            this.subscribeMap.remove(triggeredFan);
+                        }))
+                .ifPresent(subscription -> this.subscribeMap.put(triggeredFan, subscription));
     }
 }

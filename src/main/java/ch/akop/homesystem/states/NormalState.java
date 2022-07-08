@@ -9,7 +9,6 @@ import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.homesystem.services.activatable.Activatable;
-import ch.akop.homesystem.services.activatable.MotionSensorReactor;
 import ch.akop.homesystem.services.activatable.SunsetReactor;
 import ch.akop.homesystem.services.activatable.WeatherPoster;
 import ch.akop.homesystem.services.impl.RainDetectorService;
@@ -50,7 +49,6 @@ public class NormalState extends Activatable implements State {
     private final WeatherPoster weatherPoster;
     private final RainDetectorService rainDetectorService;
     private final UserService userService;
-    private final MotionSensorReactor motionSensorReactor;
 
     private Animation mainDoorOpenAnimation;
     private Thread animationThread;
@@ -73,7 +71,7 @@ public class NormalState extends Activatable implements State {
                 .subscribe(this.canStartMainDoorAnimation::setForever);
     }
 
-    private void gotNewPresenceMap(final Map<User, Boolean> presenceMap) {
+    private void gotNewPresenceMap(Map<User, Boolean> presenceMap) {
         presenceMap.forEach((user, isAtHome) -> {
             if (!this.lastPresenceMap.get(user).equals(isAtHome)) {
                 this.messageService.sendMessageToMainChannel("%s ist %s".formatted(user.getName(),
@@ -84,7 +82,7 @@ public class NormalState extends Activatable implements State {
         this.lastPresenceMap = presenceMap;
     }
 
-    private boolean compareWithLastAndSkipFirst(final Map<User, Boolean> presenceMap) {
+    private boolean compareWithLastAndSkipFirst(Map<User, Boolean> presenceMap) {
         if (this.lastPresenceMap == null) {
             this.lastPresenceMap = presenceMap;
             return false;
@@ -97,7 +95,6 @@ public class NormalState extends Activatable implements State {
     public void entered() {
         super.disposeWhenClosed(this.weatherPoster.start());
         super.disposeWhenClosed(this.sunsetReactor.start());
-        super.disposeWhenClosed(this.motionSensorReactor.start());
 
         if (this.rainDetectorService.noRainFor().toDays() > 1) {
             this.messageService.sendMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
@@ -116,7 +113,7 @@ public class NormalState extends Activatable implements State {
     }
 
     @Override
-    public void event(final Event event) {
+    public void event(Event event) {
         switch (event) {
             case DOOR_OPENED -> startMainDoorOpenAnimation();
             case DOOR_CLOSED -> log.info("MAIN-DOOR IS CLOSED!");
@@ -126,7 +123,7 @@ public class NormalState extends Activatable implements State {
     }
 
     @Override
-    public void event(final String buttonName, final int buttonEvent) {
+    public void event(String buttonName, int buttonEvent) {
         // NOP on unknown buttons
     }
 
@@ -154,7 +151,7 @@ public class NormalState extends Activatable implements State {
 
         if (this.deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
-                .anyMatch(SimpleLight::isOn)) {
+                .anyMatch(SimpleLight::isCurrentState)) {
             // NOP when any light is on
             return;
         }

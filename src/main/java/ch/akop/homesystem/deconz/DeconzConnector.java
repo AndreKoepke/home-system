@@ -195,7 +195,7 @@ public class DeconzConnector {
                 (color, duration) -> this.setColorOfLight(id, color, duration)
         );
 
-        coloredLight.setOn(light.getState().isOn());
+        coloredLight.updateState(light.getState().isOn());
         return coloredLight;
     }
 
@@ -203,13 +203,13 @@ public class DeconzConnector {
         var dimmableLight = new DimmableLight(
                 (percent, duration) -> this.setBrightnessOfLight(id, percent, duration),
                 on -> this.turnOnOrOff(id, on));
-        dimmableLight.setOn(light.getState().isOn());
+        dimmableLight.updateState(light.getState().isOn());
         return dimmableLight;
     }
 
     private SimpleLight registerSimpleLight(String id, Light light) {
         return new SimpleLight(on -> this.turnOnOrOff(id, on))
-                .setOn(light.getState().isOn());
+                .updateState(light.getState().isOn());
     }
 
     private void setBrightnessOfLight(String id, Integer percent, Duration duration) {
@@ -238,7 +238,7 @@ public class DeconzConnector {
                                 .setColormode("ct"),
                         this.webClient)
                 .subscribe(
-                        success -> log.info("Set color of light %s was status %s".formatted(id, success.getStatusCode())),
+                        success -> log.debug("Set color of light %s was status %s".formatted(id, success.getStatusCode())),
                         throwable -> {
                             if (!throwable.getClass().equals(InterruptedException.class)) {
                                 log.error(LIGHT_UPDATE_FAILED_LABEL + id, throwable);
@@ -296,7 +296,7 @@ public class DeconzConnector {
                 && update.getState().getOn() != null) {
 
             this.deviceService.getDeviceById(update.getId(), SimpleLight.class)
-                    .setOn(update.getState().getOn());
+                    .updateState(update.getState().getOn());
         }
 
     }

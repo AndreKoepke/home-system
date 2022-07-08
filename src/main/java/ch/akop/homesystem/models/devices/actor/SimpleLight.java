@@ -1,6 +1,8 @@
 package ch.akop.homesystem.models.devices.actor;
 
 import ch.akop.homesystem.models.devices.Device;
+import io.reactivex.rxjava3.subjects.ReplaySubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import lombok.*;
 
 import java.util.function.Consumer;
@@ -16,13 +18,21 @@ public class SimpleLight extends Device<SimpleLight> {
     @ToString.Exclude
     private Consumer<Boolean> functionToTurnOnOrOff;
 
-    private boolean on;
+    private Subject<Boolean> state$ = ReplaySubject.createWithSize(1);
 
-    public SimpleLight(final Consumer<Boolean> functionToTurnOnOrOff) {
+    private boolean currentState;
+
+    public SimpleLight(Consumer<Boolean> functionToTurnOnOrOff) {
         this.functionToTurnOnOrOff = functionToTurnOnOrOff;
     }
 
-    public void turnOn(final boolean on) {
+    public SimpleLight updateState(boolean isOn) {
+        this.currentState = isOn;
+        this.state$.onNext(isOn);
+        return this;
+    }
+
+    public void turnOn(boolean on) {
         this.getFunctionToTurnOnOrOff().accept(on);
     }
 }

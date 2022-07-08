@@ -35,7 +35,7 @@ public class SunsetReactor extends Activatable {
                 .subscribe());
     }
 
-    private void turnLightsOnWhenItIsGettingDark(final Weather weather) {
+    private void turnLightsOnWhenItIsGettingDark(Weather weather) {
 
         if (this.previousWeather == null
                 || this.previousWeather.getLight().isSmallerThan(NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER)
@@ -51,7 +51,7 @@ public class SunsetReactor extends Activatable {
                 .subscribe(s -> {}, this::activeSunsetScenes));
     }
 
-    private void activeSunsetScenes(final Throwable ignored) {
+    private void activeSunsetScenes(Throwable ignored) {
         this.deviceService.getDevicesOfType(Group.class)
                 .stream()
                 .filter(this::areAllLampsAreOff)
@@ -60,10 +60,10 @@ public class SunsetReactor extends Activatable {
                 .forEach(Scene::activate);
     }
 
-    private boolean areAllLampsAreOff(final Group group) {
+    private boolean areAllLampsAreOff(Group group) {
         return this.deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
                 .filter(light -> group.getLights().contains(light.getId()))
-                .noneMatch(SimpleLight::isOn);
+                .noneMatch(SimpleLight::isCurrentState);
     }
 }
