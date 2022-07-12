@@ -31,7 +31,6 @@ public class HomeConfig {
     public static class MotionSensorConfig {
         private String sensor;
         private List<String> lights;
-        private boolean ignoreBrightness;
         private Duration keepMovingFor = Duration.of(5, ChronoUnit.MINUTES);
     }
 
@@ -43,11 +42,11 @@ public class HomeConfig {
 
     @Data
     public static class FanControlConfig {
-
         private List<OffButton> buttons = new ArrayList<>();
         private String fan;
         private String turnOffWhenLightTurnedOff;
-
+        private String increaseTimeoutForMotionSensor;
+        private String increaseMotionSensorTimeout;
     }
 
 }

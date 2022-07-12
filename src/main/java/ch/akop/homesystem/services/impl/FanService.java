@@ -3,6 +3,7 @@ package ch.akop.homesystem.services.impl;
 import ch.akop.homesystem.config.HomeConfig;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.services.DeviceService;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ public class FanService {
 
     private final DeviceService deviceService;
     private final HomeConfig homeConfig;
+    private final MotionSensorService motionSensorService;
 
     private final Map<HomeConfig.FanControlConfig, Disposable> subscribeMap = new ConcurrentHashMap<>();
 
@@ -39,16 +41,23 @@ public class FanService {
     private void activateFanConfig(HomeConfig.FanControlConfig triggeredFan, SimpleLight fan) {
         fan.turnOn(true);
 
+        Optional.ofNullable(triggeredFan.getIncreaseTimeoutForMotionSensor())
+                .ifPresent(motionSensorService::requestHigherTimeout);
+
         Optional.ofNullable(triggeredFan.getTurnOffWhenLightTurnedOff())
                 .flatMap(lightName -> this.deviceService.findDeviceByName(lightName, SimpleLight.class))
-                .map(light -> light.getState$()
-                        .skip(1)
-                        .filter(isOn -> !isOn)
-                        .take(1)
+                .map(light -> waitUntilLightTurnedOff(light)
                         .subscribe(ignore -> {
                             fan.turnOn(false);
                             this.subscribeMap.remove(triggeredFan);
                         }))
                 .ifPresent(subscription -> this.subscribeMap.put(triggeredFan, subscription));
+    }
+
+    private static Observable<Boolean> waitUntilLightTurnedOff(SimpleLight light) {
+        return light.getState$()
+                .skip(1)
+                .filter(isOn -> !isOn)
+                .take(1);
     }
 }
