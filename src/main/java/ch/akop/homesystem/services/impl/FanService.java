@@ -2,9 +2,12 @@ package ch.akop.homesystem.services.impl;
 
 import ch.akop.homesystem.config.HomeConfig;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
+import ch.akop.homesystem.models.events.ButtonPressEvent;
 import ch.akop.homesystem.services.DeviceService;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -17,14 +20,16 @@ public class FanService {
 
     private final DeviceService deviceService;
     private final HomeConfig homeConfig;
+    private final MotionSensorService motionSensorService;
 
     private final Map<HomeConfig.FanControlConfig, Disposable> subscribeMap = new ConcurrentHashMap<>();
 
-    public void buttonEventHandler(String buttonName, int buttonEvent) {
+    @EventListener
+    public void buttonEventHandler(ButtonPressEvent event) {
         this.homeConfig.getFans()
                 .stream()
                 .filter(fanConfig -> !this.subscribeMap.containsKey(fanConfig))
-                .filter(fanConfig -> isButtonEventMatchingFanConfig(buttonName, buttonEvent, fanConfig))
+                .filter(fanConfig -> isButtonEventMatchingFanConfig(event.getButtonName(), event.getButtonEvent(), fanConfig))
                 .forEach(triggeredFan -> this.deviceService.findDeviceByName(triggeredFan.getFan(), SimpleLight.class)
                         .ifPresent(fan -> activateFanConfig(triggeredFan, fan)));
     }
@@ -39,16 +44,23 @@ public class FanService {
     private void activateFanConfig(HomeConfig.FanControlConfig triggeredFan, SimpleLight fan) {
         fan.turnOn(true);
 
+        Optional.ofNullable(triggeredFan.getIncreaseTimeoutForMotionSensor())
+                .ifPresent(this.motionSensorService::requestHigherTimeout);
+
         Optional.ofNullable(triggeredFan.getTurnOffWhenLightTurnedOff())
                 .flatMap(lightName -> this.deviceService.findDeviceByName(lightName, SimpleLight.class))
-                .map(light -> light.getState$()
-                        .skip(1)
-                        .filter(isOn -> !isOn)
-                        .take(1)
+                .map(light -> waitUntilLightTurnedOff(light)
                         .subscribe(ignore -> {
                             fan.turnOn(false);
                             this.subscribeMap.remove(triggeredFan);
                         }))
                 .ifPresent(subscription -> this.subscribeMap.put(triggeredFan, subscription));
+    }
+
+    private static Observable<Boolean> waitUntilLightTurnedOff(SimpleLight light) {
+        return light.getState$()
+                .skip(1)
+                .filter(isOn -> !isOn)
+                .take(1);
     }
 }

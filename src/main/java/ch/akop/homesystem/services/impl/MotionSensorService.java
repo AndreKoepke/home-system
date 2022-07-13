@@ -13,18 +13,21 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
-public class MotionSensorSensor {
+public class MotionSensorService {
 
     private final HomeConfig homeConfig;
     private final DeviceService deviceService;
     private final StateServiceImpl stateService;
+    private final Set<String> sensorsWithHigherTimeout = new HashSet<>();
 
-    @SuppressWarnings({"ConstantConditions", "ResultOfMethodCallIgnored"})
+    @SuppressWarnings({"ResultOfMethodCallIgnored"})
     @PostConstruct
     protected void setup() {
         this.homeConfig.getMotionSensors().forEach(motionSensorConfig -> this.deviceService.getDevicesOfType(MotionSensor.class)
@@ -33,18 +36,48 @@ public class MotionSensorSensor {
                 .findFirst()
                 .orElseThrow()
                 .getIsMoving$()
-                .switchMap(isMoving -> isMoving
-                        ? Observable.just(isMoving)
-                        : Observable.just(isMoving)
-                        .delay(motionSensorConfig.getKeepMovingFor().getSeconds(), TimeUnit.SECONDS))
+                .switchMap(isMoving -> delayWhenNoMovement(isMoving, motionSensorConfig))
                 .distinctUntilChanged()
                 .subscribe(isMoving -> {
-                    if (isMoving) {
+                    if (Boolean.TRUE.equals(isMoving)) {
                         turnLightsOn(motionSensorConfig.getLights());
                     } else {
                         turnLightsOff(motionSensorConfig.getLights());
+                        sensorsWithHigherTimeout.remove(motionSensorConfig.getSensor().toLowerCase());
                     }
                 }));
+    }
+
+    public Observable<Boolean> delayWhenNoMovement(Boolean movementDetected, HomeConfig.MotionSensorConfig motionSensorConfig) {
+        if (Boolean.TRUE.equals(movementDetected)) {
+            // don't delay, when movement was detected
+            return Observable.just(true);
+        }
+
+        // but if not movement detected, then wait
+        var timeout = isHigherTimeoutRequested(motionSensorConfig)
+                ? motionSensorConfig.getKeepMovingFor().toSeconds()
+                : motionSensorConfig.getKeepMovingFor().toSeconds() * 3;
+
+        return Observable.just(false)
+                .delay(timeout, TimeUnit.SECONDS)
+                .switchMap(ignored -> {
+                    if (sensorsWithHigherTimeout.contains(motionSensorConfig.getSensor())) {
+                        // if a timeout requested while waiting for the old timeout,
+                        // then increase the timeout
+                        return Observable.just(false).delay(timeout * 2, TimeUnit.SECONDS);
+                    }
+
+                    return Observable.just(false);
+                });
+    }
+
+    public void requestHigherTimeout(String sensorName) {
+        sensorsWithHigherTimeout.add(sensorName.toLowerCase());
+    }
+
+    public boolean isHigherTimeoutRequested(HomeConfig.MotionSensorConfig motionSensorConfig) {
+        return sensorsWithHigherTimeout.contains(motionSensorConfig.getSensor().toLowerCase());
     }
 
     private void turnLightsOn(List<String> lights) {

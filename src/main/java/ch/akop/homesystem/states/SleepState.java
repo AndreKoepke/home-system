@@ -4,6 +4,7 @@ import ch.akop.homesystem.config.HomeConfig;
 import ch.akop.homesystem.models.config.User;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
+import ch.akop.homesystem.models.events.ButtonPressEvent;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
@@ -13,6 +14,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -106,7 +108,7 @@ public class SleepState implements State {
         this.messageService.sendMessageToMainChannel(POSSIBLE_MORNING_TEXTS.get(RANDOM.nextInt(POSSIBLE_MORNING_TEXTS.size())));
 
         if (this.weatherService.isActive()) {
-            final var weather = this.weatherService.getWeather().blockingFirst();
+            var weather = this.weatherService.getWeather().blockingFirst();
             this.messageService.sendMessageToMainChannel("Es sind %s und es regnet%s.".formatted(
                     weather.getOuterTemperatur(),
                     weather.getRain().isBiggerThan(BigDecimal.ZERO, MILLIMETER_PER_HOUR) ? "" : " nicht"
@@ -121,7 +123,7 @@ public class SleepState implements State {
     }
 
     public void checkPresenceMapWhenLeave() {
-        final var currentPresence = this.userService.getPresenceMap$().blockingFirst();
+        var currentPresence = this.userService.getPresenceMap$().blockingFirst();
 
         if (!currentPresence.equals(this.presenceAtBeginning)) {
             currentPresence.forEach((user, isAtHome) -> {
@@ -135,8 +137,13 @@ public class SleepState implements State {
         this.presenceAtBeginning = null;
     }
 
-    @Override
-    public void event(final Event event) {
+    @EventListener
+    public void event(Event event) {
+
+        if (!(this.stateService.getCurrentState() instanceof SleepState)) {
+            return;
+        }
+
         switch (event) {
             case DOOR_CLOSED -> stopDoorOpenTimer();
             case DOOR_OPENED -> startDoorOpenTimer();
@@ -146,10 +153,10 @@ public class SleepState implements State {
         }
     }
 
-    @Override
-    public void event(final String buttonName, final int buttonEvent) {
-        if (buttonName.equals(this.homeConfig.getGoodNightButton().getName())
-                && buttonEvent == this.homeConfig.getGoodNightButton().getButtonEvent()) {
+    @EventListener
+    public void event(ButtonPressEvent event) {
+        if (event.getButtonName().equals(this.homeConfig.getGoodNightButton().getName())
+                && event.getButtonEvent() == this.homeConfig.getGoodNightButton().getButtonEvent()) {
 
             if (!this.sleepButtonState) {
                 this.deviceService.getDevicesOfType(Group.class).stream()

@@ -9,13 +9,10 @@ import ch.akop.homesystem.services.impl.StateServiceImpl;
 import io.reactivex.rxjava3.core.Observable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.concurrent.TimeUnit;
 
 @Lazy
@@ -43,7 +40,7 @@ public class HolidayState extends Activatable implements State {
         this.messageService.sendMessageToMainChannel("Ich wünsche euch einen schönen Urlaub. Wenn ihr wieder da seid, " +
                 "dann schreibt /back .");
 
-        final var durationToLightOffTime = Duration.between(ZonedDateTime.now(), getLightOffTime()).toSeconds();
+        var durationToLightOffTime = Duration.between(ZonedDateTime.now(), getLightOffTime()).toSeconds();
         super.disposeWhenClosed(
                 Observable.interval(durationToLightOffTime, ONE_DAY_AS_SECONDS, TimeUnit.SECONDS)
                         .subscribe(ignore -> this.deviceService.turnAllLightsOff()));
@@ -70,15 +67,10 @@ public class HolidayState extends Activatable implements State {
         super.dispose();
     }
 
-    @Override
-    public void event(final Event event) {
-        if (event == Event.DOOR_OPENED) {
+    @EventListener
+    public void event(Event event) {
+        if (event == Event.DOOR_OPENED && this.stateService.getCurrentState() instanceof HolidayState) {
             this.messageService.sendMessageToMainChannel("Irgendwer ist grade in die Wohnung gegangen");
         }
-    }
-
-    @Override
-    public void event(final String buttonName, final int buttonEvent) {
-        // NOP
     }
 }
