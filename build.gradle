@@ -75,6 +75,10 @@ jib {
 
     to {
         image = 'akop/home-system'
+        auth {
+            username = '$System.env.DOCKER_USER'
+            password = '$System.env.DOCKER_PASS'
+        }
     }
 }
 
