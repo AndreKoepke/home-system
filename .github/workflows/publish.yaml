@@ -24,5 +24,5 @@ jobs:
         env:
           DOCKER_USER: ${{ secrets.DOCKER_USER }}
           DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
-          USERNAME: ${{ secrets.GITHUB_NAME }}
-          PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          USERNAME: ${{ secrets.REPO_GITHUB_NAME }}
+          PASSWORD: ${{ secrets.REPO_GITHUB_TOKEN }}
