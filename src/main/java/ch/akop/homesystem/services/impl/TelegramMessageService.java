@@ -7,7 +7,11 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SetWebhook;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
@@ -66,11 +70,10 @@ public class TelegramMessageService implements MessageService {
 
     @Override
     public MessageService sendMessageToUser(final String message, final List<String> chatIds) {
-        if (this.bot == null) {
-            return this;
+        if (this.bot != null) {
+            chatIds.forEach(chatId -> this.bot.execute(new SendMessage(chatId, message)));
         }
 
-        chatIds.forEach(chatId -> this.bot.execute(new SendMessage(chatId, message)));
         return this;
     }
 
@@ -81,6 +84,7 @@ public class TelegramMessageService implements MessageService {
 
         if (this.mainChannel.equals(update.message().chat().id().toString())) {
             this.messages.onNext(update.message().text());
+            log.info("Previous message was whitelisted");
         }
     }
 }

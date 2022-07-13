@@ -46,7 +46,7 @@ public class SunsetReactor extends Activatable {
         this.messageService.sendMessageToMainChannel("Es wird dunkel ... ich mach mal etwas Licht. Es sei denn ... /keinlicht");
 
         super.disposeWhenClosed(this.messageService.getMessages()
-                .filter(message -> message.equalsIgnoreCase("/keinlicht"))
+                .filter("/keinlicht"::equalsIgnoreCase)
                 .timeout(5, TimeUnit.MINUTES)
                 .subscribe(s -> {}, this::activeSunsetScenes));
     }
