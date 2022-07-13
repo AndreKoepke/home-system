@@ -16,10 +16,11 @@ jobs:
           java-version: 17
           distribution: adopt
 
-      - name: Build and publish
+      - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
-        with:
-          args: jib
+
+      - name: Build and publish
+        run: ./gradlew jib
         env:
           DOCKER_USER: ${{ secrets.DOCKER_USER }}
           DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
