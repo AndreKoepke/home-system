@@ -71,6 +71,10 @@ jib {
 
     from {
         image = 'openjdk:17'
+        auth {
+            username = '$System.env.DOCKER_USER'
+            password = '$System.env.DOCKER_PASS'
+        }
     }
 
     to {
