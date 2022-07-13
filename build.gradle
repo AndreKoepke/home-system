@@ -34,7 +34,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'com.google.code.gson:gson:2.9.0'
     implementation 'javax.validation:validation-api:2.0.1.Final'
-    implementation 'com.github.pengrad:java-telegram-bot-api:6.0.1'
+    implementation 'com.github.pengrad:java-telegram-bot-api:6.1.0'
     implementation 'ch.obermuhlner:big-math:2.3.0'
 
     runtimeOnly 'org.postgresql:postgresql'
