@@ -7,9 +7,9 @@ import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.models.devices.sensor.CloseContactState;
+import ch.akop.homesystem.models.events.ButtonPressEvent;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
-import ch.akop.homesystem.services.UserService;
 import ch.akop.homesystem.states.Event;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +17,7 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -37,9 +38,8 @@ public class AutomationServiceImpl implements AutomationService {
 
     private final AnimationFactory animationFactory;
     private final DeviceService deviceService;
-    private final StateServiceImpl stateServiceImpl;
     private final HomeConfig homeConfig;
-    private final UserService userService;
+    private final ApplicationEventPublisher eventPublisher;
     private Animation mainDoorOpenAnimation;
 
     @SuppressWarnings("rawtypes")
@@ -60,12 +60,12 @@ public class AutomationServiceImpl implements AutomationService {
         log.info("deCONZ is up!");
     }
 
-    private boolean unknownDevice(final Device<?> device) {
+    private boolean unknownDevice(Device<?> device) {
         return !this.knownDevices.computeIfAbsent(device.getClass(), aClass -> new ArrayList<>())
                 .contains(device);
     }
 
-    private void addDevice(final Device<?> device) {
+    private void addDevice(Device<?> device) {
         this.knownDevices.get(device.getClass()).add(device);
 
         if (device instanceof CloseContact closeContact && closeContact.getName().equals(this.mainDoorName)) {
@@ -84,35 +84,34 @@ public class AutomationServiceImpl implements AutomationService {
         }
     }
 
-    private void buttonWasPressed(final String buttonName, final int buttonEvent) {
+    private void buttonWasPressed(String buttonName, int buttonEvent) {
         if (wasCentralOffPressed(buttonName, buttonEvent)) {
-            this.stateServiceImpl.triggerEvent(Event.CENTRAL_OFF_PRESSED);
+            this.eventPublisher.publishEvent(Event.CENTRAL_OFF_PRESSED);
         } else if (wasGoodNightButtonPressed(buttonName, buttonEvent)) {
-            this.stateServiceImpl.triggerEvent(Event.GOOD_NIGHT_PRESSED);
+            this.eventPublisher.publishEvent(Event.GOOD_NIGHT_PRESSED);
         } else {
-            this.stateServiceImpl.triggerEvent(buttonName, buttonEvent);
+            this.eventPublisher.publishEvent(new ButtonPressEvent(buttonName, buttonEvent));
         }
     }
 
 
-    private boolean wasGoodNightButtonPressed(final String buttonName, final int buttonEvent) {
+    private boolean wasGoodNightButtonPressed(String buttonName, int buttonEvent) {
         return buttonName.equals(this.homeConfig.getGoodNightButton().getName())
                 && buttonEvent == this.homeConfig.getGoodNightButton().getButtonEvent();
     }
 
-    private boolean wasCentralOffPressed(final String buttonName, final int buttonEvent) {
+    private boolean wasCentralOffPressed(String buttonName, int buttonEvent) {
         return this.homeConfig.getCentralOffSwitches().stream()
                 .anyMatch(offButton -> offButton.getName().equals(buttonName)
                         && offButton.getButtonEvent() == buttonEvent);
     }
 
 
-    private void mainDoorStateChanged(final CloseContactState state) {
+    private void mainDoorStateChanged(CloseContactState state) {
         if (state == CloseContactState.CLOSED) {
-            this.stateServiceImpl.triggerEvent(Event.DOOR_CLOSED);
-            this.userService.hintCheckPresence();
+            this.eventPublisher.publishEvent(Event.DOOR_CLOSED);
         } else {
-            this.stateServiceImpl.triggerEvent(Event.DOOR_OPENED);
+            this.eventPublisher.publishEvent(Event.DOOR_OPENED);
         }
     }
 }

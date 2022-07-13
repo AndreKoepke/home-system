@@ -4,6 +4,7 @@ import ch.akop.homesystem.config.HomeConfig;
 import ch.akop.homesystem.models.config.User;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
+import ch.akop.homesystem.states.Event;
 import ch.akop.homesystem.util.SleepUtil;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
@@ -12,6 +13,7 @@ import io.reactivex.rxjava3.subjects.Subject;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -43,10 +45,18 @@ public class UserServiceImpl implements UserService {
         this.executorService.submit(this::checkPresenceUntilChangedWithin);
     }
 
+
+    @EventListener
+    public void gotEvent(Event event) {
+        if (event == Event.DOOR_CLOSED) {
+            hintCheckPresence();
+        }
+    }
+
     @SneakyThrows
     private void checkPresenceUntilChangedWithin() {
-        final var startedAt = LocalDateTime.now();
-        final var stopAt = startedAt.plus(Duration.of(5, ChronoUnit.MINUTES));
+        var startedAt = LocalDateTime.now();
+        var stopAt = startedAt.plus(Duration.of(5, ChronoUnit.MINUTES));
 
         do {
             SleepUtil.sleep(Duration.of(1, ChronoUnit.MINUTES));
@@ -56,13 +66,13 @@ public class UserServiceImpl implements UserService {
 
 
     private void updatePresence() {
-        final var newPresenceMap = this.homeConfig.getUsers().stream()
+        var newPresenceMap = this.homeConfig.getUsers().stream()
                 .collect(Collectors.toMap(
                         user -> user,
                         user -> canPingIp(user.getDeviceIp())
                 ));
 
-        final var hasChanges = !newPresenceMap.equals(this.presenceMap);
+        var hasChanges = !newPresenceMap.equals(this.presenceMap);
 
         if (hasChanges) {
             this.presenceMap = newPresenceMap;
@@ -70,10 +80,10 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private boolean canPingIp(final String ip) {
+    private boolean canPingIp(String ip) {
         try {
             return InetAddress.getByName(ip).isReachable(5000);
-        } catch (final IOException ignored) {
+        } catch (IOException ignored) {
             return false;
         }
     }
@@ -84,7 +94,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void messageToUser(final String name, final String message) {
+    public void messageToUser(String name, String message) {
         this.homeConfig.getUsers().stream()
                 .filter(user -> user.getName().equalsIgnoreCase(name))
                 .findFirst()
@@ -92,7 +102,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void devMessage(final String message) {
+    public void devMessage(String message) {
         this.homeConfig.getUsers().stream()
                 .filter(User::isDev)
                 .findFirst()

@@ -2,10 +2,12 @@ package ch.akop.homesystem.services.impl;
 
 import ch.akop.homesystem.config.HomeConfig;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
+import ch.akop.homesystem.models.events.ButtonPressEvent;
 import ch.akop.homesystem.services.DeviceService;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -22,11 +24,12 @@ public class FanService {
 
     private final Map<HomeConfig.FanControlConfig, Disposable> subscribeMap = new ConcurrentHashMap<>();
 
-    public void buttonEventHandler(String buttonName, int buttonEvent) {
+    @EventListener
+    public void buttonEventHandler(ButtonPressEvent event) {
         this.homeConfig.getFans()
                 .stream()
                 .filter(fanConfig -> !this.subscribeMap.containsKey(fanConfig))
-                .filter(fanConfig -> isButtonEventMatchingFanConfig(buttonName, buttonEvent, fanConfig))
+                .filter(fanConfig -> isButtonEventMatchingFanConfig(event.getButtonName(), event.getButtonEvent(), fanConfig))
                 .forEach(triggeredFan -> this.deviceService.findDeviceByName(triggeredFan.getFan(), SimpleLight.class)
                         .ifPresent(fan -> activateFanConfig(triggeredFan, fan)));
     }
@@ -42,7 +45,7 @@ public class FanService {
         fan.turnOn(true);
 
         Optional.ofNullable(triggeredFan.getIncreaseTimeoutForMotionSensor())
-                .ifPresent(motionSensorService::requestHigherTimeout);
+                .ifPresent(this.motionSensorService::requestHigherTimeout);
 
         Optional.ofNullable(triggeredFan.getTurnOffWhenLightTurnedOff())
                 .flatMap(lightName -> this.deviceService.findDeviceByName(lightName, SimpleLight.class))

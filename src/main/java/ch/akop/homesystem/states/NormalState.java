@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -112,19 +113,19 @@ public class NormalState extends Activatable implements State {
         super.dispose();
     }
 
-    @Override
+    @EventListener
     public void event(Event event) {
+
+        if (!(this.stateService.getCurrentState() instanceof NormalState)) {
+            return;
+        }
+
         switch (event) {
             case DOOR_OPENED -> startMainDoorOpenAnimation();
             case DOOR_CLOSED -> log.info("MAIN-DOOR IS CLOSED!");
             case GOOD_NIGHT_PRESSED -> this.stateService.switchState(SleepState.class);
             case CENTRAL_OFF_PRESSED -> doCentralOff();
         }
-    }
-
-    @Override
-    public void event(String buttonName, int buttonEvent) {
-        // NOP on unknown buttons
     }
 
     @SneakyThrows
