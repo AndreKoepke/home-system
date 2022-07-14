@@ -76,8 +76,8 @@ jib {
     to {
         image = 'akop/home-system'
         auth {
-            username = System.getenv('DOCKER_USER')
-            password = System.getenv('DOCKER_PASS')
+            username = System.getenv('DOCKER_USER') ?: ''
+            password = System.getenv('DOCKER_PASS') ?: ''
         }
     }
 }

@@ -36,6 +36,7 @@ public class StateServiceImpl {
         this.states.put(SleepState.class, this.sleepState);
         this.states.put(NormalState.class, this.normalState);
         this.states.put(HolidayState.class, this.holidayState);
+        activateDefaultState();
     }
 
 
