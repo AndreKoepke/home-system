@@ -7,6 +7,7 @@ import ch.akop.homesystem.states.State;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -36,11 +37,10 @@ public class StateServiceImpl {
         this.states.put(SleepState.class, this.sleepState);
         this.states.put(NormalState.class, this.normalState);
         this.states.put(HolidayState.class, this.holidayState);
-        activateDefaultState();
     }
 
-
-    private void activateDefaultState() {
+    @Scheduled(fixedDelay = 1000)
+    public void activateDefaultState() {
         if (this.currentState == null) {
             this.currentState = getDefaultState();
             this.currentState.entered();
