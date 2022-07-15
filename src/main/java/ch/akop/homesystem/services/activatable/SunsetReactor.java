@@ -47,6 +47,7 @@ public class SunsetReactor extends Activatable {
 
         super.disposeWhenClosed(this.messageService.getMessages()
                 .filter("/keinlicht"::equalsIgnoreCase)
+                .take(1)
                 .timeout(5, TimeUnit.MINUTES)
                 .subscribe(s -> {}, this::activeSunsetScenes));
     }
