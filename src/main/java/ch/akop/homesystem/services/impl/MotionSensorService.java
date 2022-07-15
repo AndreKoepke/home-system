@@ -56,13 +56,13 @@ public class MotionSensorService {
 
         // but if not movement detected, then wait
         var timeout = isHigherTimeoutRequested(motionSensorConfig)
-                ? motionSensorConfig.getKeepMovingFor().toSeconds()
-                : motionSensorConfig.getKeepMovingFor().toSeconds() * 3;
+                ? motionSensorConfig.getKeepMovingFor().toSeconds() * 3
+                : motionSensorConfig.getKeepMovingFor().toSeconds();
 
         return Observable.just(false)
                 .delay(timeout, TimeUnit.SECONDS)
                 .switchMap(ignored -> {
-                    if (sensorsWithHigherTimeout.contains(motionSensorConfig.getSensor())) {
+                    if (isHigherTimeoutRequested(motionSensorConfig)) {
                         // if a timeout requested while waiting for the old timeout,
                         // then increase the timeout
                         return Observable.just(false).delay(timeout * 2, TimeUnit.SECONDS);
