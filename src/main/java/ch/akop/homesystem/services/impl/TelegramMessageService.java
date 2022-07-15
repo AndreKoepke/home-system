@@ -7,11 +7,7 @@ import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SetWebhook;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.SneakyThrows;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
@@ -47,15 +43,15 @@ public class TelegramMessageService implements MessageService {
 
         this.bot = new TelegramBot(this.botToken);
 
-        final SetWebhook request = new SetWebhook().url(this.botPath);
-        final var response = this.bot.execute(request);
+        SetWebhook request = new SetWebhook().url(this.botPath);
+        var response = this.bot.execute(request);
         if (!response.isOk()) {
             throw new IllegalStateException(response.description());
         }
     }
 
     @Override
-    public MessageService sendMessageToMainChannel(final String message) {
+    public MessageService sendMessageToMainChannel(String message) {
         if (this.mainChannel == null) {
             return this;
         }
@@ -64,12 +60,12 @@ public class TelegramMessageService implements MessageService {
     }
 
     @Override
-    public MessageService sendMessageToUser(final String message, final String chatId) {
+    public MessageService sendMessageToUser(String message, String chatId) {
         return sendMessageToUser(message, List.of(chatId));
     }
 
     @Override
-    public MessageService sendMessageToUser(final String message, final List<String> chatIds) {
+    public MessageService sendMessageToUser(String message, List<String> chatIds) {
         if (this.bot != null) {
             chatIds.forEach(chatId -> this.bot.execute(new SendMessage(chatId, message)));
         }
@@ -77,14 +73,13 @@ public class TelegramMessageService implements MessageService {
         return this;
     }
 
-    public void process(final Update update) {
+    public void process(Update update) {
         log.info("Message from {}@{}: {}", update.message().from().firstName(),
                 update.message().chat().id(),
                 update.message().text());
 
         if (this.mainChannel.equals(update.message().chat().id().toString())) {
             this.messages.onNext(update.message().text());
-            log.info("Previous message was whitelisted");
         }
     }
 }
