@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.boot' version '2.7.1'
+    id 'org.springframework.boot' version '2.7.2'
     id 'io.spring.dependency-management' version '1.0.12.RELEASE'
     id 'java'
     id 'com.google.cloud.tools.jib' version '3.2.1'
@@ -7,6 +7,8 @@ plugins {
 
 group = 'ch.akop'
 version = '0.0.1-SNAPSHOT'
+sourceCompatibility = 17
+targetCompatibility = 17
 
 configurations {
     compileOnly {
@@ -27,27 +29,34 @@ repositories {
 }
 
 dependencies {
+    // Spring
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'com.zaxxer:HikariCP:5.0.1'
-    implementation 'org.java-websocket:Java-WebSocket:1.5.3'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation 'com.zaxxer:HikariCP:5.0.1'
+
+    // webSocketClient
+    implementation 'org.java-websocket:Java-WebSocket:1.5.3'
+
+    // misc
+    runtimeOnly 'org.postgresql:postgresql'
     implementation 'com.google.code.gson:gson:2.9.0'
     implementation 'javax.validation:validation-api:2.0.1.Final'
     implementation 'com.github.pengrad:java-telegram-bot-api:6.1.0'
     implementation 'ch.obermuhlner:big-math:2.3.0'
+    implementation 'ch.akop:weathercloud:0.0.8'
 
-    runtimeOnly 'org.postgresql:postgresql'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // rxJava
     implementation 'io.reactivex.rxjava3:rxjava:3.1.5'
     implementation 'com.jakewharton.rx3:replaying-share:3.0.0'
-
-    implementation 'ch.akop:weathercloud:0.0.8'
 }
 
 test {
