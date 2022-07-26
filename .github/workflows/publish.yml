@@ -1,8 +1,11 @@
 name: Publish to DockerHub
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
+    paths:
+      - 'src/**'
+      - 'build.gradle'
+      - '.github/workflows/publish.yml'
 jobs:
   publish:
     runs-on: ubuntu-latest

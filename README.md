@@ -6,7 +6,7 @@ This is, what this project is trying to do.
 
 # Feature list
 
-* Build animations with your lights, which will be played when you open your door.
+* Build animations with your lights, which will be played when you open your door. [Click me for a small video.](docs/ressources/example_animations.mp4)
 * Turn lights automatically off, when it's bright outside.
 * And turn it on again, if it's getting dark.
 * Use different states for your home. Like a night- and holiday-state.
@@ -56,7 +56,7 @@ I'm working alone on this project, and I haven't much time for tests.
 <details>
   <summary>Don't judge me for bugs. :)</summary>
 
-![Meme for testing in production](images/test_in_production.png)
+![Meme for testing in production](docs/ressources/test_in_production.png)
 
 </details>
 
