@@ -65,6 +65,6 @@ public class SunsetReactor extends Activatable {
         return this.deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
                 .filter(light -> group.getLights().contains(light.getId()))
-                .noneMatch(SimpleLight::isCurrentState);
+                .noneMatch(SimpleLight::isCurrentStateIsOn);
     }
 }
