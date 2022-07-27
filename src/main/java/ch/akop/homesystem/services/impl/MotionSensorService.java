@@ -84,7 +84,7 @@ public class MotionSensorService {
         this.deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
                 .filter(light -> lights.contains(light.getName()))
-                .filter(light -> !light.isCurrentStateIsOn())
+                .filter(SimpleLight::isCurrentlyOff)
                 .forEach(light -> {
                     if (light instanceof DimmableLight dimmable) {
                         if (this.stateService.getCurrentState() instanceof SleepState) {

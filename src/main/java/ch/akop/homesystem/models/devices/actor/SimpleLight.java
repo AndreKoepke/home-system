@@ -41,4 +41,8 @@ public class SimpleLight extends Device<SimpleLight> {
     public void turnOn(boolean on) {
         this.getFunctionToTurnOnOrOff().accept(on);
     }
+
+    public boolean isCurrentlyOff() {
+        return !this.currentStateIsOn;
+    }
 }
