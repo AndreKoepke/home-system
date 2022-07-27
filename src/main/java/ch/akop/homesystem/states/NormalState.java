@@ -76,7 +76,7 @@ public class NormalState extends Activatable implements State {
         presenceMap.forEach((user, isAtHome) -> {
             if (!this.lastPresenceMap.get(user).equals(isAtHome)) {
                 this.messageService.sendMessageToMainChannel("%s ist %s".formatted(user.getName(),
-                        isAtHome ? "nach Hause gekommen." : "weggegangen"));
+                        Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen"));
             }
         });
 
@@ -152,7 +152,7 @@ public class NormalState extends Activatable implements State {
 
         if (this.deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
-                .anyMatch(SimpleLight::isCurrentState)) {
+                .anyMatch(SimpleLight::isCurrentStateIsOn)) {
             // NOP when any light is on
             return;
         }
