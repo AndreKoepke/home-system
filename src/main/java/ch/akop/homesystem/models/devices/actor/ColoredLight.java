@@ -2,17 +2,15 @@ package ch.akop.homesystem.models.devices.actor;
 
 
 import ch.akop.homesystem.models.color.Color;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 
 import java.time.Duration;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-@Getter
-@Setter
+@Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class ColoredLight extends DimmableLight {
