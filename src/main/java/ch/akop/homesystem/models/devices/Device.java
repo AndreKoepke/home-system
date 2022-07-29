@@ -7,11 +7,11 @@ import java.time.LocalDateTime;
 
 @SuppressWarnings("unchecked")
 @Data
-public abstract class Device<T> {
+public abstract class Device<T extends Device<?>> {
 
     private String name;
     private String id;
-    
+
     @ToString.Exclude
     private LocalDateTime lastChange;
 
