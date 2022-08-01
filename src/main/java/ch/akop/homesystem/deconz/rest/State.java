@@ -42,4 +42,12 @@ public class State {
     private Integer colorspeed;
 
     private Boolean stop;
+
+    private Integer current;
+    private Integer power;
+    private Integer voltage;
+
+    private Integer buttonevent;
+    private Boolean presence;
+    private Boolean dark;
 }

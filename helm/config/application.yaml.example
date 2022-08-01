@@ -78,6 +78,16 @@ home-automation:
         # increase the motionSensorTimeout, when triggered
         increaseMotionSensorTimeout: sensorName
 
+    # define power-meters, which can send messages or trigger fans
+    power-meters:
+      - sensor-name: Name of sensor
+        # threshold to determine between off and on (warning, devices consume power on standby)
+        is-on-when-more-than: 50
+        message-when-switch-on: Waschmaschine läuft
+        message-when-switch-off: Wäschemaschine ist fertig
+        # will start fan, when turning on and stop it when turning off with a delay of 10min
+        link-to-fan: Lüfter
+
   # name of the mainDoor-sensor
   # use something like this https://www.amazon.de/Aqara-MCCGQ11LM-Window-Sensor-Fensterssensor/dp/B07D37VDM3
   sensors:

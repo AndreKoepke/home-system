@@ -26,6 +26,7 @@ public class HomeConfig {
     private List<MotionSensorConfig> motionSensors;
     private boolean sendMessageWhenTurnLightsOff = true;
     private List<FanControlConfig> fans;
+    private List<PowerMeterConfigs> powerMeters;
 
     @Data
     public static class MotionSensorConfig {
@@ -47,6 +48,15 @@ public class HomeConfig {
         private String turnOffWhenLightTurnedOff;
         private String increaseTimeoutForMotionSensor;
         private String increaseMotionSensorTimeout;
+    }
+
+    @Data
+    public static class PowerMeterConfigs {
+        private String sensorName;
+        private Integer isOnWhenMoreThan;
+        private String messageWhenSwitchOn;
+        private String messageWhenSwitchOff;
+        private String linkToFan;
     }
 
 }

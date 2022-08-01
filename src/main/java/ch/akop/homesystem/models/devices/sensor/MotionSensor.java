@@ -22,10 +22,10 @@ public class MotionSensor extends Device<MotionSensor> {
     @Getter
     private LocalDateTime lastMovement = LocalDateTime.MIN;
 
-    public void updateState(final boolean movement, final boolean dark) {
+    public void updateState(boolean movement, Boolean dark) {
         super.setLastChange(LocalDateTime.now());
-        this.isMoving$.onNext(movement);
-        this.isDark$.onNext(dark);
+        isMoving$.onNext(movement);
+        isDark$.onNext(dark != null && dark);
     }
 
 
