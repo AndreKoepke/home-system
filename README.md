@@ -4,13 +4,9 @@ Smart homes are rising. But often, a home with programmable switches is called "
 I think, that a home reaches "smartness", when you only have to touch a button rarely.  
 This is, what this project is trying to do.
 
+
 # Feature list
-
-
 * Build animations with your lights, which will be played when you open your door.  
-
-https://user-images.githubusercontent.com/15613049/180959741-51ba3127-e8d8-4695-98f8-1470ca409d50.mp4
-
 * Turn lights automatically off, when it's bright outside.
 * And turn it on again, if it's getting dark.
 * Use different states for your home. Like a night- and holiday-state.
@@ -18,6 +14,15 @@ https://user-images.githubusercontent.com/15613049/180959741-51ba3127-e8d8-4695-
   * when somebody opens your door
   * when it doesn't rain since a few days
 * Use motion sensors to control your lights (even with you, [IKEA motion sensor](https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1676))
+
+
+# Impressions
+
+https://user-images.githubusercontent.com/15613049/180959741-51ba3127-e8d8-4695-98f8-1470ca409d50.mp4
+
+https://user-images.githubusercontent.com/15613049/182154112-0151bb8e-9f1e-4a9d-a596-d0e1fca3b3e1.mp4 
+
+
 
 # Installation
 Currently there is no user-friendly setup. See this [issue](https://github.com/AndreKoepke/home-system/issues/2).
