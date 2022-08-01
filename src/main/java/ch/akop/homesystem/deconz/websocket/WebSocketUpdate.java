@@ -1,5 +1,6 @@
 package ch.akop.homesystem.deconz.websocket;
 
+import ch.akop.homesystem.deconz.rest.State;
 import lombok.Data;
 
 @Data

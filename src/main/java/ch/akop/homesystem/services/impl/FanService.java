@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -23,15 +24,34 @@ public class FanService {
     private final MotionSensorService motionSensorService;
 
     private final Map<HomeConfig.FanControlConfig, Disposable> subscribeMap = new ConcurrentHashMap<>();
+    private final Map<String, Disposable> waitingToTurnOff = new ConcurrentHashMap<>();
 
     @EventListener
     public void buttonEventHandler(ButtonPressEvent event) {
-        this.homeConfig.getFans()
+        homeConfig.getFans()
                 .stream()
-                .filter(fanConfig -> !this.subscribeMap.containsKey(fanConfig))
+                .filter(fanConfig -> !subscribeMap.containsKey(fanConfig))
                 .filter(fanConfig -> isButtonEventMatchingFanConfig(event.getButtonName(), event.getButtonEvent(), fanConfig))
-                .forEach(triggeredFan -> this.deviceService.findDeviceByName(triggeredFan.getFan(), SimpleLight.class)
+                .forEach(triggeredFan -> deviceService.findDeviceByName(triggeredFan.getFan(), SimpleLight.class)
                         .ifPresent(fan -> activateFanConfig(triggeredFan, fan)));
+    }
+
+    public void startFan(String name) {
+        deviceService.findDeviceByName(name, SimpleLight.class)
+                .ifPresent(simpleLight -> simpleLight.turnOn(true));
+
+        var oldSubscription = waitingToTurnOff.get(name);
+        if (oldSubscription != null) {
+            oldSubscription.dispose();
+            waitingToTurnOff.remove(name);
+        }
+    }
+
+    public void stopFan(String name) {
+        waitingToTurnOff.put(name, Observable.timer(10, TimeUnit.MINUTES)
+                .take(1)
+                .subscribe(aLong -> deviceService.findDeviceByName(name, SimpleLight.class)
+                        .ifPresent(simpleLight -> simpleLight.turnOn(false))));
     }
 
     private boolean isButtonEventMatchingFanConfig(String buttonName, int buttonEvent, HomeConfig.FanControlConfig fanConfig) {
@@ -45,16 +65,18 @@ public class FanService {
         fan.turnOn(true);
 
         Optional.ofNullable(triggeredFan.getIncreaseTimeoutForMotionSensor())
-                .ifPresent(this.motionSensorService::requestHigherTimeout);
+                .ifPresent(motionSensorService::requestHigherTimeout);
 
         Optional.ofNullable(triggeredFan.getTurnOffWhenLightTurnedOff())
-                .flatMap(lightName -> this.deviceService.findDeviceByName(lightName, SimpleLight.class))
+                .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class))
                 .map(light -> waitUntilLightTurnedOff(light)
                         .subscribe(ignore -> {
-                            fan.turnOn(false);
-                            this.subscribeMap.remove(triggeredFan);
+                            if (!waitingToTurnOff.containsKey(light.getName())) {
+                                fan.turnOn(false);
+                            }
+                            subscribeMap.remove(triggeredFan);
                         }))
-                .ifPresent(subscription -> this.subscribeMap.put(triggeredFan, subscription));
+                .ifPresent(subscription -> subscribeMap.put(triggeredFan, subscription));
     }
 
     private static Observable<Boolean> waitUntilLightTurnedOff(SimpleLight light) {

@@ -16,6 +16,7 @@ import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
+import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.UserService;
@@ -26,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -44,8 +46,6 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 public class DeconzConnector {
 
     public static final String NO_RESPONSE_FROM_RASPBERRY = "No response from raspberry";
-    public static final String DEVICE_TYPE_CLOSE_CONTACT = "OpenClose";
-    public static final String DEVICE_TYPE_MOTION_SENSOR = "ZHAPresence";
     public static final String LIGHT_UPDATE_FAILED_LABEL = "Failed to update light ";
     private final Gson gson;
     private final DeviceService deviceService;
@@ -144,27 +144,47 @@ public class DeconzConnector {
     }
 
     private void registerSensor(String id, Sensor sensor) {
-        if (sensor.getType().contains(DEVICE_TYPE_CLOSE_CONTACT)) {
-            deviceService.registerDevice(new CloseContact()
-                    .setOpen(sensor.getState().getOpen())
-                    .setName(sensor.getName())
-                    .setId(id)
-                    .setLastChange(LocalDateTime.now()));
+
+        var newDevice = determineSensor(sensor);
+
+        if (newDevice == null) {
+            log.warn("Sensortype '{}' isn't known", sensor.getType());
+            return;
         }
 
-        if (sensor.getType().equals("ZHASwitch")) {
-            deviceService.registerDevice(new Button()
-                    .setId(id)
-                    .setName(sensor.getName())
-                    .setLastChange(LocalDateTime.now()));
-        }
+        newDevice.setId(id);
+        newDevice.setName(sensor.getName());
+        newDevice.setLastChange(LocalDateTime.now());
 
-        if (sensor.getType().equals(DEVICE_TYPE_MOTION_SENSOR)) {
-            deviceService.registerDevice(new MotionSensor()
-                    .setId(id)
-                    .setName(sensor.getName())
-                    .setLastChange(LocalDateTime.now()));
-        }
+        deviceService.registerDevice(newDevice);
+
+    }
+
+    @Nullable
+    private Device<?> determineSensor(Sensor sensor) {
+        return switch (sensor.getType()) {
+
+            case "ZHAOpenClose" -> new CloseContact()
+                    .setOpen(sensor.getState().getOpen());
+
+            case "ZHASwitch" -> new Button();
+
+            case "ZHAPresence" -> {
+                var motionSensor = new MotionSensor();
+                motionSensor.updateState(sensor.getState().getPresence(), sensor.getState().getDark());
+                yield motionSensor;
+            }
+
+            case "ZHAPower" -> {
+                var powerMeter = new PowerMeter();
+                powerMeter.getPower$().onNext(sensor.getState().getPower());
+                powerMeter.getCurrent$().onNext(sensor.getState().getCurrent());
+                powerMeter.getVoltage$().onNext(sensor.getState().getVoltage());
+                yield powerMeter;
+            }
+
+            default -> null;
+        };
     }
 
     private void registerActor(String id, Light light) {
@@ -303,6 +323,13 @@ public class DeconzConnector {
             if (update.getState().getPresence() != null) {
                 deviceService.getDeviceById(update.getId(), MotionSensor.class)
                         .updateState(update.getState().getPresence(), update.getState().getDark());
+            }
+
+            if (update.getState().getPower() != null) {
+                var powerMeter = deviceService.getDeviceById(update.getId(), PowerMeter.class);
+                powerMeter.getPower$().onNext(update.getState().getPower());
+                powerMeter.getCurrent$().onNext(update.getState().getCurrent());
+                powerMeter.getVoltage$().onNext(update.getState().getVoltage());
             }
         }
 
