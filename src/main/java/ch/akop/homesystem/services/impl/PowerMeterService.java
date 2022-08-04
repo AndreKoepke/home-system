@@ -34,8 +34,8 @@ public class PowerMeterService {
                     //noinspection ResultOfMethodCallIgnored
                     sensor.getCurrent$()
                             .map(current -> current > powerMeterConfig.getIsOnWhenMoreThan())
-                            .debounce(5, TimeUnit.MINUTES)
                             .distinctUntilChanged()
+                            .debounce(5, TimeUnit.MINUTES)
                             .subscribe(isRunning -> {
                                 if (!stateMap.containsKey(powerMeterConfig)) {
                                     stateMap.put(powerMeterConfig, new State().setRunning(isRunning));
