@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -30,12 +31,12 @@ public class PowerMeterService {
                     var sensor = deviceService.findDeviceByName(powerMeterConfig.getSensorName(), PowerMeter.class)
                             .orElseThrow(() -> new IllegalStateException("Sensor %s not found.".formatted(powerMeterConfig.getSensorName())));
 
-
                     //noinspection ResultOfMethodCallIgnored
                     sensor.getCurrent$()
-                            .subscribe(current -> {
-
-                                var isRunning = current > powerMeterConfig.getIsOnWhenMoreThan();
+                            .map(current -> current > powerMeterConfig.getIsOnWhenMoreThan())
+                            .debounce(5, TimeUnit.MINUTES)
+                            .distinctUntilChanged()
+                            .subscribe(isRunning -> {
                                 if (!stateMap.containsKey(powerMeterConfig)) {
                                     stateMap.put(powerMeterConfig, new State().setRunning(isRunning));
                                     return;
@@ -49,7 +50,6 @@ public class PowerMeterService {
 
                                 lastState.setRunning(isRunning);
                                 lastState.setStartTime(LocalDateTime.now());
-
                             });
                 });
     }
@@ -68,7 +68,6 @@ public class PowerMeterService {
             }
         }
     }
-
 
     @Data
     public static class State {
