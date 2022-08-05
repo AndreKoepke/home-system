@@ -75,7 +75,7 @@ public class DeconzConnector {
     private void connect() {
         var wsUrl = new URI("ws://%s:%d".formatted(deconzConfig.getHost(), deconzConfig.getWebsocketPort()));
 
-        WebSocketClient wsClient = new WebSocketClient(wsUrl, new Draft_6455(), null, 30) {
+        WebSocketClient wsClient = new WebSocketClient(wsUrl, new Draft_6455(), null, 30000) {
             @Override
             public void onOpen(ServerHandshake handshakedata) {
                 log.info("WebSocket is up and listing.");
@@ -94,18 +94,21 @@ public class DeconzConnector {
             @SneakyThrows
             @Override
             public void onClose(int code, String reason, boolean remote) {
-                var retryIn = Duration.of(Math.min(60, ++connectionRetries * 10), SECONDS);
-                log.warn("WS-Connection was closed, because of '{}'. Reconnecting  in {}s...", reason, retryIn.toSeconds());
-                Thread.sleep(retryIn.toMillis());
-                DeconzConnector.this.connect();
+                log.warn("WS-Connection was closed");
+                onError(new RuntimeException(reason));
             }
 
             @Override
+            @SneakyThrows
             public void onError(Exception ex) {
                 if (connectionRetries <= 1) {
                     userService.devMessage("Lost connection to raspberry. :(");
-                    log.error("Got exception on ws-connection to {}", deconzConfig.getHost(), ex);
                 }
+
+                var retryIn = Duration.of(Math.min(60, ++connectionRetries * 10), SECONDS);
+                log.error("WS-Connection failure. Reconnecting  in {}s...", retryIn.toSeconds(), ex);
+                Thread.sleep(retryIn.toMillis());
+                DeconzConnector.this.connect();
             }
         };
 
@@ -310,27 +313,7 @@ public class DeconzConnector {
                 && update.getE().equals("changed")
                 && update.getState() != null) {
 
-            if (update.getState().getOpen() != null) {
-                deviceService.getDeviceById(update.getId(), CloseContact.class)
-                        .setOpen(update.getState().getOpen());
-            }
-
-            if (update.getState().getButtonevent() != null) {
-                deviceService.getDeviceById(update.getId(), Button.class)
-                        .triggerEvent(update.getState().getButtonevent());
-            }
-
-            if (update.getState().getPresence() != null) {
-                deviceService.getDeviceById(update.getId(), MotionSensor.class)
-                        .updateState(update.getState().getPresence(), update.getState().getDark());
-            }
-
-            if (update.getState().getPower() != null) {
-                var powerMeter = deviceService.getDeviceById(update.getId(), PowerMeter.class);
-                powerMeter.getPower$().onNext(update.getState().getPower());
-                powerMeter.getCurrent$().onNext(update.getState().getCurrent());
-                powerMeter.getVoltage$().onNext(update.getState().getVoltage());
-            }
+            updateSensor(update.getId(), update.getState());
         }
 
         if (update.getR().equals("lights")
@@ -338,11 +321,33 @@ public class DeconzConnector {
                 && update.getState() != null
                 && update.getState().getOn() != null) {
 
-            deviceService.getDeviceById(update.getId(), SimpleLight.class)
-                    .updateState(update.getState().getOn());
+            updateActor(update.getId(), update.getState());
         }
 
     }
 
+    private void updateActor(String actorId, State state) {
+        if (state.getTilt() != null || state.getLift() != null) {
+            var rollerShutter = deviceService.getDeviceById(actorId, RollerShutter.class);
+            rollerShutter.setLift(state.getLift());
+            rollerShutter.setTilt(state.getTilt());
+        } else {
+            deviceService.getDeviceById(actorId, SimpleLight.class).updateState(state.getOn());
+        }
+    }
 
+    private void updateSensor(String sensorId, State state) {
+        if (state.getOpen() != null) {
+            deviceService.getDeviceById(sensorId, CloseContact.class).setOpen(state.getOpen());
+        } else if (state.getButtonevent() != null) {
+            deviceService.getDeviceById(sensorId, Button.class).triggerEvent(state.getButtonevent());
+        } else if (state.getPresence() != null) {
+            deviceService.getDeviceById(sensorId, MotionSensor.class).updateState(state.getPresence(), state.getDark());
+        } else if (state.getPower() != null) {
+            var powerMeter = deviceService.getDeviceById(sensorId, PowerMeter.class);
+            powerMeter.getPower$().onNext(state.getPower());
+            powerMeter.getCurrent$().onNext(state.getCurrent());
+            powerMeter.getVoltage$().onNext(state.getVoltage());
+        }
+    }
 }
