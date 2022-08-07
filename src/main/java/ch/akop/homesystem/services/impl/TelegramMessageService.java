@@ -11,6 +11,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
+import reactor.util.annotation.Nullable;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -36,38 +37,38 @@ public class TelegramMessageService implements MessageService {
     @PostConstruct
     @SneakyThrows
     public void turnBotOn() {
-        if (this.botToken == null || this.botPath == null) {
+        if (botToken == null || botPath == null) {
             log.info("No telegrambot will be started.");
             return;
         }
 
-        this.bot = new TelegramBot(this.botToken);
+        bot = new TelegramBot(botToken);
 
-        SetWebhook request = new SetWebhook().url(this.botPath);
-        var response = this.bot.execute(request);
+        SetWebhook request = new SetWebhook().url(botPath);
+        var response = bot.execute(request);
         if (!response.isOk()) {
             throw new IllegalStateException(response.description());
         }
     }
 
     @Override
-    public MessageService sendMessageToMainChannel(String message) {
-        if (this.mainChannel == null) {
+    public MessageService sendMessageToMainChannel(@Nullable String message) {
+        if (mainChannel == null || message == null) {
             return this;
         }
 
-        return sendMessageToUser(message, this.mainChannel);
+        return sendMessageToUser(message, mainChannel);
     }
 
     @Override
-    public MessageService sendMessageToUser(String message, String chatId) {
+    public MessageService sendMessageToUser(@Nullable String message, @NonNull String chatId) {
         return sendMessageToUser(message, List.of(chatId));
     }
 
     @Override
-    public MessageService sendMessageToUser(String message, List<String> chatIds) {
-        if (this.bot != null) {
-            chatIds.forEach(chatId -> this.bot.execute(new SendMessage(chatId, message)));
+    public MessageService sendMessageToUser(@Nullable String message, @NonNull List<String> chatIds) {
+        if (bot != null) {
+            chatIds.forEach(chatId -> bot.execute(new SendMessage(chatId, message)));
         }
 
         return this;
@@ -78,8 +79,8 @@ public class TelegramMessageService implements MessageService {
                 update.message().chat().id(),
                 update.message().text());
 
-        if (this.mainChannel.equals(update.message().chat().id().toString())) {
-            this.messages.onNext(update.message().text());
+        if (mainChannel.equals(update.message().chat().id().toString())) {
+            messages.onNext(update.message().text());
         }
     }
 }

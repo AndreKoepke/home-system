@@ -37,12 +37,7 @@ public class PowerMeterService {
                             .distinctUntilChanged()
                             .debounce(5, TimeUnit.MINUTES)
                             .subscribe(isRunning -> {
-                                if (!stateMap.containsKey(powerMeterConfig)) {
-                                    stateMap.put(powerMeterConfig, new State().setRunning(isRunning));
-                                    return;
-                                }
-
-                                var lastState = stateMap.get(powerMeterConfig);
+                                var lastState = stateMap.getOrDefault(powerMeterConfig, new State().setRunning(false));
 
                                 if (lastState.isRunning() != isRunning) {
                                     stateSwitched(powerMeterConfig, isRunning);
