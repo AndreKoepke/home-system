@@ -1,6 +1,6 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.HomeConfig;
+import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class MotionSensorService {
 
-    private final HomeConfig homeConfig;
+    private final HomeSystemProperties homeSystemProperties;
     private final DeviceService deviceService;
     private final StateServiceImpl stateService;
     private final Set<String> sensorsWithHigherTimeout = new HashSet<>();
@@ -30,7 +30,7 @@ public class MotionSensorService {
     @SuppressWarnings({"ResultOfMethodCallIgnored"})
     @PostConstruct
     protected void setup() {
-        this.homeConfig.getMotionSensors().forEach(motionSensorConfig -> this.deviceService.getDevicesOfType(MotionSensor.class)
+        homeSystemProperties.getMotionSensors().forEach(motionSensorConfig -> deviceService.getDevicesOfType(MotionSensor.class)
                 .stream()
                 .filter(motionSensor -> motionSensor.getName().equals(motionSensorConfig.getSensor()))
                 .findFirst()
@@ -48,7 +48,7 @@ public class MotionSensorService {
                 }));
     }
 
-    public Observable<Boolean> delayWhenNoMovement(Boolean movementDetected, HomeConfig.MotionSensorConfig motionSensorConfig) {
+    public Observable<Boolean> delayWhenNoMovement(Boolean movementDetected, HomeSystemProperties.MotionSensorConfig motionSensorConfig) {
         if (Boolean.TRUE.equals(movementDetected)) {
             // don't delay, when movement was detected
             return Observable.just(true);
@@ -76,18 +76,18 @@ public class MotionSensorService {
         sensorsWithHigherTimeout.add(sensorName.toLowerCase());
     }
 
-    public boolean isHigherTimeoutRequested(HomeConfig.MotionSensorConfig motionSensorConfig) {
+    public boolean isHigherTimeoutRequested(HomeSystemProperties.MotionSensorConfig motionSensorConfig) {
         return sensorsWithHigherTimeout.contains(motionSensorConfig.getSensor().toLowerCase());
     }
 
     private void turnLightsOn(List<String> lights) {
-        this.deviceService.getDevicesOfType(SimpleLight.class)
+        deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
                 .filter(light -> lights.contains(light.getName()))
                 .filter(SimpleLight::isCurrentlyOff)
                 .forEach(light -> {
                     if (light instanceof DimmableLight dimmable) {
-                        if (this.stateService.getCurrentState() instanceof SleepState) {
+                        if (stateService.getCurrentState() instanceof SleepState) {
                             dimmable.setBrightness(10, Duration.of(10, ChronoUnit.SECONDS));
                         } else {
                             dimmable.setBrightness(100, Duration.of(10, ChronoUnit.SECONDS));
@@ -100,7 +100,7 @@ public class MotionSensorService {
     }
 
     private void turnLightsOff(List<String> lights) {
-        this.deviceService.getDevicesOfType(SimpleLight.class)
+        deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
                 .filter(light -> lights.contains(light.getName()))
                 .forEach(light -> light.turnOn(false));

@@ -29,6 +29,12 @@ repositories {
 }
 
 dependencies {
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
     // Spring
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -47,12 +53,6 @@ dependencies {
     implementation 'com.github.pengrad:java-telegram-bot-api:6.1.0'
     implementation 'ch.obermuhlner:big-math:2.3.0'
     implementation 'ch.akop:weathercloud:0.0.8'
-
-    // Lombok
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
 
     // rxJava
     implementation 'io.reactivex.rxjava3:rxjava:3.1.5'
