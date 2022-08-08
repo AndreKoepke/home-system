@@ -1,6 +1,6 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.HomeConfig;
+import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.animation.Animation;
 import ch.akop.homesystem.models.animation.AnimationFactory;
 import ch.akop.homesystem.models.devices.Device;
@@ -38,7 +38,7 @@ public class AutomationServiceImpl implements AutomationService {
 
     private final AnimationFactory animationFactory;
     private final DeviceService deviceService;
-    private final HomeConfig homeConfig;
+    private final HomeSystemProperties homeSystemProperties;
     private final ApplicationEventPublisher eventPublisher;
     private Animation mainDoorOpenAnimation;
 
@@ -51,24 +51,24 @@ public class AutomationServiceImpl implements AutomationService {
     @Override
     @SneakyThrows
     public void discoverNewDevices() {
-        this.deviceService.getAllDevices().stream()
+        deviceService.getAllDevices().stream()
                 .filter(this::unknownDevice)
                 .forEach(this::addDevice);
 
-        this.mainDoorOpenAnimation = this.animationFactory.buildMainDoorAnimation();
+        mainDoorOpenAnimation = animationFactory.buildMainDoorAnimation();
 
         log.info("deCONZ is up!");
     }
 
     private boolean unknownDevice(Device<?> device) {
-        return !this.knownDevices.computeIfAbsent(device.getClass(), aClass -> new ArrayList<>())
+        return !knownDevices.computeIfAbsent(device.getClass(), aClass -> new ArrayList<>())
                 .contains(device);
     }
 
     private void addDevice(Device<?> device) {
-        this.knownDevices.get(device.getClass()).add(device);
+        knownDevices.get(device.getClass()).add(device);
 
-        if (device instanceof CloseContact closeContact && closeContact.getName().equals(this.mainDoorName)) {
+        if (device instanceof CloseContact closeContact && closeContact.getName().equals(mainDoorName)) {
             //noinspection ResultOfMethodCallIgnored
             closeContact.getState$()
                     .skip(0)
@@ -80,28 +80,32 @@ public class AutomationServiceImpl implements AutomationService {
         if (device instanceof Button button) {
             //noinspection ResultOfMethodCallIgnored
             button.getEvents$()
-                    .subscribe(integer -> this.buttonWasPressed(button.getName(), integer));
+                    .subscribe(integer -> buttonWasPressed(button.getName(), integer));
         }
     }
 
     private void buttonWasPressed(String buttonName, int buttonEvent) {
         if (wasCentralOffPressed(buttonName, buttonEvent)) {
-            this.eventPublisher.publishEvent(Event.CENTRAL_OFF_PRESSED);
+            eventPublisher.publishEvent(Event.CENTRAL_OFF_PRESSED);
         } else if (wasGoodNightButtonPressed(buttonName, buttonEvent)) {
-            this.eventPublisher.publishEvent(Event.GOOD_NIGHT_PRESSED);
+            eventPublisher.publishEvent(Event.GOOD_NIGHT_PRESSED);
         } else {
-            this.eventPublisher.publishEvent(new ButtonPressEvent(buttonName, buttonEvent));
+            eventPublisher.publishEvent(new ButtonPressEvent(buttonName, buttonEvent));
         }
     }
 
 
     private boolean wasGoodNightButtonPressed(String buttonName, int buttonEvent) {
-        return buttonName.equals(this.homeConfig.getGoodNightButton().getName())
-                && buttonEvent == this.homeConfig.getGoodNightButton().getButtonEvent();
+        var properties = homeSystemProperties.getGoodNightButton();
+        if (properties == null) {
+            return false;
+        }
+
+        return buttonName.equals(properties.getName()) && buttonEvent == properties.getButtonEvent();
     }
 
     private boolean wasCentralOffPressed(String buttonName, int buttonEvent) {
-        return this.homeConfig.getCentralOffSwitches().stream()
+        return homeSystemProperties.getCentralOffSwitches().stream()
                 .anyMatch(offButton -> offButton.getName().equals(buttonName)
                         && offButton.getButtonEvent() == buttonEvent);
     }
@@ -109,9 +113,9 @@ public class AutomationServiceImpl implements AutomationService {
 
     private void mainDoorStateChanged(CloseContactState state) {
         if (state == CloseContactState.CLOSED) {
-            this.eventPublisher.publishEvent(Event.DOOR_CLOSED);
+            eventPublisher.publishEvent(Event.DOOR_CLOSED);
         } else {
-            this.eventPublisher.publishEvent(Event.DOOR_OPENED);
+            eventPublisher.publishEvent(Event.DOOR_OPENED);
         }
     }
 }

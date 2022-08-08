@@ -1,6 +1,6 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.HomeConfig;
+import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
@@ -25,7 +25,7 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 @Slf4j
 public class WeatherServiceImpl implements WeatherService {
 
-    private final HomeConfig config;
+    private final HomeSystemProperties config;
     private final MessageService messageService;
 
     @Getter
@@ -36,20 +36,20 @@ public class WeatherServiceImpl implements WeatherService {
 
     @PostConstruct
     public void startFetchingData() {
-        if (this.config.getNearestWeatherCloudStation() == null) {
-            this.active = false;
+        if (config.getNearestWeatherCloudStation() == null) {
+            active = false;
             return;
         }
 
-        this.active = true;
+        active = true;
         log.info("WeatherService will be started.");
-        this.weather = new Scraper()
-                .scrape$(this.config.getNearestWeatherCloudStation(), Duration.of(5, MINUTES))
+        weather = new Scraper()
+                .scrape$(config.getNearestWeatherCloudStation(), Duration.of(5, MINUTES))
                 .compose(ReplayingShare.instance());
 
-        this.weather.subscribe(weather -> {
+        weather.subscribe(weather -> {
             if (weather.getWind().getAs(KILOMETERS_PER_SECOND).compareTo(new BigDecimal(50)) > 0) {
-                this.messageService.sendMessageToMainChannel("Hui, ist das winding. Macht lieber die Stören hoch. Grade wehts mit %s."
+                messageService.sendMessageToMainChannel("Hui, ist das winding. Macht lieber die Stören hoch. Grade wehts mit %s."
                         .formatted(weather.getWind()));
             }
         });

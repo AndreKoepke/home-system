@@ -1,7 +1,6 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.HomeConfig;
-import ch.akop.homesystem.models.config.User;
+import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
 import ch.akop.homesystem.states.Event;
@@ -32,17 +31,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final HomeConfig homeConfig;
+    private final HomeSystemProperties homeSystemProperties;
     private final MessageService messageService;
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-    private Map<User, Boolean> presenceMap = new HashMap<>();
-    private final Subject<Map<User, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
+    private Map<HomeSystemProperties.User, Boolean> presenceMap = new HashMap<>();
+    private final Subject<Map<HomeSystemProperties.User, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
 
 
     @Override
     public void hintCheckPresence() {
-        this.executorService.submit(this::checkPresenceUntilChangedWithin);
+        executorService.submit(this::checkPresenceUntilChangedWithin);
     }
 
 
@@ -66,17 +65,17 @@ public class UserServiceImpl implements UserService {
 
 
     private void updatePresence() {
-        var newPresenceMap = this.homeConfig.getUsers().stream()
+        var newPresenceMap = homeSystemProperties.getUsers().stream()
                 .collect(Collectors.toMap(
                         user -> user,
                         user -> canPingIp(user.getDeviceIp())
                 ));
 
-        var hasChanges = !newPresenceMap.equals(this.presenceMap);
+        var hasChanges = !newPresenceMap.equals(presenceMap);
 
         if (hasChanges) {
-            this.presenceMap = newPresenceMap;
-            this.presenceMap$.onNext(newPresenceMap);
+            presenceMap = newPresenceMap;
+            presenceMap$.onNext(newPresenceMap);
         }
     }
 
@@ -89,23 +88,23 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Flowable<Map<User, Boolean>> getPresenceMap$() {
-        return this.presenceMap$.toFlowable(BackpressureStrategy.DROP);
+    public Flowable<Map<HomeSystemProperties.User, Boolean>> getPresenceMap$() {
+        return presenceMap$.toFlowable(BackpressureStrategy.DROP);
     }
 
     @Override
     public void messageToUser(String name, String message) {
-        this.homeConfig.getUsers().stream()
+        homeSystemProperties.getUsers().stream()
                 .filter(user -> user.getName().equalsIgnoreCase(name))
                 .findFirst()
-                .ifPresent(user -> this.messageService.sendMessageToUser(message, user.getTelegramId()));
+                .ifPresent(user -> messageService.sendMessageToUser(message, user.getTelegramId()));
     }
 
     @Override
     public void devMessage(String message) {
-        this.homeConfig.getUsers().stream()
-                .filter(User::isDev)
+        homeSystemProperties.getUsers().stream()
+                .filter(HomeSystemProperties.User::isDev)
                 .findFirst()
-                .ifPresent(user -> this.messageService.sendMessageToUser(message, user.getTelegramId()));
+                .ifPresent(user -> messageService.sendMessageToUser(message, user.getTelegramId()));
     }
 }

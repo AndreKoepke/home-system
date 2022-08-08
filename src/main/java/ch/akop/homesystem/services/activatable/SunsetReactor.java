@@ -1,6 +1,6 @@
 package ch.akop.homesystem.services.activatable;
 
-import ch.akop.homesystem.config.HomeConfig;
+import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
@@ -23,46 +23,47 @@ public class SunsetReactor extends Activatable {
     private final WeatherService weatherService;
     private final MessageService messageService;
     private final DeviceService deviceService;
-    private final HomeConfig homeConfig;
+    private final HomeSystemProperties homeSystemProperties;
 
     private Weather previousWeather;
 
     @Override
     protected void started() {
-        super.disposeWhenClosed(this.weatherService.getWeather()
+        super.disposeWhenClosed(weatherService.getWeather()
                 .doOnNext(this::turnLightsOnWhenItIsGettingDark)
-                .doOnNext(weather -> this.previousWeather = weather)
+                .doOnNext(weather -> previousWeather = weather)
                 .subscribe());
     }
 
     private void turnLightsOnWhenItIsGettingDark(Weather weather) {
 
-        if (this.previousWeather == null
-                || this.previousWeather.getLight().isSmallerThan(NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER)
+        if (previousWeather == null
+                || previousWeather.getLight().isSmallerThan(NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER)
                 || weather.getLight().isBiggerThan(NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER)) {
             return;
         }
 
-        this.messageService.sendMessageToMainChannel("Es wird dunkel ... ich mach mal etwas Licht. Es sei denn ... /keinlicht");
+        messageService.sendMessageToMainChannel("Es wird dunkel ... ich mach mal etwas Licht. Es sei denn ... /keinlicht");
 
-        super.disposeWhenClosed(this.messageService.getMessages()
+        super.disposeWhenClosed(messageService.getMessages()
                 .filter("/keinlicht"::equalsIgnoreCase)
                 .take(1)
                 .timeout(5, TimeUnit.MINUTES)
-                .subscribe(s -> {}, this::activeSunsetScenes));
+                .subscribe(s -> {
+                }, this::activeSunsetScenes));
     }
 
     private void activeSunsetScenes(Throwable ignored) {
-        this.deviceService.getDevicesOfType(Group.class)
+        deviceService.getDevicesOfType(Group.class)
                 .stream()
                 .filter(this::areAllLampsAreOff)
                 .flatMap(group -> group.getScenes().stream())
-                .filter(scene -> scene.getName().equals(this.homeConfig.getSunsetSceneName()))
+                .filter(scene -> scene.getName().equals(homeSystemProperties.getSunsetSceneName()))
                 .forEach(Scene::activate);
     }
 
     private boolean areAllLampsAreOff(Group group) {
-        return this.deviceService.getDevicesOfType(SimpleLight.class)
+        return deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
                 .filter(light -> group.getLights().contains(light.getId()))
                 .noneMatch(SimpleLight::isCurrentStateIsOn);

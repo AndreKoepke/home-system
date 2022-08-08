@@ -1,8 +1,8 @@
 package ch.akop.homesystem.states;
 
+import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.animation.Animation;
 import ch.akop.homesystem.models.animation.AnimationFactory;
-import ch.akop.homesystem.models.config.User;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
@@ -53,39 +53,39 @@ public class NormalState extends Activatable implements State {
 
     private Animation mainDoorOpenAnimation;
     private Thread animationThread;
-    private Map<User, Boolean> lastPresenceMap;
+    private Map<HomeSystemProperties.User, Boolean> lastPresenceMap;
 
 
     @PostConstruct
     public void reactOnHolidayMessage() {
         //noinspection ResultOfMethodCallIgnored
-        this.messageService.getMessages()
+        messageService.getMessages()
                 .filter(message -> message.equals("/holiday"))
-                .subscribe(ignored -> this.stateService.switchState(HolidayState.class));
+                .subscribe(ignored -> stateService.switchState(HolidayState.class));
     }
 
     @PostConstruct
     public void listenToTheWeather() {
-        this.weatherService.getWeather()
+        weatherService.getWeather()
                 .map(Weather::getLight)
                 .map(light -> light.isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER))
-                .subscribe(this.canStartMainDoorAnimation::setForever);
+                .subscribe(canStartMainDoorAnimation::setForever);
     }
 
-    private void gotNewPresenceMap(Map<User, Boolean> presenceMap) {
+    private void gotNewPresenceMap(Map<HomeSystemProperties.User, Boolean> presenceMap) {
         presenceMap.forEach((user, isAtHome) -> {
-            if (!this.lastPresenceMap.get(user).equals(isAtHome)) {
-                this.messageService.sendMessageToMainChannel("%s ist %s".formatted(user.getName(),
+            if (!lastPresenceMap.get(user).equals(isAtHome)) {
+                messageService.sendMessageToMainChannel("%s ist %s".formatted(user.getName(),
                         Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen"));
             }
         });
 
-        this.lastPresenceMap = presenceMap;
+        lastPresenceMap = presenceMap;
     }
 
-    private boolean compareWithLastAndSkipFirst(Map<User, Boolean> presenceMap) {
-        if (this.lastPresenceMap == null) {
-            this.lastPresenceMap = presenceMap;
+    private boolean compareWithLastAndSkipFirst(Map<HomeSystemProperties.User, Boolean> presenceMap) {
+        if (lastPresenceMap == null) {
+            lastPresenceMap = presenceMap;
             return false;
         }
 
@@ -94,16 +94,16 @@ public class NormalState extends Activatable implements State {
 
     @Override
     public void entered() {
-        super.disposeWhenClosed(this.weatherPoster.start());
-        super.disposeWhenClosed(this.sunsetReactor.start());
+        super.disposeWhenClosed(weatherPoster.start());
+        super.disposeWhenClosed(sunsetReactor.start());
 
-        if (this.rainDetectorService.noRainFor().toDays() > 1) {
-            this.messageService.sendMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
-                    .formatted(this.rainDetectorService.noRainFor().toDays()));
+        if (rainDetectorService.noRainFor().toDays() > 1) {
+            messageService.sendMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
+                    .formatted(rainDetectorService.noRainFor().toDays()));
         }
 
-        this.lastPresenceMap = null;
-        super.disposeWhenClosed(this.userService.getPresenceMap$()
+        lastPresenceMap = null;
+        super.disposeWhenClosed(userService.getPresenceMap$()
                 .filter(this::compareWithLastAndSkipFirst)
                 .subscribe(this::gotNewPresenceMap));
     }
@@ -116,24 +116,24 @@ public class NormalState extends Activatable implements State {
     @EventListener
     public void event(Event event) {
 
-        if (!(this.stateService.getCurrentState() instanceof NormalState)) {
+        if (!(stateService.getCurrentState() instanceof NormalState)) {
             return;
         }
 
         switch (event) {
             case DOOR_OPENED -> startMainDoorOpenAnimation();
             case DOOR_CLOSED -> log.info("MAIN-DOOR IS CLOSED!");
-            case GOOD_NIGHT_PRESSED -> this.stateService.switchState(SleepState.class);
+            case GOOD_NIGHT_PRESSED -> stateService.switchState(SleepState.class);
             case CENTRAL_OFF_PRESSED -> doCentralOff();
         }
     }
 
     @SneakyThrows
     private void doCentralOff() {
-        this.canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
+        canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
 
-        if (this.animationThread != null && this.animationThread.isAlive()) {
-            this.animationThread.interrupt();
+        if (animationThread != null && animationThread.isAlive()) {
+            animationThread.interrupt();
             // it is possible, that lights can be still on
         }
     }
@@ -141,31 +141,31 @@ public class NormalState extends Activatable implements State {
     private void startMainDoorOpenAnimation() {
 
         log.info("MAIN-DOOR IS OPENED!");
-        this.messageService.sendMessageToMainChannel("Wohnungstür wurde geöffnet.");
+        messageService.sendMessageToMainChannel("Wohnungstür wurde geöffnet.");
 
-        if (!this.canStartMainDoorAnimation.isGateOpen()) {
+        if (!canStartMainDoorAnimation.isGateOpen()) {
             return;
         }
 
-        this.canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
+        canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
         createAnimationIfNotExists();
 
-        if (this.deviceService.getDevicesOfType(SimpleLight.class)
+        if (deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
                 .anyMatch(SimpleLight::isCurrentStateIsOn)) {
             // NOP when any light is on
             return;
         }
 
-        if (this.animationThread == null || !this.animationThread.isAlive()) {
-            this.animationThread = new Thread(this.mainDoorOpenAnimation::play);
-            this.animationThread.start();
+        if (animationThread == null || !animationThread.isAlive()) {
+            animationThread = new Thread(mainDoorOpenAnimation::play);
+            animationThread.start();
         }
     }
 
     private void createAnimationIfNotExists() {
-        if (this.mainDoorOpenAnimation == null) {
-            this.mainDoorOpenAnimation = this.animationFactory.buildMainDoorAnimation();
+        if (mainDoorOpenAnimation == null) {
+            mainDoorOpenAnimation = animationFactory.buildMainDoorAnimation();
         }
     }
 

@@ -1,6 +1,6 @@
 package ch.akop.homesystem.services.activatable;
 
-import ch.akop.homesystem.config.HomeConfig;
+import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
@@ -20,33 +20,33 @@ public class SunriseReactor extends Activatable {
     private final WeatherService weatherService;
     private final DeviceService deviceService;
     private final MessageService messageService;
-    private final HomeConfig homeConfig;
+    private final HomeSystemProperties homeSystemProperties;
 
     private Weather previousWeather;
 
     @PostConstruct
     public void startForAllStates() {
-        this.started();
+        started();
     }
 
     @Override
     protected void started() {
-        super.disposeWhenClosed(this.weatherService.getWeather()
+        super.disposeWhenClosed(weatherService.getWeather()
                 .doOnNext(this::turnLightsOffWhenItIsGettingLight)
-                .doOnNext(weather -> this.previousWeather = weather)
+                .doOnNext(weather -> previousWeather = weather)
                 .subscribe());
     }
 
-    private void turnLightsOffWhenItIsGettingLight(final Weather weather) {
-        if (this.previousWeather == null
-                || this.previousWeather.getLight().isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER)
+    private void turnLightsOffWhenItIsGettingLight(Weather weather) {
+        if (previousWeather == null
+                || previousWeather.getLight().isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER)
                 || weather.getLight().isSmallerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER)) {
             return;
         }
 
-        if (homeConfig.isSendMessageWhenTurnLightsOff()) {
-            this.messageService.sendMessageToMainChannel("Es wird hell, ich mach mal die Lichter aus.");
+        if (homeSystemProperties.isSendMessageWhenTurnLightsOff()) {
+            messageService.sendMessageToMainChannel("Es wird hell, ich mach mal die Lichter aus.");
         }
-        this.deviceService.turnAllLightsOff();
+        deviceService.turnAllLightsOff();
     }
 }

@@ -1,10 +1,8 @@
 package ch.akop.homesystem.states;
 
-import ch.akop.homesystem.config.HomeConfig;
-import ch.akop.homesystem.models.config.User;
+import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
-import ch.akop.homesystem.models.events.ButtonPressEvent;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
@@ -49,36 +47,36 @@ public class SleepState implements State {
     private final StateServiceImpl stateService;
     private final MessageService messageService;
     private final DeviceService deviceService;
-    private final HomeConfig homeConfig;
+    private final HomeSystemProperties homeSystemProperties;
     private final WeatherService weatherService;
     private final UserService userService;
 
 
     private Disposable timerDoorOpen;
-    private Map<User, Boolean> presenceAtBeginning;
+    private Map<HomeSystemProperties.User, Boolean> presenceAtBeginning;
     private boolean sleepButtonState;
 
 
     @Override
     public void entered() {
-        this.messageService.sendMessageToMainChannel("Gute Nacht. Ich mache die Lichter in %dmin aus. Falls ich sofort aufwachen soll, schreibt einfach /aufwachen."
+        messageService.sendMessageToMainChannel("Gute Nacht. Ich mache die Lichter in %dmin aus. Falls ich sofort aufwachen soll, schreibt einfach /aufwachen."
                 .formatted(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes()));
 
-        this.disposeWhenLeaveState.add(Observable.timer(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes(), TimeUnit.MINUTES)
+        disposeWhenLeaveState.add(Observable.timer(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes(), TimeUnit.MINUTES)
                 .doOnNext(t -> turnLightsOff())
-                .doOnNext(duration -> this.messageService
+                .doOnNext(duration -> messageService
                         .sendMessageToMainChannel("Schlaft gut. Die Lichter gehen jetzt aus. :)")
                         .sendMessageToMainChannel("Ich lege mich auch hin und stehe um %s wieder auf.".formatted(WAKEUP_TIME)))
                 .subscribe());
 
-        this.disposeWhenLeaveState.add(Observable.timer(getDurationToWakeupAsSeconds(), TimeUnit.SECONDS)
-                .subscribe(a -> this.stateService.switchState(NormalState.class)));
+        disposeWhenLeaveState.add(Observable.timer(getDurationToWakeupAsSeconds(), TimeUnit.SECONDS)
+                .subscribe(a -> stateService.switchState(NormalState.class)));
 
-        this.disposeWhenLeaveState.add(this.messageService.getMessages()
+        disposeWhenLeaveState.add(messageService.getMessages()
                 .filter(message -> message.equalsIgnoreCase("/aufwachen"))
-                .subscribe(ignored -> this.stateService.switchState(NormalState.class)));
+                .subscribe(ignored -> stateService.switchState(NormalState.class)));
 
-        this.presenceAtBeginning = this.userService.getPresenceMap$().blockingFirst();
+        presenceAtBeginning = userService.getPresenceMap$().blockingFirst();
     }
 
     private long getDurationToWakeupAsSeconds() {
@@ -96,92 +94,87 @@ public class SleepState implements State {
 
 
     public void turnLightsOff() {
-        this.deviceService.getDevicesOfType(Group.class)
+        deviceService.getDevicesOfType(Group.class)
                 .stream()
                 .flatMap(group -> group.getScenes().stream())
-                .filter(scene -> scene.getName().equals(this.homeConfig.getNightSceneName()))
+                .filter(scene -> scene.getName().equals(homeSystemProperties.getNightSceneName()))
                 .forEach(Scene::activate);
     }
 
     @Override
     public void leave() {
-        this.messageService.sendMessageToMainChannel(POSSIBLE_MORNING_TEXTS.get(RANDOM.nextInt(POSSIBLE_MORNING_TEXTS.size())));
+        messageService.sendMessageToMainChannel(POSSIBLE_MORNING_TEXTS.get(RANDOM.nextInt(POSSIBLE_MORNING_TEXTS.size())));
 
-        if (this.weatherService.isActive()) {
-            var weather = this.weatherService.getWeather().blockingFirst();
-            this.messageService.sendMessageToMainChannel("Es sind %s und es regnet%s.".formatted(
+        if (weatherService.isActive()) {
+            var weather = weatherService.getWeather().blockingFirst();
+            messageService.sendMessageToMainChannel("Es sind %s und es regnet%s.".formatted(
                     weather.getOuterTemperatur(),
                     weather.getRain().isBiggerThan(BigDecimal.ZERO, MILLIMETER_PER_HOUR) ? "" : " nicht"
             ));
         }
 
-        this.disposeWhenLeaveState.forEach(Disposable::dispose);
-        this.disposeWhenLeaveState.clear();
+        disposeWhenLeaveState.forEach(Disposable::dispose);
+        disposeWhenLeaveState.clear();
 
         stopDoorOpenTimer();
         checkPresenceMapWhenLeave();
     }
 
     public void checkPresenceMapWhenLeave() {
-        var currentPresence = this.userService.getPresenceMap$().blockingFirst();
+        var currentPresence = userService.getPresenceMap$().blockingFirst();
 
-        if (!currentPresence.equals(this.presenceAtBeginning)) {
+        if (!currentPresence.equals(presenceAtBeginning)) {
             currentPresence.forEach((user, isAtHome) -> {
-                if (!this.presenceAtBeginning.get(user).equals(isAtHome)) {
-                    this.messageService.sendMessageToMainChannel("In der Nacht ist %s %s".formatted(user.getName(),
+                if (!presenceAtBeginning.get(user).equals(isAtHome)) {
+                    messageService.sendMessageToMainChannel("In der Nacht ist %s %s".formatted(user.getName(),
                             isAtHome ? "nach Hause gekommen." : "weggegangen."));
                 }
             });
         }
 
-        this.presenceAtBeginning = null;
+        presenceAtBeginning = null;
     }
 
     @EventListener
     public void event(Event event) {
 
-        if (!(this.stateService.getCurrentState() instanceof SleepState)) {
+        if (!(stateService.getCurrentState() instanceof SleepState)) {
             return;
         }
 
         switch (event) {
             case DOOR_CLOSED -> stopDoorOpenTimer();
             case DOOR_OPENED -> startDoorOpenTimer();
+            case GOOD_NIGHT_PRESSED -> doNightRun();
             default -> {
                 // nop
             }
         }
     }
 
-    @EventListener
-    public void event(ButtonPressEvent event) {
-        if (event.getButtonName().equals(this.homeConfig.getGoodNightButton().getName())
-                && event.getButtonEvent() == this.homeConfig.getGoodNightButton().getButtonEvent()) {
-
-            if (!this.sleepButtonState) {
-                this.deviceService.getDevicesOfType(Group.class).stream()
-                        .flatMap(group -> group.getScenes().stream())
-                        .filter(scene -> scene.getName().equals(this.homeConfig.getNightRunSceneName()))
-                        .forEach(Scene::activate);
-            } else {
-                this.turnLightsOff();
-            }
-            this.sleepButtonState = !this.sleepButtonState;
+    public void doNightRun() {
+        if (!sleepButtonState) {
+            deviceService.getDevicesOfType(Group.class).stream()
+                    .flatMap(group -> group.getScenes().stream())
+                    .filter(scene -> scene.getName().equals(homeSystemProperties.getNightRunSceneName()))
+                    .forEach(Scene::activate);
+        } else {
+            turnLightsOff();
         }
-
+        sleepButtonState = !sleepButtonState;
     }
 
     private void stopDoorOpenTimer() {
-        if (this.timerDoorOpen != null) {
-            this.timerDoorOpen.dispose();
-            this.timerDoorOpen = null;
+        if (timerDoorOpen != null) {
+            timerDoorOpen.dispose();
+            timerDoorOpen = null;
         }
     }
 
     private void startDoorOpenTimer() {
-        if (this.timerDoorOpen == null || this.timerDoorOpen.isDisposed()) {
-            this.timerDoorOpen = Observable.timer(1, TimeUnit.MINUTES)
-                    .subscribe(a -> this.messageService.sendMessageToMainChannel("Die Tür ist jetzt schon länger auf ..."));
+        if (timerDoorOpen == null || timerDoorOpen.isDisposed()) {
+            timerDoorOpen = Observable.timer(1, TimeUnit.MINUTES)
+                    .subscribe(a -> messageService.sendMessageToMainChannel("Die Tür ist jetzt schon länger auf ..."));
         }
     }
 }

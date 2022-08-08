@@ -1,6 +1,6 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.HomeConfig;
+import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.events.ButtonPressEvent;
 import ch.akop.homesystem.services.DeviceService;
@@ -8,6 +8,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -20,15 +21,15 @@ import java.util.concurrent.TimeUnit;
 public class FanService {
 
     private final DeviceService deviceService;
-    private final HomeConfig homeConfig;
+    private final HomeSystemProperties homeSystemProperties;
     private final MotionSensorService motionSensorService;
 
-    private final Map<HomeConfig.FanControlConfig, Disposable> subscribeMap = new ConcurrentHashMap<>();
+    private final Map<HomeSystemProperties.FanControlConfig, Disposable> subscribeMap = new ConcurrentHashMap<>();
     private final Map<String, Disposable> waitingToTurnOff = new ConcurrentHashMap<>();
 
     @EventListener
     public void buttonEventHandler(ButtonPressEvent event) {
-        homeConfig.getFans()
+        homeSystemProperties.getFans()
                 .stream()
                 .filter(fanConfig -> !subscribeMap.containsKey(fanConfig))
                 .filter(fanConfig -> isButtonEventMatchingFanConfig(event.getButtonName(), event.getButtonEvent(), fanConfig))
@@ -36,7 +37,11 @@ public class FanService {
                         .ifPresent(fan -> activateFanConfig(triggeredFan, fan)));
     }
 
-    public void startFan(String name) {
+    public void startFan(@Nullable String name) {
+        if (name == null) {
+            return;
+        }
+
         deviceService.findDeviceByName(name, SimpleLight.class)
                 .ifPresent(simpleLight -> simpleLight.turnOn(true));
 
@@ -48,20 +53,25 @@ public class FanService {
     }
 
     public void stopFan(String name) {
+
+        if (name == null) {
+            return;
+        }
+
         waitingToTurnOff.put(name, Observable.timer(10, TimeUnit.MINUTES)
                 .take(1)
                 .subscribe(aLong -> deviceService.findDeviceByName(name, SimpleLight.class)
                         .ifPresent(simpleLight -> simpleLight.turnOn(false))));
     }
 
-    private boolean isButtonEventMatchingFanConfig(String buttonName, int buttonEvent, HomeConfig.FanControlConfig fanConfig) {
+    private boolean isButtonEventMatchingFanConfig(String buttonName, int buttonEvent, HomeSystemProperties.FanControlConfig fanConfig) {
         return fanConfig.getButtons()
                 .stream()
                 .anyMatch(button -> button.getName().equalsIgnoreCase(buttonName)
                         && buttonEvent == button.getButtonEvent());
     }
 
-    private void activateFanConfig(HomeConfig.FanControlConfig triggeredFan, SimpleLight fan) {
+    private void activateFanConfig(HomeSystemProperties.FanControlConfig triggeredFan, SimpleLight fan) {
         fan.turnOn(true);
 
         Optional.ofNullable(triggeredFan.getIncreaseTimeoutForMotionSensor())
