@@ -19,21 +19,22 @@ import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
+import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
-import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.socket.client.standard.StandardWebSocketClient;
-import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import javax.annotation.PostConstruct;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.WebSocket;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CompletionStage;
 
 
 @Service
@@ -46,10 +47,11 @@ public class DeconzConnector {
     private final DeviceService deviceService;
     private final DeconzConfig deconzConfig;
     private final AutomationService automationService;
+    private final Gson gson = new Gson();
 
     private WebClient webClient;
 
-    private final AtomicInteger tryConnectionCount = new AtomicInteger(0);
+    private int tryConnectionCount = 0;
 
     @PostConstruct
     public void initialSetup() {
@@ -67,26 +69,40 @@ public class DeconzConnector {
 
     @SneakyThrows
     public void connect() {
-        var wsUrl = "ws://%s:%d".formatted(deconzConfig.getHost(), deconzConfig.getWebsocketPort());
-        var client = new StandardWebSocketClient();
+        var wsUrl = URI.create("ws://%s:%d/ws".formatted(deconzConfig.getHost(), deconzConfig.getWebsocketPort()));
 
-        var stompClient = new WebSocketStompClient(client);
-        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
-
-        var sessionHandler = new DeconzWebsocketListener(this);
-        stompClient.connect(wsUrl, sessionHandler).addCallback(
-                result -> tryConnectionCount.set(0),
-                ex -> {
-                    var timeoutBetweenConnectAttempts = Duration.ofSeconds(Math.min(60, tryConnectionCount.addAndGet(1) * 10));
-                    log.warn("Connection lost, reconnect in {}s", timeoutBetweenConnectAttempts.toSeconds());
-                    try {
-                        Thread.sleep(Duration.ofSeconds(5).toMillis());
-                        this.connect();
-                    } catch (InterruptedException ignored) {
-                        // shutdown
-                        Thread.currentThread().interrupt();
+        HttpClient.newHttpClient()
+                .newWebSocketBuilder()
+                .buildAsync(wsUrl, new WebSocket.Listener() {
+                    @Override
+                    public void onOpen(WebSocket webSocket) {
+                        log.info("WS-Connection is established.");
+                        tryConnectionCount = 0;
+                        WebSocket.Listener.super.onOpen(webSocket);
                     }
-                });
+
+                    @Override
+                    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                        handleMessage(gson.fromJson(data.toString(), WebSocketUpdate.class));
+                        return WebSocket.Listener.super.onText(webSocket, data, last);
+                    }
+
+                    @Override
+                    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+                        var timeoutBeforeNextAttempt = Duration.ofSeconds(Math.min(60, (++tryConnectionCount) * 10));
+                        log.warn("WS-Connection closed because '{}', retry in {}s", reason, timeoutBeforeNextAttempt.toSeconds());
+
+                        try {
+                            Thread.sleep(timeoutBeforeNextAttempt.toMillis());
+                            connect();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+
+                        return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
+                    }
+                })
+                .join();
     }
 
 
