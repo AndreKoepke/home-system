@@ -80,7 +80,7 @@ jib {
     }
 
     to {
-        image = 'akop/home-system:test'
+        image = 'akop/home-system:latest'
         auth {
             username = System.getenv('DOCKER_USER') ?: ''
             password = System.getenv('DOCKER_PASS') ?: ''
