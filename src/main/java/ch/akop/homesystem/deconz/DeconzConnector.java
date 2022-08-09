@@ -19,25 +19,22 @@ import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
-import ch.akop.homesystem.services.UserService;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.drafts.Draft_6455;
-import org.java_websocket.handshake.ServerHandshake;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.WebSocket;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
-
-import static java.time.temporal.ChronoUnit.SECONDS;
+import java.util.concurrent.CompletionStage;
 
 
 @Service
@@ -47,15 +44,14 @@ public class DeconzConnector {
 
     public static final String NO_RESPONSE_FROM_RASPBERRY = "No response from raspberry";
     public static final String LIGHT_UPDATE_FAILED_LABEL = "Failed to update light ";
-    private final Gson gson;
     private final DeviceService deviceService;
     private final DeconzConfig deconzConfig;
     private final AutomationService automationService;
-    private final UserService userService;
+    private final Gson gson = new Gson();
 
     private WebClient webClient;
-    private int connectionRetries = 0;
 
+    private int tryConnectionCount = 0;
 
     @PostConstruct
     public void initialSetup() {
@@ -72,48 +68,41 @@ public class DeconzConnector {
     }
 
     @SneakyThrows
-    private void connect() {
-        var wsUrl = new URI("ws://%s:%d".formatted(deconzConfig.getHost(), deconzConfig.getWebsocketPort()));
+    public void connect() {
+        var wsUrl = URI.create("ws://%s:%d/ws".formatted(deconzConfig.getHost(), deconzConfig.getWebsocketPort()));
 
-        WebSocketClient wsClient = new WebSocketClient(wsUrl, new Draft_6455(), null, 30000) {
-            @Override
-            public void onOpen(ServerHandshake handshakedata) {
-                log.info("WebSocket is up and listing.");
-                connectionRetries = 0;
-            }
+        HttpClient.newHttpClient()
+                .newWebSocketBuilder()
+                .buildAsync(wsUrl, new WebSocket.Listener() {
+                    @Override
+                    public void onOpen(WebSocket webSocket) {
+                        log.info("WS-Connection is established.");
+                        tryConnectionCount = 0;
+                        WebSocket.Listener.super.onOpen(webSocket);
+                    }
 
-            @Override
-            public void onMessage(String message) {
-                try {
-                    handleMessage(gson.fromJson(message, WebSocketUpdate.class));
-                } catch (Exception e) {
-                    log.error("Exception occurred with the message:\n{}", message, e);
-                }
-            }
+                    @Override
+                    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                        handleMessage(gson.fromJson(data.toString(), WebSocketUpdate.class));
+                        return WebSocket.Listener.super.onText(webSocket, data, last);
+                    }
 
-            @SneakyThrows
-            @Override
-            public void onClose(int code, String reason, boolean remote) {
-                log.warn("WS-Connection was closed");
-                onError(new RuntimeException(reason));
-            }
+                    @Override
+                    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+                        var timeoutBeforeNextAttempt = Duration.ofSeconds(Math.min(60, (++tryConnectionCount) * 10));
+                        log.warn("WS-Connection closed because '{}', retry in {}s", reason, timeoutBeforeNextAttempt.toSeconds());
 
-            @Override
-            @SneakyThrows
-            public void onError(Exception ex) {
-                if (connectionRetries <= 1) {
-                    userService.devMessage("Lost connection to raspberry. :(");
-                }
+                        try {
+                            Thread.sleep(timeoutBeforeNextAttempt.toMillis());
+                            connect();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
 
-                var retryIn = Duration.of(Math.min(60, ++connectionRetries * 10), SECONDS);
-                log.error("WS-Connection failure. Reconnecting  in {}s...", retryIn.toSeconds(), ex);
-                Thread.sleep(retryIn.toMillis());
-                DeconzConnector.this.connect();
-            }
-        };
-
-        wsClient.setConnectionLostTimeout(25);
-        wsClient.connect();
+                        return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
+                    }
+                })
+                .join();
     }
 
 
@@ -308,7 +297,7 @@ public class DeconzConnector {
     }
 
 
-    private void handleMessage(WebSocketUpdate update) {
+    public void handleMessage(WebSocketUpdate update) {
         if (update.getR().equals("sensors")
                 && update.getE().equals("changed")
                 && update.getState() != null) {
