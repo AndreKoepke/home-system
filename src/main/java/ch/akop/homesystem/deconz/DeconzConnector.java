@@ -19,25 +19,21 @@ import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
-import ch.akop.homesystem.services.UserService;
-import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.drafts.Draft_6455;
-import org.java_websocket.handshake.ServerHandshake;
 import org.springframework.lang.Nullable;
+import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import javax.annotation.PostConstruct;
-import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
-
-import static java.time.temporal.ChronoUnit.SECONDS;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 @Service
@@ -47,15 +43,13 @@ public class DeconzConnector {
 
     public static final String NO_RESPONSE_FROM_RASPBERRY = "No response from raspberry";
     public static final String LIGHT_UPDATE_FAILED_LABEL = "Failed to update light ";
-    private final Gson gson;
     private final DeviceService deviceService;
     private final DeconzConfig deconzConfig;
     private final AutomationService automationService;
-    private final UserService userService;
 
     private WebClient webClient;
-    private int connectionRetries = 0;
 
+    private final AtomicInteger tryConnectionCount = new AtomicInteger(0);
 
     @PostConstruct
     public void initialSetup() {
@@ -72,48 +66,27 @@ public class DeconzConnector {
     }
 
     @SneakyThrows
-    private void connect() {
-        var wsUrl = new URI("ws://%s:%d".formatted(deconzConfig.getHost(), deconzConfig.getWebsocketPort()));
+    public void connect() {
+        var wsUrl = "ws://%s:%d".formatted(deconzConfig.getHost(), deconzConfig.getWebsocketPort());
+        var client = new StandardWebSocketClient();
 
-        WebSocketClient wsClient = new WebSocketClient(wsUrl, new Draft_6455(), null, 30000) {
-            @Override
-            public void onOpen(ServerHandshake handshakedata) {
-                log.info("WebSocket is up and listing.");
-                connectionRetries = 0;
-            }
+        var stompClient = new WebSocketStompClient(client);
+        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
 
-            @Override
-            public void onMessage(String message) {
-                try {
-                    handleMessage(gson.fromJson(message, WebSocketUpdate.class));
-                } catch (Exception e) {
-                    log.error("Exception occurred with the message:\n{}", message, e);
-                }
-            }
-
-            @SneakyThrows
-            @Override
-            public void onClose(int code, String reason, boolean remote) {
-                log.warn("WS-Connection was closed");
-                onError(new RuntimeException(reason));
-            }
-
-            @Override
-            @SneakyThrows
-            public void onError(Exception ex) {
-                if (connectionRetries <= 1) {
-                    userService.devMessage("Lost connection to raspberry. :(");
-                }
-
-                var retryIn = Duration.of(Math.min(60, ++connectionRetries * 10), SECONDS);
-                log.error("WS-Connection failure. Reconnecting  in {}s...", retryIn.toSeconds(), ex);
-                Thread.sleep(retryIn.toMillis());
-                DeconzConnector.this.connect();
-            }
-        };
-
-        wsClient.setConnectionLostTimeout(25);
-        wsClient.connect();
+        var sessionHandler = new DeconzWebsocketListener(this);
+        stompClient.connect(wsUrl, sessionHandler).addCallback(
+                result -> tryConnectionCount.set(0),
+                ex -> {
+                    var timeoutBetweenConnectAttempts = Duration.ofSeconds(Math.min(60, tryConnectionCount.addAndGet(1) * 10));
+                    log.warn("Connection lost, reconnect in {}s", timeoutBetweenConnectAttempts.toSeconds());
+                    try {
+                        Thread.sleep(Duration.ofSeconds(5).toMillis());
+                        this.connect();
+                    } catch (InterruptedException ignored) {
+                        // shutdown
+                        Thread.currentThread().interrupt();
+                    }
+                });
     }
 
 
@@ -308,7 +281,7 @@ public class DeconzConnector {
     }
 
 
-    private void handleMessage(WebSocketUpdate update) {
+    public void handleMessage(WebSocketUpdate update) {
         if (update.getR().equals("sensors")
                 && update.getE().equals("changed")
                 && update.getState() != null) {

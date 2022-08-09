@@ -41,10 +41,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'com.zaxxer:HikariCP:5.0.1'
-
-    // webSocketClient
-    implementation 'org.java-websocket:Java-WebSocket:1.5.3'
 
     // misc
     runtimeOnly 'org.postgresql:postgresql'
@@ -83,7 +81,7 @@ jib {
     }
 
     to {
-        image = 'akop/home-system'
+        image = 'akop/home-system:test'
         auth {
             username = System.getenv('DOCKER_USER') ?: ''
             password = System.getenv('DOCKER_PASS') ?: ''
