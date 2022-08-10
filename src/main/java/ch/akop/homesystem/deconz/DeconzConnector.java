@@ -19,7 +19,7 @@ import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +47,7 @@ public class DeconzConnector {
     private final DeviceService deviceService;
     private final DeconzConfig deconzConfig;
     private final AutomationService automationService;
-    private final Gson gson = new Gson();
+    private final ObjectMapper objectMapper;
 
     private WebClient webClient;
 
@@ -83,7 +83,13 @@ public class DeconzConnector {
 
                     @Override
                     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-                        handleMessage(gson.fromJson(data.toString(), WebSocketUpdate.class));
+                        try {
+                            var parsed = objectMapper.readValue(data.toString(), WebSocketUpdate.class);
+                            handleMessage(parsed);
+                        } catch (Exception e) {
+                            log.error("There was a problem while parsing message:\n{}", data, e);
+                        }
+
                         return WebSocket.Listener.super.onText(webSocket, data, last);
                     }
 
