@@ -88,7 +88,19 @@ public class DeconzConnector {
                     }
 
                     @Override
+                    public void onError(WebSocket webSocket, Throwable error) {
+                        log.error("Error on WS-Connection", error);
+                        reconnect(error.getMessage());
+                        WebSocket.Listener.super.onError(webSocket, error);
+                    }
+
+                    @Override
                     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+                        reconnect(reason);
+                        return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
+                    }
+
+                    private void reconnect(String reason) {
                         var timeoutBeforeNextAttempt = Duration.ofSeconds(Math.min(60, (++tryConnectionCount) * 10));
                         log.warn("WS-Connection closed because '{}', retry in {}s", reason, timeoutBeforeNextAttempt.toSeconds());
 
@@ -98,8 +110,6 @@ public class DeconzConnector {
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                         }
-
-                        return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
                     }
                 })
                 .join();
