@@ -73,7 +73,11 @@ public class DeconzConnector {
 
         HttpClient.newHttpClient()
                 .newWebSocketBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
                 .buildAsync(wsUrl, new WebSocket.Listener() {
+
+                    StringBuilder messageBuilder = new StringBuilder();
+
                     @Override
                     public void onOpen(WebSocket webSocket) {
                         log.info("WS-Connection is established.");
@@ -83,13 +87,20 @@ public class DeconzConnector {
 
                     @Override
                     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                        messageBuilder.append(data.toString());
+
+                        if (!last) {
+                            return WebSocket.Listener.super.onText(webSocket, data, last);
+                        }
+
                         try {
-                            var parsed = objectMapper.readValue(data.toString(), WebSocketUpdate.class);
+                            var parsed = objectMapper.readValue(messageBuilder.toString(), WebSocketUpdate.class);
                             handleMessage(parsed);
                         } catch (Exception e) {
                             log.error("There was a problem while parsing message:\n{}", data, e);
                         }
 
+                        messageBuilder = new StringBuilder();
                         return WebSocket.Listener.super.onText(webSocket, data, last);
                     }
 
