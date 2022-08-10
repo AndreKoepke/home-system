@@ -79,6 +79,7 @@ public class DeconzConnector {
                     StringBuilder messageBuilder = new StringBuilder();
                     CompletableFuture<?> accumulatedMessage = new CompletableFuture<>();
 
+
                     @Override
                     public void onOpen(WebSocket webSocket) {
                         log.info("WS-Connection is established.");
@@ -89,9 +90,9 @@ public class DeconzConnector {
                     @Override
                     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
                         messageBuilder.append(data);
+                        webSocket.request(1);
 
                         if (last) {
-                            log.info("Flushed");
                             handleCompleteMessage(messageBuilder.toString());
                             messageBuilder = new StringBuilder();
                             accumulatedMessage.complete(null);
@@ -116,13 +117,12 @@ public class DeconzConnector {
                     public void onError(WebSocket webSocket, Throwable error) {
                         log.error("Error on WS-Connection", error);
                         reconnect(error.getMessage());
-                        WebSocket.Listener.super.onError(webSocket, error);
                     }
 
                     @Override
                     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
                         reconnect(reason);
-                        return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
+                        return CompletableFuture.completedFuture(null);
                     }
 
                     private void reconnect(String reason) {
