@@ -34,6 +34,7 @@ import java.net.http.WebSocket;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 
@@ -75,8 +76,8 @@ public class DeconzConnector {
                 .newWebSocketBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .buildAsync(wsUrl, new WebSocket.Listener() {
-
                     StringBuilder messageBuilder = new StringBuilder();
+                    CompletableFuture<?> accumulatedMessage = new CompletableFuture<>();
 
                     @Override
                     public void onOpen(WebSocket webSocket) {
@@ -87,21 +88,28 @@ public class DeconzConnector {
 
                     @Override
                     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-                        messageBuilder.append(data.toString());
+                        messageBuilder.append(data);
 
-                        if (!last) {
-                            return WebSocket.Listener.super.onText(webSocket, data, last);
+                        if (last) {
+                            log.info("Flushed");
+                            handleCompleteMessage(messageBuilder.toString());
+                            messageBuilder = new StringBuilder();
+                            accumulatedMessage.complete(null);
+                            var oldFuture = accumulatedMessage;
+                            accumulatedMessage = new CompletableFuture<>();
+                            return oldFuture;
                         }
 
+                        return accumulatedMessage;
+                    }
+
+                    private void handleCompleteMessage(String message) {
                         try {
-                            var parsed = objectMapper.readValue(messageBuilder.toString(), WebSocketUpdate.class);
+                            var parsed = objectMapper.readValue(message, WebSocketUpdate.class);
                             handleMessage(parsed);
                         } catch (Exception e) {
-                            log.error("There was a problem while parsing message:\n{}", data, e);
+                            log.error("There was a problem while parsing message:\n{}", message, e);
                         }
-
-                        messageBuilder = new StringBuilder();
-                        return WebSocket.Listener.super.onText(webSocket, data, last);
                     }
 
                     @Override
