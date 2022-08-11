@@ -20,6 +20,8 @@ import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -31,11 +33,13 @@ import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 
 @Service
@@ -76,6 +80,9 @@ public class DeconzConnector {
                 .newWebSocketBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .buildAsync(wsUrl, new WebSocket.Listener() {
+
+                    Disposable keepaliveSubscription;
+
                     StringBuilder messageBuilder = new StringBuilder();
                     CompletableFuture<?> accumulatedMessage = new CompletableFuture<>();
 
@@ -85,6 +92,10 @@ public class DeconzConnector {
                         log.info("WS-Connection is established.");
                         tryConnectionCount = 0;
                         WebSocket.Listener.super.onOpen(webSocket);
+
+                        keepaliveSubscription = Observable.interval(30, TimeUnit.SECONDS)
+                                .doOnNext(aLong -> webSocket.sendPing(ByteBuffer.wrap(new byte[]{1, 2, 3})).join())
+                                .subscribe();
                     }
 
                     @Override
@@ -121,8 +132,9 @@ public class DeconzConnector {
 
                     @Override
                     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+                        keepaliveSubscription.dispose();
                         reconnect(reason);
-                        return CompletableFuture.completedFuture(null);
+                        return null;
                     }
 
                     private void reconnect(String reason) {
