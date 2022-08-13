@@ -54,7 +54,7 @@ public class PowerMeterService {
         if (bool) {
             return Observable.just(true);
         } else {
-            return Observable.just(false).delay(30, TimeUnit.SECONDS);
+            return Observable.just(false).delay(3, TimeUnit.MINUTES);
         }
     }
 

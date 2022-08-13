@@ -34,9 +34,8 @@ public class UserServiceImpl implements UserService {
     private final HomeSystemProperties homeSystemProperties;
     private final MessageService messageService;
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-
-    private Map<HomeSystemProperties.User, Boolean> presenceMap = new HashMap<>();
     private final Subject<Map<HomeSystemProperties.User, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
+    private Map<HomeSystemProperties.User, Boolean> presenceMap = new HashMap<>();
 
 
     @Override
@@ -106,5 +105,10 @@ public class UserServiceImpl implements UserService {
                 .filter(HomeSystemProperties.User::isDev)
                 .findFirst()
                 .ifPresent(user -> messageService.sendMessageToUser(message, user.getTelegramId()));
+    }
+
+    @Override
+    public boolean isAnyoneAtHome() {
+        return presenceMap.values().stream().anyMatch(isAtHome -> isAtHome);
     }
 }

@@ -18,4 +18,6 @@ public interface UserService {
     void messageToUser(String name, String message);
 
     void devMessage(String message);
+
+    boolean isAnyoneAtHome();
 }

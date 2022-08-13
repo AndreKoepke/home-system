@@ -6,6 +6,7 @@ import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
+import ch.akop.homesystem.services.UserService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.homesystem.states.NormalState;
 import ch.akop.weathercloud.Weather;
@@ -24,6 +25,7 @@ public class SunsetReactor extends Activatable {
     private final MessageService messageService;
     private final DeviceService deviceService;
     private final HomeSystemProperties homeSystemProperties;
+    private final UserService userService;
 
     private Weather previousWeather;
 
@@ -43,8 +45,12 @@ public class SunsetReactor extends Activatable {
             return;
         }
 
-        messageService.sendMessageToMainChannel("Es wird dunkel ... ich mach mal etwas Licht. Es sei denn ... /keinlicht");
+        if (!userService.isAnyoneAtHome()) {
+            messageService.sendMessageToMainChannel("Es wird dunkel ... aber weil kein Zuhause ist, mache mal nichts.");
+            return;
+        }
 
+        messageService.sendMessageToMainChannel("Es wird dunkel ... ich mach mal etwas Licht. Es sei denn ... /keinlicht");
         super.disposeWhenClosed(messageService.getMessages()
                 .filter("/keinlicht"::equalsIgnoreCase)
                 .take(1)
