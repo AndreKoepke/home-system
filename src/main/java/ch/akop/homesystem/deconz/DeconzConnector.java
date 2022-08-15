@@ -20,26 +20,16 @@ import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import javax.annotation.PostConstruct;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.WebSocket;
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 
 @Service
@@ -68,90 +58,8 @@ public class DeconzConnector {
                 .build();
 
         registerDevices();
-        connect();
         automationService.discoverNewDevices();
     }
-
-    @SneakyThrows
-    public void connect() {
-        var wsUrl = URI.create("ws://%s:%d/ws".formatted(deconzConfig.getHost(), deconzConfig.getWebsocketPort()));
-
-        HttpClient.newHttpClient()
-                .newWebSocketBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .buildAsync(wsUrl, new WebSocket.Listener() {
-
-                    Disposable keepaliveSubscription;
-
-                    StringBuilder messageBuilder = new StringBuilder();
-                    CompletableFuture<?> accumulatedMessage = new CompletableFuture<>();
-
-
-                    @Override
-                    public void onOpen(WebSocket webSocket) {
-                        log.info("WS-Connection is established.");
-                        tryConnectionCount = 0;
-                        WebSocket.Listener.super.onOpen(webSocket);
-
-                        keepaliveSubscription = Observable.interval(30, TimeUnit.SECONDS)
-                                .doOnNext(aLong -> webSocket.sendPing(ByteBuffer.wrap(new byte[]{1, 2, 3})).join())
-                                .subscribe();
-                    }
-
-                    @Override
-                    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-                        messageBuilder.append(data);
-                        webSocket.request(1);
-
-                        if (last) {
-                            handleCompleteMessage(messageBuilder.toString());
-                            messageBuilder = new StringBuilder();
-                            accumulatedMessage.complete(null);
-                            var oldFuture = accumulatedMessage;
-                            accumulatedMessage = new CompletableFuture<>();
-                            return oldFuture;
-                        }
-
-                        return accumulatedMessage;
-                    }
-
-                    private void handleCompleteMessage(String message) {
-                        try {
-                            var parsed = objectMapper.readValue(message, WebSocketUpdate.class);
-                            handleMessage(parsed);
-                        } catch (Exception e) {
-                            log.error("There was a problem while parsing message:\n{}", message, e);
-                        }
-                    }
-
-                    @Override
-                    public void onError(WebSocket webSocket, Throwable error) {
-                        log.error("Error on WS-Connection", error);
-                        reconnect(error.getMessage());
-                    }
-
-                    @Override
-                    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-                        keepaliveSubscription.dispose();
-                        reconnect(reason);
-                        return null;
-                    }
-
-                    private void reconnect(String reason) {
-                        var timeoutBeforeNextAttempt = Duration.ofSeconds(Math.min(60, (++tryConnectionCount) * 10));
-                        log.warn("WS-Connection closed because '{}', retry in {}s", reason, timeoutBeforeNextAttempt.toSeconds());
-
-                        try {
-                            Thread.sleep(timeoutBeforeNextAttempt.toMillis());
-                            connect();
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-                })
-                .join();
-    }
-
 
     private void registerDevices() {
         Specs.getAllSensors(webClient).blockOptional()
