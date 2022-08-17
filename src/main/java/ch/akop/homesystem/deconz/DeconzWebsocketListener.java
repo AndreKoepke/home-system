@@ -1,9 +1,10 @@
 package ch.akop.homesystem.deconz;
 
 import ch.akop.homesystem.deconz.websocket.WebSocketUpdate;
-import ch.akop.homesystem.util.SleepUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -23,7 +24,7 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DeconzWebsocketService implements WebSocket.Listener {
+public class DeconzWebsocketListener implements WebSocket.Listener {
 
     private final DeconzConfig deconzConfig;
     private final DeconzConnector deconzConnector;
@@ -32,19 +33,16 @@ public class DeconzWebsocketService implements WebSocket.Listener {
     private LocalDateTime lastContact = LocalDateTime.MIN;
     private StringBuilder messageBuilder = new StringBuilder();
     private CompletableFuture<?> messageCompleteFuture = new CompletableFuture<>();
-    private WebSocket webSocket;
+    private Disposable timeoutHandler = Disposable.empty();
 
 
     @PostConstruct
     public void setupWebSocketListener() {
-
         var wsUrl = URI.create("ws://%s:%d/ws".formatted(deconzConfig.getHost(), deconzConfig.getWebsocketPort()));
 
-        getWebSocketCompletableFuture(wsUrl, this)
-                .exceptionallyCompose(throwable -> {
-                    SleepUtil.sleep(Duration.ofSeconds(30));
-                    return getWebSocketCompletableFuture(wsUrl, this);
-                })
+        Observable.fromFuture(getWebSocketCompletableFuture(wsUrl, this))
+                .retryUntil(() -> Thread.currentThread().isInterrupted())
+                .subscribe();
     }
 
     private static CompletableFuture<WebSocket> getWebSocketCompletableFuture(URI wsUrl, WebSocket.Listener listener) {
@@ -57,13 +55,13 @@ public class DeconzWebsocketService implements WebSocket.Listener {
     @Override
     public void onOpen(WebSocket webSocket) {
         log.info("WS-Connection is established.");
-        WebSocket.Listener.super.onOpen(webSocket);
-
         lastContact = LocalDateTime.now();
-        this.webSocket = webSocket;
+        webSocket.request(1);
 
-        Observable.interval(30, 30, TimeUnit.SECONDS)
-                .subscribe()
+        timeoutHandler = Observable.interval(30, 30, TimeUnit.SECONDS)
+                .map(aLong -> webSocket)
+                .doOnNext(this::checkTimeout)
+                .subscribe();
     }
 
     @Override
@@ -84,6 +82,28 @@ public class DeconzWebsocketService implements WebSocket.Listener {
         return messageCompleteFuture;
     }
 
+    @Override
+    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+        log.error("WS-Connection closed, because of '{}'", reason);
+        timeoutHandler.dispose();
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletionStage<?> onPing(WebSocket webSocket, ByteBuffer message) {
+        webSocket.request(1);
+        webSocket.sendPing(message);
+        lastContact = LocalDateTime.now();
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletionStage<?> onPong(WebSocket webSocket, ByteBuffer message) {
+        webSocket.request(1);
+        lastContact = LocalDateTime.now();
+        return CompletableFuture.completedFuture(null);
+    }
+
     private void handleCompleteMessage(String message) {
         try {
             var parsed = objectMapper.readValue(message, WebSocketUpdate.class);
@@ -98,14 +118,17 @@ public class DeconzWebsocketService implements WebSocket.Listener {
         log.error("Error on WS-Connection", error);
     }
 
-    private void checkTimeout() {
+    private void checkTimeout(WebSocket webSocket) {
         var lastContactSinceSeconds = Duration.between(lastContact, LocalDateTime.now()).toSeconds();
 
         if (lastContactSinceSeconds > 60) {
-            log.error("websocket-timeout", new TimeoutException("No websocket-contact since 60s. Timeout."));
+            timeoutHandler.dispose();
+            log.error("WS-Connection has no longer contact", new TimeoutException("No websocket-contact since 60s. Timeout."));
+            webSocket.sendClose(WebSocketCloseStatus.ABNORMAL_CLOSURE.code(), "Timeouted").join();
+            webSocket.abort();
         } else if (lastContactSinceSeconds > 30) {
             log.warn("No websocket-contact since 30s");
-            this.webSocket.sendPing(ByteBuffer.wrap(new byte[]{1, 2, 3})));
+            webSocket.sendPing(ByteBuffer.wrap(new byte[]{1, 2, 3}));
         }
     }
 }
