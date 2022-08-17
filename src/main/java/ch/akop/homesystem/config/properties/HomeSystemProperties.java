@@ -1,5 +1,6 @@
 package ch.akop.homesystem.config.properties;
 
+import ch.akop.homesystem.models.CompassDirection;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.Value;
@@ -26,6 +27,7 @@ public class HomeSystemProperties {
     boolean sendMessageWhenTurnLightsOff;
     @NonNull List<FanControlConfig> fans;
     @NonNull List<PowerMeterConfigs> powerMeters;
+    @NonNull List<RollerShutter> rollerShutters;
 
     @Value
     @ConstructorBinding
@@ -74,11 +76,21 @@ public class HomeSystemProperties {
     @ToString(onlyExplicitlyIncluded = true)
     public static class User {
 
-        @ToString.Include String name;
+        @ToString.Include
+        String name;
 
         String telegramId;
         String deviceIp;
         boolean dev;
+    }
+
+    @Value
+    @ConstructorBinding
+    public static class RollerShutter {
+
+        @NonNull String name;
+        @NonNull CompassDirection compassDirection;
+
     }
 }
 
