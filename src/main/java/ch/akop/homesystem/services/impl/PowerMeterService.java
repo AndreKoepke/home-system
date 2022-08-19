@@ -17,13 +17,12 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class PowerMeterService {
 
-    private static final int FLAT_WITH_VALUE_COUNT = 5;
-
     private final HomeSystemProperties homeSystemProperties;
     private final DeviceService deviceService;
     private final FanService fanService;
     private final MessageService messageService;
-    private final Map<HomeSystemProperties.PowerMeterConfigs, Boolean> configToIsRunningMap;
+    
+    private final Map<HomeSystemProperties.PowerMeterConfigs, Boolean> configToIsRunningMap = new HashMap<>();
 
 
     @PostConstruct
@@ -38,9 +37,10 @@ public class PowerMeterService {
 
         //noinspection ResultOfMethodCallIgnored
         sensor.getCurrent$()
-                .buffer(FLAT_WITH_VALUE_COUNT)
-                .map(values -> values.stream().reduce(0, Integer::sum) * 1d / FLAT_WITH_VALUE_COUNT)
                 .map(current -> current > powerMeterConfig.getIsOnWhenMoreThan())
+                // reduce the re-emits of same values
+                .distinctUntilChanged()
+                // delay, when on-value not changed
                 .switchMap(this::delayIfFalse)
                 .distinctUntilChanged()
                 .subscribe(isNowRunning -> {
@@ -56,7 +56,7 @@ public class PowerMeterService {
 
     private Observable<Boolean> delayIfFalse(Boolean bool) {
         if (bool) {
-            return Observable.just(true).delay(1, TimeUnit.MINUTES);
+            return Observable.just(true).delay(5, TimeUnit.MINUTES);
         } else {
             return Observable.just(false);
         }
