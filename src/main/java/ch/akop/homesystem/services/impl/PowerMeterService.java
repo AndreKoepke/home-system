@@ -42,7 +42,7 @@ public class PowerMeterService {
                 // reduce the re-emits of same values
                 .distinctUntilChanged()
                 // delay, when on-value not changed
-                .switchMap(this::delayIfFalse)
+                .delay(1, TimeUnit.MINUTES)
                 .distinctUntilChanged()
                 .subscribe(isNowRunning -> {
                     var wasLastTimeRunning = configToIsRunningMap.getOrDefault(powerMeterConfig, false);
@@ -53,14 +53,6 @@ public class PowerMeterService {
 
                     configToIsRunningMap.put(powerMeterConfig, isNowRunning);
                 });
-    }
-
-    private Observable<Boolean> delayIfFalse(Boolean bool) {
-        if (bool) {
-            return Observable.just(true).delay(5, TimeUnit.MINUTES);
-        } else {
-            return Observable.just(false);
-        }
     }
 
     private void stateSwitched(HomeSystemProperties.PowerMeterConfigs powerMeterConfig, boolean isRunning) {
