@@ -42,7 +42,7 @@ public class PowerMeterService {
                 // reduce the re-emits of same values
                 .distinctUntilChanged()
                 // delay, when on-value not changed
-                .delay(1, TimeUnit.MINUTES)
+                .debounce(1, TimeUnit.MINUTES)
                 .distinctUntilChanged()
                 .subscribe(isNowRunning -> {
                     var wasLastTimeRunning = configToIsRunningMap.getOrDefault(powerMeterConfig, false);
