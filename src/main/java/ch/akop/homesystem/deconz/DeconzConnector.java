@@ -252,13 +252,13 @@ public class DeconzConnector {
         }
 
         var rollerShutter = new RollerShutter(
-                lift -> Specs.setState(id, new State().setLift(lift), webClient).subscribe(),
+                lift -> Specs.setState(id, new State().setLift(lift).setTilt(0), webClient).subscribe(),
                 tilt -> Specs.setState(id, new State().setTilt(tilt), webClient).subscribe(),
                 () -> Specs.setState(id, new State().setStop(true), webClient).subscribe()
         );
 
-        rollerShutter.setLift(light.getState().getLift());
-        rollerShutter.setTilt(light.getState().getTilt());
+        rollerShutter.setCurrentLift(light.getState().getLift());
+        rollerShutter.setCurrentTilt(light.getState().getTilt());
 
         return Optional.of(rollerShutter);
     }
@@ -365,8 +365,8 @@ public class DeconzConnector {
     private void updateActor(String actorId, State state) {
         if (state.getTilt() != null || state.getLift() != null) {
             var rollerShutter = deviceService.getDeviceById(actorId, RollerShutter.class);
-            rollerShutter.setLift(state.getLift());
-            rollerShutter.setTilt(state.getTilt());
+            rollerShutter.setCurrentLift(state.getLift());
+            rollerShutter.setCurrentTilt(state.getTilt());
         } else {
             deviceService.getDeviceById(actorId, SimpleLight.class).updateState(state.getOn());
         }
