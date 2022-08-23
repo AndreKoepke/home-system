@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 
 import static ch.akop.homesystem.states.NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON;
-import static ch.akop.weathercloud.light.LightUnit.WATT_PER_SQUARE_METER;
+import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 
 @Service
 @RequiredArgsConstructor
@@ -39,8 +39,8 @@ public class SunriseReactor extends Activatable {
 
     private void turnLightsOffWhenItIsGettingLight(Weather weather) {
         if (previousWeather == null
-                || previousWeather.getLight().isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER)
-                || weather.getLight().isSmallerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER)) {
+                || previousWeather.getLight().isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)
+                || weather.getLight().isSmallerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)) {
             return;
         }
 

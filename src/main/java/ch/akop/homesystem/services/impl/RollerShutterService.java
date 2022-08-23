@@ -4,13 +4,13 @@ import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.WeatherService;
-import ch.akop.weathercloud.light.LightUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.math.BigDecimal;
 import java.util.NoSuchElementException;
+
+import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 
 @Service
 @RequiredArgsConstructor
@@ -29,16 +29,21 @@ public class RollerShutterService {
 
                     weatherService.getWeather()
                             .subscribe(weather -> {
-                                var isRollerShutterOpen = rollerShutter.getLift() > 50 || rollerShutter.getTilt() > 50;
+                                var isRollerShutterOpen = rollerShutter.getCurrentLift() > 50 || rollerShutter.getCurrentTilt() > 50;
+                                // TODO tbd
                                 var isRollerShutterHeadingToSun = true;
-                                
-                                if (isRollerShutterOpen
-                                        && isRollerShutterHeadingToSun
-                                        && weather.getLight().isBiggerThan(BigDecimal.valueOf(100), LightUnit.WATT_PER_SQUARE_METER)) {
-                                    // close it
-                                    rollerShutter.setLift(0);
-                                    rollerShutter.setTilt(30);
-                                } else if (isRollerShutterOpen && weather.getLight().isSmallerThan(BigDecimal.valueOf(50), LightUnit.WATT_PER_SQUARE_METER)) {
+
+                                if (isRollerShutterOpen) {
+                                    // we want to close it when it's getting very bright
+                                    // or when the nights start
+
+                                    if (isRollerShutterHeadingToSun && weather.getLight().isBiggerThan(250, KILO_LUX)) {
+                                        rollerShutter.setLiftAndThenTilt(0, 30);
+                                    } else if (weather.getLight().isSmallerThan(20, KILO_LUX)) {
+                                        rollerShutter.setLiftAndThenTilt(0, 20);
+                                    }
+                                } else {
+                                    // we want to open it, when it is not so bright anymore
 
                                 }
 
