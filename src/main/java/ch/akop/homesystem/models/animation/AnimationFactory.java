@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +40,7 @@ public class AnimationFactory {
                 .map(config -> config.toAnimationStep(config.getLights() == null ? new HashSet<>() : config.getLights().getNames().stream()
                         .map(String::toLowerCase)
                         .map(lightsByName::get)
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toSet())))
                 .toList());
 
