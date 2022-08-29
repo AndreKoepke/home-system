@@ -16,12 +16,20 @@ import java.util.List;
 @ConfigurationProperties(prefix = "home-automation.special")
 public class HomeSystemProperties {
 
+    @NonNull Double latitude;
+    @NonNull Double longitude;
+
     @NonNull List<OffButton> centralOffSwitches;
-    @Nullable String nightRunSceneName;
-    @Nullable GoodNightButton goodNightButton;
-    @Nullable String nightSceneName;
-    @Nullable String nearestWeatherCloudStation;
-    @Nullable String sunsetSceneName;
+    @Nullable
+    String nightRunSceneName;
+    @Nullable
+    GoodNightButton goodNightButton;
+    @Nullable
+    String nightSceneName;
+    @Nullable
+    String nearestWeatherCloudStation;
+    @Nullable
+    String sunsetSceneName;
     @NonNull List<User> users;
     @NonNull List<MotionSensorConfig> motionSensors;
     boolean sendMessageWhenTurnLightsOff;
@@ -49,9 +57,12 @@ public class HomeSystemProperties {
     public static class FanControlConfig {
         @NonNull List<OffButton> buttons;
         @NonNull String fan;
-        @Nullable String turnOffWhenLightTurnedOff;
-        @Nullable String increaseTimeoutForMotionSensor;
-        @Nullable String increaseMotionSensorTimeout;
+        @Nullable
+        String turnOffWhenLightTurnedOff;
+        @Nullable
+        String increaseTimeoutForMotionSensor;
+        @Nullable
+        String increaseMotionSensorTimeout;
     }
 
     @Value
@@ -59,9 +70,12 @@ public class HomeSystemProperties {
     public static class PowerMeterConfigs {
         @NonNull String sensorName;
         @NonNull Integer isOnWhenMoreThan;
-        @Nullable String messageWhenSwitchOn;
-        @Nullable String messageWhenSwitchOff;
-        @Nullable String linkToFan;
+        @Nullable
+        String messageWhenSwitchOn;
+        @Nullable
+        String messageWhenSwitchOff;
+        @Nullable
+        String linkToFan;
     }
 
     @Value
@@ -87,10 +101,8 @@ public class HomeSystemProperties {
     @Value
     @ConstructorBinding
     public static class RollerShutter {
-
         @NonNull String name;
         @NonNull CompassDirection compassDirection;
-
     }
 }
 
