@@ -5,10 +5,14 @@ import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
+import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
@@ -22,10 +26,13 @@ public class RollerShutterService {
     private final DeviceService deviceService;
     private final WeatherService weatherService;
 
+    private List<Disposable> disposables = new ArrayList<>();
+
     @PostConstruct
     private void init() {
-        homeSystemProperties.getRollerShutters()
-                .forEach(rollerShutterConfig -> weatherService.getCurrentAndPreviousWeather()
+        disposables = homeSystemProperties.getRollerShutters()
+                .stream()
+                .map(rollerShutterConfig -> weatherService.getCurrentAndPreviousWeather()
                         .subscribe(weather -> {
                             var currentComparedToPrevious = weather.current().getLight().compareTo(weather.previous().getLight().getAs(KILO_LUX));
                             if (currentComparedToPrevious < 0) {
@@ -33,7 +40,13 @@ public class RollerShutterService {
                             } else if (currentComparedToPrevious > 0) {
                                 itsGettingBrighterOutside(rollerShutterConfig, weather.current());
                             }
-                        }));
+                        }))
+                .toList();
+    }
+
+    @PreDestroy
+    private void tearDown() {
+        disposables.forEach(Disposable::dispose);
     }
 
 
