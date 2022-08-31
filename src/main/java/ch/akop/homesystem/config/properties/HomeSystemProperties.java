@@ -9,7 +9,11 @@ import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.lang.Nullable;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
+
+import static ch.akop.homesystem.util.TimeUtil.getLocalDateTimeForTodayOrTomorrow;
 
 @Value
 @ConstructorBinding
@@ -18,7 +22,6 @@ public class HomeSystemProperties {
 
     @NonNull Double latitude;
     @NonNull Double longitude;
-
     @NonNull List<OffButton> centralOffSwitches;
     @Nullable
     String nightRunSceneName;
@@ -35,7 +38,7 @@ public class HomeSystemProperties {
     boolean sendMessageWhenTurnLightsOff;
     @NonNull List<FanControlConfig> fans;
     @NonNull List<PowerMeterConfigs> powerMeters;
-    @NonNull List<RollerShutter> rollerShutters;
+    @NonNull List<RollerShutterConfig> rollerShutters;
 
     @Value
     @ConstructorBinding
@@ -100,9 +103,30 @@ public class HomeSystemProperties {
 
     @Value
     @ConstructorBinding
-    public static class RollerShutter {
+    public static class RollerShutterConfig {
         @NonNull String name;
-        @NonNull CompassDirection compassDirection;
+        @Nullable
+        CompassDirection compassDirection;
+        @Nullable
+        LocalTime closeAt;
+        @Nullable
+        LocalTime openAt;
+
+        public LocalDateTime actionRequiredAt() {
+
+            if (closeAt == null && openAt == null) {
+                throw new IllegalStateException("The config for '%s' has no clock-data.".formatted(name));
+            }
+
+            var closeActionRequiredAt = getLocalDateTimeForTodayOrTomorrow(closeAt);
+            var openActionRequiredAt = getLocalDateTimeForTodayOrTomorrow(openAt);
+
+            if (closeActionRequiredAt.isBefore(openActionRequiredAt)) {
+                return closeActionRequiredAt;
+            }
+
+            return openActionRequiredAt;
+        }
     }
 }
 
