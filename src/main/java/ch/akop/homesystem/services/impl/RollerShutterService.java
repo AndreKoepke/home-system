@@ -4,16 +4,20 @@ import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.WeatherService;
+import ch.akop.homesystem.util.TimeUtil;
 import ch.akop.weathercloud.Weather;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
@@ -28,10 +32,12 @@ public class RollerShutterService {
 
     private List<Disposable> disposables = new ArrayList<>();
 
+    private final Map<LocalTime, List<HomeSystemProperties.RollerShutterConfig>> timeToConfigs = new HashMap<>();
+
     @PostConstruct
-    private void init() {
-        disposables = homeSystemProperties.getRollerShutters()
-                .stream()
+    private void initWeatherBasedRollerShutters() {
+        homeSystemProperties.getRollerShutters().stream()
+                .filter(config -> config.getCompassDirection() != null)
                 .map(rollerShutterConfig -> weatherService.getCurrentAndPreviousWeather()
                         .subscribe(weather -> {
                             var currentComparedToPrevious = weather.current().getLight().compareTo(weather.previous().getLight().getAs(KILO_LUX));
@@ -41,7 +47,55 @@ public class RollerShutterService {
                                 itsGettingBrighterOutside(rollerShutterConfig, weather.current());
                             }
                         }))
-                .toList();
+                .forEach(disposables::add);
+    }
+
+    @PostConstruct
+    private void initTimer() {
+        homeSystemProperties.getRollerShutters().stream()
+                .filter(config -> config.getCloseAt() != null || config.getOpenAt() != null)
+                .forEach(config -> {
+                    Optional.ofNullable(config.getOpenAt())
+                            .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new ArrayList<>()))
+                            .ifPresent(list -> list.add(config));
+
+                    Optional.ofNullable(config.getCloseAt())
+                            .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new ArrayList<>()))
+                            .ifPresent(list -> list.add(config));
+                });
+
+        if (timeToConfigs.isEmpty()) {
+            // no defined times = nop
+            return;
+        }
+
+        disposables.add(Observable.defer(this::timerForNextEvent)
+                .repeat()
+                .subscribe());
+    }
+
+    private Observable<LocalTime> timerForNextEvent() {
+        var nextExecutionTime = getNextExecutionTime();
+        var nextEvent = Duration.between(LocalDateTime.now(), nextExecutionTime);
+
+        return Observable.timer(nextEvent.toSeconds(), TimeUnit.SECONDS)
+                .map(ignored -> nextExecutionTime.toLocalTime())
+                .doOnNext(this::handleTime);
+    }
+
+    private void handleTime(LocalTime time) {
+        // check open and close at
+        // call it, when it is closer as one second (both?)
+        // TODO
+    }
+
+    private LocalDateTime getNextExecutionTime() {
+        return timeToConfigs
+                .keySet()
+                .stream()
+                .map(TimeUtil::getLocalDateTimeForTodayOrTomorrow)
+                .min(LocalDateTime::compareTo)
+                .orElseThrow();
     }
 
     @PreDestroy
@@ -50,7 +104,7 @@ public class RollerShutterService {
     }
 
 
-    private void itsGettingBrighterOutside(HomeSystemProperties.RollerShutter config, Weather currentWeather) {
+    private void itsGettingBrighterOutside(HomeSystemProperties.RollerShutterConfig config, Weather currentWeather) {
         var rollerShutter = getRollerShutter(config);
         var isOpen = rollerShutter.getCurrentLift() > 50 || rollerShutter.getCurrentTilt() > 50;
 
@@ -62,7 +116,7 @@ public class RollerShutterService {
         }
     }
 
-    private void itsGettingDarkerOutside(HomeSystemProperties.RollerShutter config, Weather currentWeather) {
+    private void itsGettingDarkerOutside(HomeSystemProperties.RollerShutterConfig config, Weather currentWeather) {
         var rollerShutter = getRollerShutter(config);
         var isOpen = rollerShutter.getCurrentLift() > 50 || rollerShutter.getCurrentTilt() > 50;
 
@@ -73,7 +127,7 @@ public class RollerShutterService {
         }
     }
 
-    private RollerShutter getRollerShutter(HomeSystemProperties.RollerShutter config) {
+    private RollerShutter getRollerShutter(HomeSystemProperties.RollerShutterConfig config) {
         return deviceService.findDeviceByName(config.getName(), RollerShutter.class)
                 .orElseThrow(() -> new NoSuchElementException("No rollerShutter named '%s' was found in deviceList.".formatted(config.getName())));
     }
