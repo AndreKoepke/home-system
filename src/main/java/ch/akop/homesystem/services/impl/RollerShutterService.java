@@ -84,9 +84,15 @@ public class RollerShutterService {
     }
 
     private void handleTime(LocalTime time) {
-        // check open and close at
-        // call it, when it is closer as one second (both?)
-        // TODO
+        timeToConfigs.get(time)
+                .forEach(config -> {
+                    var rollerShutter = getRollerShutter(config);
+                    if (config.getCloseAt() != null && config.getCloseAt().equals(time)) {
+                        rollerShutter.setLiftAndThenTilt(0, 0);
+                    } else {
+                        rollerShutter.setLiftAndThenTilt(100, 100);
+                    }
+                });
     }
 
     private LocalDateTime getNextExecutionTime() {
