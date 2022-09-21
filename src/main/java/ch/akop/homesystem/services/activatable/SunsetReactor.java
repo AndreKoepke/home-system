@@ -46,7 +46,7 @@ public class SunsetReactor extends Activatable {
         }
 
         if (!userService.isAnyoneAtHome()) {
-            messageService.sendMessageToMainChannel("Es wird dunkel ... aber weil kein Zuhause ist, mache mal nichts.");
+            messageService.sendMessageToMainChannel("Es wird dunkel ... aber weil keiner Zuhause ist, mache ich mal nichts.");
             return;
         }
 
