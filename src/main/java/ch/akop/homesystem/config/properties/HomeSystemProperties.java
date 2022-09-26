@@ -9,11 +9,8 @@ import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.lang.Nullable;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-
-import static ch.akop.homesystem.util.TimeUtil.getLocalDateTimeForTodayOrTomorrow;
 
 @Value
 @ConstructorBinding
@@ -23,21 +20,17 @@ public class HomeSystemProperties {
     @NonNull Double latitude;
     @NonNull Double longitude;
     @NonNull List<OffButton> centralOffSwitches;
-    @Nullable
-    String nightRunSceneName;
-    @Nullable
-    GoodNightButton goodNightButton;
-    @Nullable
-    String nightSceneName;
-    @Nullable
-    String nearestWeatherCloudStation;
-    @Nullable
-    String sunsetSceneName;
+    @Nullable String nightRunSceneName;
+    @Nullable GoodNightButton goodNightButton;
+    @Nullable String nightSceneName;
+    @Nullable String nearestWeatherCloudStation;
+    @Nullable String sunsetSceneName;
     @NonNull List<User> users;
     @NonNull List<MotionSensorConfig> motionSensors;
     boolean sendMessageWhenTurnLightsOff;
     @NonNull List<FanControlConfig> fans;
     @NonNull List<PowerMeterConfigs> powerMeters;
+
     @NonNull List<RollerShutterConfig> rollerShutters;
 
     @Value
@@ -60,12 +53,9 @@ public class HomeSystemProperties {
     public static class FanControlConfig {
         @NonNull List<OffButton> buttons;
         @NonNull String fan;
-        @Nullable
-        String turnOffWhenLightTurnedOff;
-        @Nullable
-        String increaseTimeoutForMotionSensor;
-        @Nullable
-        String increaseMotionSensorTimeout;
+        @Nullable String turnOffWhenLightTurnedOff;
+        @Nullable String increaseTimeoutForMotionSensor;
+        @Nullable String increaseMotionSensorTimeout;
     }
 
     @Value
@@ -73,12 +63,9 @@ public class HomeSystemProperties {
     public static class PowerMeterConfigs {
         @NonNull String sensorName;
         @NonNull Integer isOnWhenMoreThan;
-        @Nullable
-        String messageWhenSwitchOn;
-        @Nullable
-        String messageWhenSwitchOff;
-        @Nullable
-        String linkToFan;
+        @Nullable String messageWhenSwitchOn;
+        @Nullable String messageWhenSwitchOff;
+        @Nullable String linkToFan;
     }
 
     @Value
@@ -105,28 +92,9 @@ public class HomeSystemProperties {
     @ConstructorBinding
     public static class RollerShutterConfig {
         @NonNull String name;
-        @Nullable
-        CompassDirection compassDirection;
-        @Nullable
-        LocalTime closeAt;
-        @Nullable
-        LocalTime openAt;
-
-        public LocalDateTime actionRequiredAt() {
-
-            if (closeAt == null && openAt == null) {
-                throw new IllegalStateException("The config for '%s' has no clock-data.".formatted(name));
-            }
-
-            var closeActionRequiredAt = getLocalDateTimeForTodayOrTomorrow(closeAt);
-            var openActionRequiredAt = getLocalDateTimeForTodayOrTomorrow(openAt);
-
-            if (closeActionRequiredAt.isBefore(openActionRequiredAt)) {
-                return closeActionRequiredAt;
-            }
-
-            return openActionRequiredAt;
-        }
+        @Nullable CompassDirection compassDirection;
+        @Nullable LocalTime closeAt;
+        @Nullable LocalTime openAt;
     }
 }
 

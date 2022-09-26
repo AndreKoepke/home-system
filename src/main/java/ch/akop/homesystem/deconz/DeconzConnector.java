@@ -20,14 +20,21 @@ import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.handler.logging.LogLevel;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.transport.logging.AdvancedByteBufFormat;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
@@ -60,11 +67,22 @@ public class DeconzConnector {
 
     @PostConstruct
     public void initialSetup() {
+        var strategies = ExchangeStrategies
+                .builder()
+                .codecs(configurer -> {
+                    configurer.defaultCodecs().jackson2JsonEncoder(new Jackson2JsonEncoder(objectMapper, MediaType.APPLICATION_JSON));
+                    configurer.defaultCodecs().jackson2JsonDecoder(new Jackson2JsonDecoder(objectMapper, MediaType.APPLICATION_JSON));
+                }).build();
+
         //noinspection HttpUrlsUsage
         webClient = WebClient.builder()
                 .baseUrl("http://%s:%d/api/%s/".formatted(deconzConfig.getHost(),
                         deconzConfig.getPort(),
                         deconzConfig.getApiKey()))
+                .exchangeStrategies(strategies)
+                // full log available in DEBUG
+                .clientConnector(new ReactorClientHttpConnector(reactor.netty.http.client.HttpClient.create()
+                        .wiretap(getClass().getCanonicalName(), LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL)))
                 .build();
 
         registerDevices();
@@ -252,7 +270,7 @@ public class DeconzConnector {
         }
 
         var rollerShutter = new RollerShutter(
-                lift -> Specs.setState(id, new State().setLift(lift).setTilt(0), webClient).subscribe(),
+                lift -> Specs.setState(id, new State().setLift(lift), webClient).subscribe(),
                 tilt -> Specs.setState(id, new State().setTilt(tilt), webClient).subscribe(),
                 () -> Specs.setState(id, new State().setStop(true), webClient).subscribe()
         );
