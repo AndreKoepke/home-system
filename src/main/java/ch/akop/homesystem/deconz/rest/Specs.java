@@ -38,7 +38,8 @@ public class Specs {
     public static Mono<ResponseEntity<Void>> setState(String id,
                                                       State updateLightParameters,
                                                       WebClient client) {
-        return client.put().uri("/lights/%s/state".formatted(id))
+        return client.put()
+                .uri("/lights/%s/state".formatted(id))
                 .body(Mono.just(updateLightParameters), State.class)
                 .retrieve()
                 .toBodilessEntity()
@@ -64,6 +65,4 @@ public class Specs {
                     return false;
                 });
     }
-
-
 }

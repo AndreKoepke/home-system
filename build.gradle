@@ -48,7 +48,8 @@ dependencies {
     implementation 'javax.validation:validation-api:2.0.1.Final'
     implementation 'com.github.pengrad:java-telegram-bot-api:6.2.0'
     implementation 'ch.obermuhlner:big-math:2.3.0'
-    implementation 'ch.akop:weathercloud:0.0.8'
+    implementation 'ch.akop:weathercloud:0.1.0'
+    implementation 'net.e175.klaus:solarpositioning:0.0.9'
 
     // rxJava
     implementation 'io.reactivex.rxjava3:rxjava:3.1.5'

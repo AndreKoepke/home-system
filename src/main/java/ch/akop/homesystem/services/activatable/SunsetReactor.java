@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
-import static ch.akop.weathercloud.light.LightUnit.WATT_PER_SQUARE_METER;
+import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 
 @Service
 @RequiredArgsConstructor
@@ -40,8 +40,8 @@ public class SunsetReactor extends Activatable {
     private void turnLightsOnWhenItIsGettingDark(Weather weather) {
 
         if (previousWeather == null
-                || previousWeather.getLight().isSmallerThan(NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER)
-                || weather.getLight().isBiggerThan(NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER)) {
+                || previousWeather.getLight().isSmallerThan(NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)
+                || weather.getLight().isBiggerThan(NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)) {
             return;
         }
 

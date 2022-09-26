@@ -20,11 +20,18 @@ import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.handler.logging.LogLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.transport.logging.AdvancedByteBufFormat;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
@@ -46,15 +53,24 @@ public class DeconzConnector {
 
     private WebClient webClient;
 
-    private int tryConnectionCount = 0;
-
     @PostConstruct
     public void initialSetup() {
+        var strategies = ExchangeStrategies
+                .builder()
+                .codecs(configurer -> {
+                    configurer.defaultCodecs().jackson2JsonEncoder(new Jackson2JsonEncoder(objectMapper, MediaType.APPLICATION_JSON));
+                    configurer.defaultCodecs().jackson2JsonDecoder(new Jackson2JsonDecoder(objectMapper, MediaType.APPLICATION_JSON));
+                }).build();
+
         //noinspection HttpUrlsUsage
         webClient = WebClient.builder()
                 .baseUrl("http://%s:%d/api/%s/".formatted(deconzConfig.getHost(),
                         deconzConfig.getPort(),
                         deconzConfig.getApiKey()))
+                .exchangeStrategies(strategies)
+                // full log available in DEBUG
+                .clientConnector(new ReactorClientHttpConnector(reactor.netty.http.client.HttpClient.create()
+                        .wiretap(getClass().getCanonicalName(), LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL)))
                 .build();
 
         registerDevices();
@@ -165,8 +181,8 @@ public class DeconzConnector {
                 () -> Specs.setState(id, new State().setStop(true), webClient).subscribe()
         );
 
-        rollerShutter.setLift(light.getState().getLift());
-        rollerShutter.setTilt(light.getState().getTilt());
+        rollerShutter.setCurrentLift(light.getState().getLift());
+        rollerShutter.setCurrentTilt(light.getState().getTilt());
 
         return Optional.of(rollerShutter);
     }
@@ -273,8 +289,8 @@ public class DeconzConnector {
     private void updateActor(String actorId, State state) {
         if (state.getTilt() != null || state.getLift() != null) {
             var rollerShutter = deviceService.getDeviceById(actorId, RollerShutter.class);
-            rollerShutter.setLift(state.getLift());
-            rollerShutter.setTilt(state.getTilt());
+            rollerShutter.setCurrentLift(state.getLift());
+            rollerShutter.setCurrentTilt(state.getTilt());
         } else {
             deviceService.getDeviceById(actorId, SimpleLight.class).updateState(state.getOn());
         }

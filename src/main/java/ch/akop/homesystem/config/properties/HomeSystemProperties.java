@@ -1,5 +1,6 @@
 package ch.akop.homesystem.config.properties;
 
+import ch.akop.homesystem.models.CompassDirection;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.Value;
@@ -8,6 +9,7 @@ import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.lang.Nullable;
 
 import java.time.Duration;
+import java.time.LocalTime;
 import java.util.List;
 
 @Value
@@ -15,6 +17,8 @@ import java.util.List;
 @ConfigurationProperties(prefix = "home-automation.special")
 public class HomeSystemProperties {
 
+    @NonNull Double latitude;
+    @NonNull Double longitude;
     @NonNull List<OffButton> centralOffSwitches;
     @Nullable String nightRunSceneName;
     @Nullable GoodNightButton goodNightButton;
@@ -26,6 +30,8 @@ public class HomeSystemProperties {
     boolean sendMessageWhenTurnLightsOff;
     @NonNull List<FanControlConfig> fans;
     @NonNull List<PowerMeterConfigs> powerMeters;
+
+    @NonNull List<RollerShutterConfig> rollerShutters;
 
     @Value
     @ConstructorBinding
@@ -74,11 +80,21 @@ public class HomeSystemProperties {
     @ToString(onlyExplicitlyIncluded = true)
     public static class User {
 
-        @ToString.Include String name;
+        @ToString.Include
+        String name;
 
         String telegramId;
         String deviceIp;
         boolean dev;
+    }
+
+    @Value
+    @ConstructorBinding
+    public static class RollerShutterConfig {
+        @NonNull String name;
+        @Nullable CompassDirection compassDirection;
+        @Nullable LocalTime closeAt;
+        @Nullable LocalTime openAt;
     }
 }
 

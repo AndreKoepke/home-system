@@ -27,7 +27,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Map;
 
-import static ch.akop.weathercloud.light.LightUnit.WATT_PER_SQUARE_METER;
+import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -68,7 +68,7 @@ public class NormalState extends Activatable implements State {
     public void listenToTheWeather() {
         weatherService.getWeather()
                 .map(Weather::getLight)
-                .map(light -> light.isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, WATT_PER_SQUARE_METER))
+                .map(light -> light.isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX))
                 .subscribe(canStartMainDoorAnimation::setForever);
     }
 
