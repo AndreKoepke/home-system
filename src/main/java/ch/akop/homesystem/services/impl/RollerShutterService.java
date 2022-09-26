@@ -13,9 +13,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -30,8 +28,7 @@ public class RollerShutterService {
     private final DeviceService deviceService;
     private final WeatherService weatherService;
 
-    private List<Disposable> disposables = new ArrayList<>();
-
+    private final List<Disposable> disposables = new ArrayList<>();
     private final Map<LocalTime, List<HomeSystemProperties.RollerShutterConfig>> timeToConfigs = new HashMap<>();
 
     @PostConstruct
@@ -75,8 +72,8 @@ public class RollerShutterService {
     }
 
     private Observable<LocalTime> timerForNextEvent() {
-        var nextExecutionTime = getNextExecutionTime();
-        var nextEvent = Duration.between(LocalDateTime.now(), nextExecutionTime);
+        var nextExecutionTime = getNextExecutionTime().atZone(ZoneId.systemDefault());
+        var nextEvent = Duration.between(ZonedDateTime.now(), nextExecutionTime);
 
         return Observable.timer(nextEvent.toSeconds(), TimeUnit.SECONDS)
                 .map(ignored -> nextExecutionTime.toLocalTime())
