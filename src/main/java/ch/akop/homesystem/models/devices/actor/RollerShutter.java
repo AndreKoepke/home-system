@@ -6,12 +6,14 @@ import io.reactivex.rxjava3.subjects.Subject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
+@SuppressWarnings("UnusedReturnValue")
+@Slf4j
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
@@ -57,20 +59,14 @@ public class RollerShutter extends Device<RollerShutter> {
      *
      * @param lift new lift value
      * @param tilt new tilt value
-     * @return CompletitionStage, which will be finished after both values are successfully set.
      */
-    public CompletionStage<Void> setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
+    public void setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
         functionToSetLift.accept(lift);
 
-        return liftWasChanged
+        //noinspection ResultOfMethodCallIgnored
+        liftWasChanged
                 .filter(lift::equals)
-                .doOnNext(ignored -> functionToSetTilt.accept(tilt))
-                .switchMap(ignored -> tiltWasChanged)
-                .filter(tilt::equals)
-                .singleElement()
-                .toCompletionStage()
-                .thenAccept(ignored -> {
-                });
+                .take(1)
+                .subscribe(ignored -> functionToSetTilt.accept(tilt));
     }
-
 }
