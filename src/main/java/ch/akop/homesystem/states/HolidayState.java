@@ -3,6 +3,7 @@ package ch.akop.homesystem.states;
 
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
+import ch.akop.homesystem.services.UserService;
 import ch.akop.homesystem.services.activatable.Activatable;
 import ch.akop.homesystem.services.activatable.SunsetReactor;
 import ch.akop.homesystem.services.impl.StateServiceImpl;
@@ -27,6 +28,7 @@ public class HolidayState extends Activatable implements State {
     private final StateServiceImpl stateService;
     private final SunsetReactor sunsetReactor;
     private final DeviceService deviceService;
+    private final UserService userService;
 
 
     @Override
@@ -46,6 +48,11 @@ public class HolidayState extends Activatable implements State {
                         .subscribe(ignore -> this.deviceService.turnAllLightsOff()));
 
         super.disposeWhenClosed(this.sunsetReactor.start());
+        super.disposeWhenClosed(this.userService.getPresenceMap$()
+                .skip(10, TimeUnit.MINUTES)
+                .map(ignored -> userService.isAnyoneAtHome())
+                .filter(anyOneAtHome -> anyOneAtHome)
+                .subscribe(ignore -> this.stateService.switchState(NormalState.class)));
         super.disposeWhenClosed(this.messageService.getMessages()
                 .filter(message -> message.equals("/back"))
                 .subscribe(ignore -> this.stateService.switchState(NormalState.class)));
