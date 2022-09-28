@@ -11,6 +11,7 @@ import org.springframework.lang.Nullable;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 
 @Value
 @ConstructorBinding
@@ -30,8 +31,8 @@ public class HomeSystemProperties {
     boolean sendMessageWhenTurnLightsOff;
     @NonNull List<FanControlConfig> fans;
     @NonNull List<PowerMeterConfigs> powerMeters;
-
     @NonNull List<RollerShutterConfig> rollerShutters;
+    @NonNull Set<String> notLights;
 
     @Value
     @ConstructorBinding

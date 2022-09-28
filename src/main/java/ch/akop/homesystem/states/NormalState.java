@@ -3,7 +3,6 @@ package ch.akop.homesystem.states;
 import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.animation.Animation;
 import ch.akop.homesystem.models.animation.AnimationFactory;
-import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
@@ -136,6 +135,8 @@ public class NormalState extends Activatable implements State {
             animationThread.interrupt();
             // it is possible, that lights can be still on
         }
+
+        deviceService.turnAllLightsOff();
     }
 
     private void startMainDoorOpenAnimation() {
@@ -150,9 +151,7 @@ public class NormalState extends Activatable implements State {
         canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
         createAnimationIfNotExists();
 
-        if (deviceService.getDevicesOfType(SimpleLight.class)
-                .stream()
-                .anyMatch(SimpleLight::isCurrentStateIsOn)) {
+        if (deviceService.isAnyLightOn()) {
             // NOP when any light is on
             return;
         }
