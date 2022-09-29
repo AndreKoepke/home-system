@@ -56,7 +56,6 @@ public class HomeSystemProperties {
         @NonNull String fan;
         @Nullable String turnOffWhenLightTurnedOff;
         @Nullable String increaseTimeoutForMotionSensor;
-        @Nullable String increaseMotionSensorTimeout;
     }
 
     @Value
