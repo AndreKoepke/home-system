@@ -67,6 +67,10 @@ public class WeatherServiceImpl implements WeatherService {
     public Flowable<CurrentAndPreviousWeather> getCurrentAndPreviousWeather() {
         var previousUpdate = new AtomicReference<Weather>();
 
+        weather
+           .take(1)
+           .subscribe(previousUpdate::set);
+
         return weather
                 .filter(weatherUpdate -> previousUpdate.get() != null)
                 .map(weatherUpdate -> new CurrentAndPreviousWeather(weatherUpdate, previousUpdate.get()))
