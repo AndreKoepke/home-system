@@ -1,9 +1,9 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
+import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public class DeviceServiceImpl implements DeviceService {
 
     private final List<Device<?>> devices = new ArrayList<>();
-    private final HomeSystemProperties homeSystemProperties;
+    private final BasicConfigRepository basicConfigRepository;
 
     public <T extends Device<?>> T getDeviceById(final String id, final Class<T> clazz) {
         return this.getDevicesOfType(clazz)
@@ -63,7 +63,7 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     public void turnAllLightsOff() {
         this.getDevicesOfType(SimpleLight.class).stream()
-                .filter(light -> !homeSystemProperties.getNotLights().contains(light.getName()))
+                .filter(light -> !basicConfigRepository.findFirstByOrderByModifiedDesc().getNotLights().contains(light.getName()))
                 .forEach(light -> {
                     if (light instanceof DimmableLight dimmable) {
                         dimmable.setBrightness(0, Duration.of(10, ChronoUnit.SECONDS));
@@ -77,7 +77,7 @@ public class DeviceServiceImpl implements DeviceService {
     public boolean isAnyLightOn() {
         return getDevicesOfType(SimpleLight.class)
                 .stream()
-                .filter(light -> !homeSystemProperties.getNotLights().contains(light.getName()))
+                .filter(light -> !basicConfigRepository.findFirstByOrderByModifiedDesc().getNotLights().contains(light.getName()))
                 .anyMatch(SimpleLight::isCurrentStateIsOn);
     }
 }

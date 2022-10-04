@@ -29,7 +29,7 @@ public class RollerShutterService {
     private final WeatherService weatherService;
 
     private final List<Disposable> disposables = new ArrayList<>();
-    private final Map<LocalTime, List<HomeSystemProperties.RollerShutterConfig>> timeToConfigs = new HashMap<>();
+    private final Map<LocalTime, List<RollerShutterConfig>> timeToConfigs = new HashMap<>();
 
     @PostConstruct
     private void initWeatherBasedRollerShutters() {

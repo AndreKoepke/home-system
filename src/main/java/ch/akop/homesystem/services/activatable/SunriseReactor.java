@@ -1,6 +1,6 @@
 package ch.akop.homesystem.services.activatable;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
+import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
@@ -20,7 +20,7 @@ public class SunriseReactor extends Activatable {
     private final WeatherService weatherService;
     private final DeviceService deviceService;
     private final MessageService messageService;
-    private final HomeSystemProperties homeSystemProperties;
+    private final BasicConfigRepository basicConfigRepository;
 
     private Weather previousWeather;
 
@@ -44,7 +44,7 @@ public class SunriseReactor extends Activatable {
             return;
         }
 
-        if (homeSystemProperties.isSendMessageWhenTurnLightsOff()) {
+        if (basicConfigRepository.findFirstByOrderByModifiedDesc().isSendMessageWhenTurnLightsOff()) {
             messageService.sendMessageToMainChannel("Es wird hell, ich mach mal die Lichter aus.");
         }
         deviceService.turnAllLightsOff();
