@@ -9,5 +9,6 @@ import java.time.LocalDateTime;
 @Repository
 public interface BasicConfigRepository extends JpaRepository<BasicConfig, LocalDateTime> {
 
+    BasicConfig findFirstByOrderByModifiedDesc();
 
 }

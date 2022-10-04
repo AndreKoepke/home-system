@@ -1,11 +1,14 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
+import ch.akop.homesystem.models.animation.Animation;
+import ch.akop.homesystem.models.animation.AnimationFactory;
 import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.models.devices.sensor.CloseContactState;
 import ch.akop.homesystem.models.events.ButtonPressEvent;
+import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
+import ch.akop.homesystem.persistence.repository.config.OffButtonConfigRepository;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.states.Event;
@@ -29,7 +32,8 @@ public class AutomationServiceImpl implements AutomationService {
     private static final int MARCEL_CONSTANT_SECONDS = 30;
 
     private final DeviceService deviceService;
-    private final HomeSystemProperties homeSystemProperties;
+    private final BasicConfigRepository basicConfigRepository;
+    private final OffButtonConfigRepository offButtonConfigRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @SuppressWarnings("rawtypes")
@@ -82,18 +86,18 @@ public class AutomationServiceImpl implements AutomationService {
 
 
     private boolean wasGoodNightButtonPressed(String buttonName, int buttonEvent) {
-        var properties = homeSystemProperties.getGoodNightButton();
-        if (properties == null) {
+        var basicConfig = basicConfigRepository.findFirstByOrderByModifiedDesc();
+        if (basicConfig.getGoodNightButtonName() == null || basicConfig.getGoodNightButtonEvent() == null) {
             return false;
         }
 
-        return buttonName.equals(properties.getName()) && buttonEvent == properties.getButtonEvent();
+        return basicConfig.getGoodNightButtonName().equals(buttonName)
+                && basicConfig.getGoodNightButtonEvent().equals(buttonEvent);
     }
 
     private boolean wasCentralOffPressed(String buttonName, int buttonEvent) {
-        return homeSystemProperties.getCentralOffSwitches().stream()
-                .anyMatch(offButton -> offButton.getName().equals(buttonName)
-                        && offButton.getButtonEvent() == buttonEvent);
+        return offButtonConfigRepository.findAllByNameAndButtonEvent(buttonName, buttonEvent)
+                .findAny().isPresent();
     }
 
 

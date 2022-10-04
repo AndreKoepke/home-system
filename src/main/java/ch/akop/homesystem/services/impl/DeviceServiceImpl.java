@@ -1,9 +1,9 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
+import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.util.SleepUtil;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 public class DeviceServiceImpl implements DeviceService {
 
     private final List<Device<?>> devices = new ArrayList<>();
-    private final HomeSystemProperties homeSystemProperties;
+    private final BasicConfigRepository basicConfigRepository;
 
 
     @Override
@@ -67,7 +67,7 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     public void turnAllLightsOff() {
         this.getDevicesOfType(SimpleLight.class).stream()
-                .filter(light -> !homeSystemProperties.getNotLights().contains(light.getName()))
+                .filter(light -> !basicConfigRepository.findFirstByOrderByModifiedDesc().getNotLights().contains(light.getName()))
                 .forEach(light -> {
                     // see #74, if the commands are cumming to fast, then maybe lights are not correctly off
                     // if this workaround helps, then this should be removed for a rate-limit (see #3)
@@ -85,7 +85,7 @@ public class DeviceServiceImpl implements DeviceService {
     public boolean isAnyLightOn() {
         return getDevicesOfType(SimpleLight.class)
                 .stream()
-                .filter(light -> !homeSystemProperties.getNotLights().contains(light.getName()))
+                .filter(light -> !basicConfigRepository.findFirstByOrderByModifiedDesc().getNotLights().contains(light.getName()))
                 .anyMatch(SimpleLight::isCurrentStateIsOn);
     }
 }
