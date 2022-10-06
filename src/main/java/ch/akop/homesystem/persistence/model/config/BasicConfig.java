@@ -48,4 +48,6 @@ public class BasicConfig {
     @Nullable
     private Integer goodNightButtonEvent;
 
+    @Nullable
+    private String nightRunSceneName;
 }

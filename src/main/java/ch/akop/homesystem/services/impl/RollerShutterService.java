@@ -1,7 +1,8 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.actor.RollerShutter;
+import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
+import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.homesystem.util.TimeUtil;
@@ -25,16 +26,17 @@ import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 @RequiredArgsConstructor
 public class RollerShutterService {
 
-    private final HomeSystemProperties homeSystemProperties;
     private final DeviceService deviceService;
     private final WeatherService weatherService;
+    private final RollerShutterConfigRepository rollerShutterConfigRepository;
 
     private final List<Disposable> disposables = new ArrayList<>();
-    private final Map<LocalTime, List<RollerShutterConfig>> timeToConfigs = new HashMap<>();
+    private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
 
     @PostConstruct
     private void initWeatherBasedRollerShutters() {
-        homeSystemProperties.getRollerShutters().stream()
+        rollerShutterConfigRepository.findAll()
+                .stream()
                 .filter(config -> config.getCompassDirection() != null)
                 .map(rollerShutterConfig -> weatherService.getCurrentAndPreviousWeather()
                         .subscribe(weather -> {
@@ -50,16 +52,16 @@ public class RollerShutterService {
 
     @PostConstruct
     private void initTimer() {
-        homeSystemProperties.getRollerShutters().stream()
+        rollerShutterConfigRepository.findAll().stream()
                 .filter(config -> config.getCloseAt() != null || config.getOpenAt() != null)
                 .forEach(config -> {
                     Optional.ofNullable(config.getOpenAt())
                             .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new ArrayList<>()))
-                            .ifPresent(list -> list.add(config));
+                            .ifPresent(list -> list.add(config.getName()));
 
                     Optional.ofNullable(config.getCloseAt())
                             .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new ArrayList<>()))
-                            .ifPresent(list -> list.add(config));
+                            .ifPresent(list -> list.add(config.getName()));
                 });
 
         if (timeToConfigs.isEmpty()) {
@@ -83,6 +85,9 @@ public class RollerShutterService {
 
     private void handleTime(LocalTime time) {
         timeToConfigs.get(time)
+                .stream()
+                .map(id -> rollerShutterConfigRepository.findById(id)
+                        .orElseThrow(() -> new IllegalStateException("RollerShutterConfig %s is not in database".formatted(id))))
                 .forEach(config -> {
                     var rollerShutter = getRollerShutter(config);
                     if (config.getCloseAt() != null && config.getCloseAt().equals(time)) {
@@ -110,7 +115,7 @@ public class RollerShutterService {
     }
 
 
-    private void itsGettingBrighterOutside(HomeSystemProperties.RollerShutterConfig config,
+    private void itsGettingBrighterOutside(RollerShutterConfig config,
                                            WeatherServiceImpl.CurrentAndPreviousWeather weather) {
         var rollerShutter = getRollerShutter(config);
 
@@ -128,7 +133,7 @@ public class RollerShutterService {
         }
     }
 
-    private void itsGettingDarkerOutside(HomeSystemProperties.RollerShutterConfig config,
+    private void itsGettingDarkerOutside(RollerShutterConfig config,
                                          WeatherServiceImpl.CurrentAndPreviousWeather weather) {
         var rollerShutter = getRollerShutter(config);
 
@@ -158,7 +163,7 @@ public class RollerShutterService {
         return current <= threshold && previous > threshold;
     }
 
-    private RollerShutter getRollerShutter(HomeSystemProperties.RollerShutterConfig config) {
+    private RollerShutter getRollerShutter(RollerShutterConfig config) {
         return deviceService.findDeviceByName(config.getName(), RollerShutter.class)
                 .orElseThrow(() -> new NoSuchElementException("No rollerShutter named '%s' was found in deviceList.".formatted(config.getName())));
     }
