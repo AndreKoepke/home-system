@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.LastModifiedDate;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -19,8 +20,15 @@ public class TelegramConfig {
     @LastModifiedDate
     private LocalDateTime modified = LocalDateTime.now();
 
+    @Column(columnDefinition = "TEXT")
     private String botToken;
+
+    @Column(columnDefinition = "TEXT")
     private String botUsername;
+
+    @Column(columnDefinition = "TEXT")
     private String botPath;
+
+    @Column(columnDefinition = "TEXT")
     private String mainChannel;
 }

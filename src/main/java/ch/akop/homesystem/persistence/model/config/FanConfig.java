@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.springframework.lang.Nullable;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -19,15 +20,18 @@ public class FanConfig {
     private String name;
 
     @NonNull
+    @Column(columnDefinition = "TEXT")
     private String triggerByButtonName;
 
     @NonNull
     private Integer triggerByButtonEvent;
 
     @Nullable
+    @Column(columnDefinition = "TEXT")
     private String turnOffWhenLightTurnedOff;
 
     @Nullable
+    @Column(columnDefinition = "TEXT")
     private String increaseTimeoutForMotionSensor;
 
 
