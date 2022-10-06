@@ -1,6 +1,5 @@
 package ch.akop.homesystem.states;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.animation.Animation;
 import ch.akop.homesystem.models.animation.AnimationFactory;
 import ch.akop.homesystem.services.DeviceService;
@@ -52,7 +51,7 @@ public class NormalState extends Activatable implements State {
 
     private Animation mainDoorOpenAnimation;
     private Thread animationThread;
-    private Map<HomeSystemProperties.User, Boolean> lastPresenceMap;
+    private Map<String, Boolean> lastPresenceMap;
 
 
     @PostConstruct
@@ -71,10 +70,10 @@ public class NormalState extends Activatable implements State {
                 .subscribe(canStartMainDoorAnimation::setForever);
     }
 
-    private void gotNewPresenceMap(Map<HomeSystemProperties.User, Boolean> presenceMap) {
+    private void gotNewPresenceMap(Map<String, Boolean> presenceMap) {
         presenceMap.forEach((user, isAtHome) -> {
             if (!lastPresenceMap.get(user).equals(isAtHome)) {
-                messageService.sendMessageToMainChannel("%s ist %s".formatted(user.getName(),
+                messageService.sendMessageToMainChannel("%s ist %s".formatted(user,
                         Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen"));
             }
         });
@@ -82,7 +81,7 @@ public class NormalState extends Activatable implements State {
         lastPresenceMap = presenceMap;
     }
 
-    private boolean compareWithLastAndSkipFirst(Map<HomeSystemProperties.User, Boolean> presenceMap) {
+    private boolean compareWithLastAndSkipFirst(Map<String, Boolean> presenceMap) {
         if (lastPresenceMap == null) {
             lastPresenceMap = presenceMap;
             return false;

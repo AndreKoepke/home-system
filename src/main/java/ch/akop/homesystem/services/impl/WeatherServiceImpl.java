@@ -1,7 +1,7 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.CompassDirection;
+import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
@@ -32,7 +32,7 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 @Slf4j
 public class WeatherServiceImpl implements WeatherService {
 
-    private final HomeSystemProperties config;
+    private final BasicConfigRepository basicConfigRepository;
     private final MessageService messageService;
 
     @Getter
@@ -43,6 +43,8 @@ public class WeatherServiceImpl implements WeatherService {
 
     @PostConstruct
     public void startFetchingData() {
+        // TODO restart when config changes
+        var config = basicConfigRepository.findFirstByOrderByModifiedDesc();
         if (config.getNearestWeatherCloudStation() == null) {
             active = false;
             return;
@@ -75,6 +77,7 @@ public class WeatherServiceImpl implements WeatherService {
 
     @Override
     public CompassDirection getCurrentSunDirection() {
+        var config = basicConfigRepository.findFirstByOrderByModifiedDesc();
         var position = Grena3.calculateSolarPosition(new GregorianCalendar(), config.getLatitude(), config.getLongitude(), 68);
 
         return Arrays.stream(CompassDirection.values())

@@ -16,6 +16,7 @@ import java.util.Set;
 @Value
 @ConstructorBinding
 @ConfigurationProperties(prefix = "home-automation.special")
+@Deprecated
 public class HomeSystemProperties {
 
     @NonNull Double latitude;

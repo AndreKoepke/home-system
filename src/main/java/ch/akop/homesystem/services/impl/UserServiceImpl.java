@@ -1,6 +1,7 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
+import ch.akop.homesystem.persistence.model.config.UserConfig;
+import ch.akop.homesystem.persistence.repository.config.UserConfigRepository;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
 import ch.akop.homesystem.states.Event;
@@ -31,11 +32,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final HomeSystemProperties homeSystemProperties;
     private final MessageService messageService;
+    private final UserConfigRepository userConfigRepository;
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-    private final Subject<Map<HomeSystemProperties.User, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
-    private Map<HomeSystemProperties.User, Boolean> presenceMap = new HashMap<>();
+    private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
+    private Map<String, Boolean> presenceMap = new HashMap<>();
 
 
     @Override
@@ -64,10 +65,10 @@ public class UserServiceImpl implements UserService {
 
 
     private void updatePresence() {
-        var newPresenceMap = homeSystemProperties.getUsers().stream()
+        var newPresenceMap = userConfigRepository.findAll().stream()
                 .collect(Collectors.toMap(
-                        user -> user,
-                        user -> canPingIp(user.getDeviceIp())
+                        UserConfig::getName,
+                        this::canPingIp
                 ));
 
         var hasChanges = !newPresenceMap.equals(presenceMap);
@@ -78,33 +79,31 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private boolean canPingIp(String ip) {
+    private boolean canPingIp(UserConfig userConfig) {
         try {
-            return InetAddress.getByName(ip).isReachable(5000);
+            return InetAddress.getByName(userConfig.getDeviceIp()).isReachable(5000);
         } catch (IOException ignored) {
             return false;
         }
     }
 
     @Override
-    public Flowable<Map<HomeSystemProperties.User, Boolean>> getPresenceMap$() {
+    public Flowable<Map<String, Boolean>> getPresenceMap$() {
         return presenceMap$.toFlowable(BackpressureStrategy.DROP);
     }
 
     @Override
     public void messageToUser(String name, String message) {
-        homeSystemProperties.getUsers().stream()
-                .filter(user -> user.getName().equalsIgnoreCase(name))
-                .findFirst()
+        userConfigRepository.findById(name)
                 .ifPresent(user -> messageService.sendMessageToUser(message, user.getTelegramId()));
     }
 
     @Override
     public void devMessage(String message) {
-        homeSystemProperties.getUsers().stream()
-                .filter(HomeSystemProperties.User::isDev)
-                .findFirst()
-                .ifPresent(user -> messageService.sendMessageToUser(message, user.getTelegramId()));
+        userConfigRepository.findAll()
+                .stream()
+                .filter(UserConfig::isDev)
+                .forEach(user -> messageService.sendMessageToUser(message, user.getTelegramId()));
     }
 
     @Override
