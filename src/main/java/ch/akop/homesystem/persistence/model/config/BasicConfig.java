@@ -5,10 +5,7 @@ import lombok.Setter;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.lang.Nullable;
 
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -29,25 +26,33 @@ public class BasicConfig {
     private Double longitude;
 
     @Nullable
+    @Column(columnDefinition = "TEXT")
     private String nightSceneName;
 
     @Nullable
+    @Column(columnDefinition = "TEXT")
     private String nearestWeatherCloudStation;
 
     @Nullable
+    @Column(columnDefinition = "TEXT")
     private String sunsetSceneName;
 
     private boolean sendMessageWhenTurnLightsOff;
 
     @ElementCollection
+    @CollectionTable(name = "config_basic_not_lights")
+    @MapKeyColumn(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private Set<String> notLights;
 
     @Nullable
+    @Column(columnDefinition = "TEXT")
     private String goodNightButtonName;
 
     @Nullable
     private Integer goodNightButtonEvent;
 
     @Nullable
+    @Column(columnDefinition = "TEXT")
     private String nightRunSceneName;
 }

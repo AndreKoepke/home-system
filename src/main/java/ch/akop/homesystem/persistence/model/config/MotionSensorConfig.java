@@ -4,10 +4,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.time.Duration;
 import java.util.List;
 
@@ -18,10 +15,14 @@ import java.util.List;
 public class MotionSensorConfig {
 
     @Id
+    @Column(columnDefinition = "TEXT")
     private String name;
 
-    @ElementCollection
     @NonNull
+    @ElementCollection
+    @CollectionTable(name = "config_motion_sensor_lights")
+    @MapKeyColumn(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private List<String> lights;
 
     @NonNull

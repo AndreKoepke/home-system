@@ -15,10 +15,12 @@ import java.time.LocalTime;
 public class RollerShutterConfig {
 
     @Id
+    @Column(columnDefinition = "TEXT")
     private String name;
 
     @Nullable
     @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "TEXT")
     private CompassDirection compassDirection;
 
     @Nullable

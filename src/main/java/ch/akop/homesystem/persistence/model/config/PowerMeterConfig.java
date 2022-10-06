@@ -5,10 +5,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.springframework.lang.Nullable;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 @Entity
 @Table(name = "config_power_meter")
@@ -17,15 +14,18 @@ import javax.persistence.Table;
 public class PowerMeterConfig {
 
     @Id
+    @Column(columnDefinition = "TEXT")
     private String name;
 
     @NonNull
     private Integer isOnWhenMoreThan;
 
     @Nullable
+    @Column(columnDefinition = "TEXT")
     private String messageWhenSwitchOn;
 
     @Nullable
+    @Column(columnDefinition = "TEXT")
     private String messageWhenSwitchOff;
 
     @ManyToOne
