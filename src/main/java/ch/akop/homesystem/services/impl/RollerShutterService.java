@@ -9,6 +9,7 @@ import ch.akop.weathercloud.Weather;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -20,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RollerShutterService {
@@ -85,8 +87,10 @@ public class RollerShutterService {
                 .forEach(config -> {
                     var rollerShutter = getRollerShutter(config);
                     if (config.getCloseAt() != null && config.getCloseAt().equals(time)) {
+                        log.info("Timed close for {}", rollerShutter.getName());
                         rollerShutter.setLiftAndThenTilt(0, 0);
                     } else {
+                        log.info("Timed open for {}", rollerShutter.getName());
                         rollerShutter.setLiftAndThenTilt(100, 100);
                     }
                 });
@@ -115,6 +119,7 @@ public class RollerShutterService {
                 && weatherService.getCurrentSunDirection().equals(config.getCompassDirection())
                 && currentWeather.getLight().isBiggerThan(250, KILO_LUX)
                 && currentWeather.getOuterTemperatur().isBiggerThan(15, DEGREE)) {
+            log.info("Weather close for {}", rollerShutter.getName());
             rollerShutter.setLiftAndThenTilt(0, 20);
         }
     }
@@ -124,8 +129,10 @@ public class RollerShutterService {
         var isOpen = rollerShutter.getCurrentLift() > 50 || rollerShutter.getCurrentTilt() > 50;
 
         if (isOpen && currentWeather.getLight().isSmallerThan(20, KILO_LUX)) {
+            log.info("Weather close for {} because it is getting dark", rollerShutter.getName());
             rollerShutter.setLiftAndThenTilt(0, 0);
         } else if (!isOpen && currentWeather.getLight().isSmallerThan(75, KILO_LUX)) {
+            log.info("Weather open for {} because it is getting bright", rollerShutter.getName());
             rollerShutter.setLiftAndThenTilt(100, 100);
         }
     }

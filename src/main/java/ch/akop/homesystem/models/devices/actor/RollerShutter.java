@@ -61,12 +61,16 @@ public class RollerShutter extends Device<RollerShutter> {
      * @param tilt new tilt value
      */
     public void setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
+        log.info("Setting lift (to {}) and tilt (to {}) of {}", lift, tilt, getName());
         functionToSetLift.accept(lift);
 
         //noinspection ResultOfMethodCallIgnored
         liftWasChanged
                 .filter(lift::equals)
                 .take(1)
-                .subscribe(ignored -> functionToSetTilt.accept(tilt));
+                .subscribe(ignored -> {
+                    log.info("lift is ok, setting tilt to {}", tilt);
+                    functionToSetTilt.accept(tilt);
+                });
     }
 }
