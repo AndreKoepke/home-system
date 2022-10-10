@@ -5,7 +5,6 @@ import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.homesystem.util.TimeUtil;
-import ch.akop.weathercloud.Weather;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
@@ -41,9 +40,9 @@ public class RollerShutterService {
                         .subscribe(weather -> {
                             var currentComparedToPrevious = weather.current().getLight().compareTo(weather.previous().getLight().getAs(KILO_LUX));
                             if (currentComparedToPrevious < 0) {
-                                itsGettingDarkerOutside(rollerShutterConfig, weather.current());
+                                itsGettingDarkerOutside(rollerShutterConfig, weather);
                             } else if (currentComparedToPrevious > 0) {
-                                itsGettingBrighterOutside(rollerShutterConfig, weather.current());
+                                itsGettingBrighterOutside(rollerShutterConfig, weather);
                             }
                         }))
                 .forEach(disposables::add);
@@ -111,30 +110,43 @@ public class RollerShutterService {
     }
 
 
-    private void itsGettingBrighterOutside(HomeSystemProperties.RollerShutterConfig config, Weather currentWeather) {
+    private void itsGettingBrighterOutside(HomeSystemProperties.RollerShutterConfig config,
+                                           WeatherServiceImpl.CurrentAndPreviousWeather weather) {
         var rollerShutter = getRollerShutter(config);
         var isOpen = rollerShutter.getCurrentLift() > 50 || rollerShutter.getCurrentTilt() > 50;
 
         if (isOpen
                 && weatherService.getCurrentSunDirection().equals(config.getCompassDirection())
-                && currentWeather.getLight().isBiggerThan(250, KILO_LUX)
-                && currentWeather.getOuterTemperatur().isBiggerThan(15, DEGREE)) {
+                && lightIsGoingAboveThreshold(weather, 200)
+                && weather.current().getOuterTemperatur().isBiggerThan(15, DEGREE)) {
             log.info("Weather close for {}", rollerShutter.getName());
             rollerShutter.setLiftAndThenTilt(0, 20);
         }
     }
 
-    private void itsGettingDarkerOutside(HomeSystemProperties.RollerShutterConfig config, Weather currentWeather) {
+    private void itsGettingDarkerOutside(HomeSystemProperties.RollerShutterConfig config,
+                                         WeatherServiceImpl.CurrentAndPreviousWeather weather) {
         var rollerShutter = getRollerShutter(config);
         var isOpen = rollerShutter.getCurrentLift() > 50 || rollerShutter.getCurrentTilt() > 50;
 
-        if (isOpen && currentWeather.getLight().isSmallerThan(20, KILO_LUX)) {
+        if (isOpen && lightIsGoingBelowThreshold(weather, 20)) {
             log.info("Weather close for {} because it is getting dark", rollerShutter.getName());
             rollerShutter.setLiftAndThenTilt(0, 0);
-        } else if (!isOpen && currentWeather.getLight().isSmallerThan(75, KILO_LUX)) {
+        } else if (!isOpen && lightIsGoingBelowThreshold(weather, 75)) {
             log.info("Weather open for {} because it is getting bright", rollerShutter.getName());
             rollerShutter.setLiftAndThenTilt(100, 100);
         }
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private boolean lightIsGoingAboveThreshold(WeatherServiceImpl.CurrentAndPreviousWeather weather, int threshold) {
+        return weather.current().getLight().isBiggerThan(threshold, KILO_LUX)
+                && weather.previous().getLight().isSmallerThan(threshold, KILO_LUX);
+    }
+
+    private boolean lightIsGoingBelowThreshold(WeatherServiceImpl.CurrentAndPreviousWeather weather, int threshold) {
+        return weather.current().getLight().isSmallerThan(threshold, KILO_LUX)
+                && weather.previous().getLight().isBiggerThan(threshold, KILO_LUX);
     }
 
     private RollerShutter getRollerShutter(HomeSystemProperties.RollerShutterConfig config) {
