@@ -181,8 +181,8 @@ public class DeconzConnector {
                 () -> Specs.setState(id, new State().setStop(true), webClient).subscribe()
         );
 
-        rollerShutter.setCurrentLift(light.getState().getLift());
-        rollerShutter.setCurrentTilt(light.getState().getTilt());
+        // workaround - lift is reported via bri, for tilt there are no values
+        rollerShutter.setCurrentLift(light.getState().getBri());
 
         return Optional.of(rollerShutter);
     }
@@ -289,8 +289,8 @@ public class DeconzConnector {
     private void updateActor(String actorId, State state) {
         if (state.getTilt() != null || state.getLift() != null) {
             var rollerShutter = deviceService.getDeviceById(actorId, RollerShutter.class);
-            rollerShutter.setCurrentLift(state.getLift());
-            rollerShutter.setCurrentTilt(state.getTilt());
+            // bri as workaround, tilt was never updated
+            rollerShutter.setCurrentLift(state.getBri());
         } else {
             deviceService.getDeviceById(actorId, SimpleLight.class).updateState(state.getOn());
         }

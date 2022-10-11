@@ -68,11 +68,11 @@ public class WeatherServiceImpl implements WeatherService {
         var previousUpdate = new AtomicReference<Weather>();
 
         weather
-           .take(1)
-           .subscribe(previousUpdate::set);
+                .take(1)
+                .subscribe(previousUpdate::set);
 
         return weather
-                .filter(weatherUpdate -> previousUpdate.get() != null)
+                .skip(1)
                 .map(weatherUpdate -> new CurrentAndPreviousWeather(weatherUpdate, previousUpdate.get()))
                 .doOnNext(weatherData -> previousUpdate.set(weatherData.current));
     }

@@ -113,40 +113,45 @@ public class RollerShutterService {
     private void itsGettingBrighterOutside(HomeSystemProperties.RollerShutterConfig config,
                                            WeatherServiceImpl.CurrentAndPreviousWeather weather) {
         var rollerShutter = getRollerShutter(config);
-        var isOpen = rollerShutter.getCurrentLift() > 50 || rollerShutter.getCurrentTilt() > 50;
 
-        if (isOpen
+        if (rollerShutter.isCurrentlyOpen()
                 && weatherService.getCurrentSunDirection().equals(config.getCompassDirection())
-                && lightIsGoingAboveThreshold(weather, 200)
+                && brightnessIsGoingAboveThreshold(weather, 200)
                 && weather.current().getOuterTemperatur().isBiggerThan(15, DEGREE)) {
-            log.info("Weather close for {}", rollerShutter.getName());
+            log.info("Weather close for {} because it is too much sun", rollerShutter.getName());
             rollerShutter.setLiftAndThenTilt(0, 20);
+        } else if (!rollerShutter.isCurrentlyOpen() && brightnessIsGoingAboveThreshold(weather, 50)) {
+            log.info("Weather open for {}", rollerShutter.getName());
+            rollerShutter.open();
         }
     }
 
     private void itsGettingDarkerOutside(HomeSystemProperties.RollerShutterConfig config,
                                          WeatherServiceImpl.CurrentAndPreviousWeather weather) {
         var rollerShutter = getRollerShutter(config);
-        var isOpen = rollerShutter.getCurrentLift() > 50 || rollerShutter.getCurrentTilt() > 50;
 
-        if (isOpen && lightIsGoingBelowThreshold(weather, 20)) {
+        if (rollerShutter.isCurrentlyOpen() && brightnessIsGoingBelowThreshold(weather, 20)) {
             log.info("Weather close for {} because it is getting dark", rollerShutter.getName());
-            rollerShutter.setLiftAndThenTilt(0, 0);
-        } else if (!isOpen && lightIsGoingBelowThreshold(weather, 75)) {
-            log.info("Weather open for {} because it is getting bright", rollerShutter.getName());
-            rollerShutter.setLiftAndThenTilt(100, 100);
+            rollerShutter.close();
+        } else if (!rollerShutter.isCurrentlyOpen() && brightnessIsGoingBelowThreshold(weather, 100)) {
+            log.info("Weather open for {} because it is not longer super-bright outside", rollerShutter.getName());
+            rollerShutter.open();
         }
     }
 
     @SuppressWarnings("SameParameterValue")
-    private boolean lightIsGoingAboveThreshold(WeatherServiceImpl.CurrentAndPreviousWeather weather, int threshold) {
-        return weather.current().getLight().isBiggerThan(threshold, KILO_LUX)
-                && weather.previous().getLight().isSmallerThan(threshold, KILO_LUX);
+    private boolean brightnessIsGoingAboveThreshold(WeatherServiceImpl.CurrentAndPreviousWeather weather, int threshold) {
+        var current = weather.current().getLight().getAs(KILO_LUX).intValue();
+        var previous = weather.previous().getLight().getAs(KILO_LUX).intValue();
+
+        return current >= threshold && previous < threshold;
     }
 
-    private boolean lightIsGoingBelowThreshold(WeatherServiceImpl.CurrentAndPreviousWeather weather, int threshold) {
-        return weather.current().getLight().isSmallerThan(threshold, KILO_LUX)
-                && weather.previous().getLight().isBiggerThan(threshold, KILO_LUX);
+    private boolean brightnessIsGoingBelowThreshold(WeatherServiceImpl.CurrentAndPreviousWeather weather, int threshold) {
+        var current = weather.current().getLight().getAs(KILO_LUX).intValue();
+        var previous = weather.previous().getLight().getAs(KILO_LUX).intValue();
+
+        return current <= threshold && previous > threshold;
     }
 
     private RollerShutter getRollerShutter(HomeSystemProperties.RollerShutterConfig config) {
