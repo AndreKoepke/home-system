@@ -5,13 +5,9 @@ import ch.akop.homesystem.models.CompassDirection;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
-import ch.akop.weathercloud.light.Light;
-import ch.akop.weathercloud.light.LightUnit;
 import ch.akop.weathercloud.scraper.weathercloud.Scraper;
 import com.jakewharton.rx3.ReplayingShare;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Observable;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +21,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.GregorianCalendar;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static ch.akop.weathercloud.wind.WindSpeedUnit.KILOMETERS_PER_SECOND;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -68,21 +65,16 @@ public class WeatherServiceImpl implements WeatherService {
 
     @Override
     public Flowable<CurrentAndPreviousWeather> getCurrentAndPreviousWeather() {
-//        var previousUpdate = new AtomicReference<Weather>();
-//
-//        weather
-//                .take(1)
-//                .subscribe(previousUpdate::set);
-//
-//        return weather
-//                .skip(1)
-//                .map(weatherUpdate -> new CurrentAndPreviousWeather(weatherUpdate, previousUpdate.get()))
-//                .doOnNext(weatherData -> previousUpdate.set(weatherData.current));
+        var previousUpdate = new AtomicReference<Weather>();
 
-        return Observable.fromArray(new CurrentAndPreviousWeather(
-                        new Weather().setLight(Light.fromUnit(BigDecimal.valueOf(19), LightUnit.KILO_LUX)),
-                        new Weather().setLight(Light.fromUnit(BigDecimal.valueOf(20), LightUnit.KILO_LUX))))
-                .toFlowable(BackpressureStrategy.BUFFER);
+        weather
+                .take(1)
+                .subscribe(previousUpdate::set);
+
+        return weather
+                .skip(1)
+                .map(weatherUpdate -> new CurrentAndPreviousWeather(weatherUpdate, previousUpdate.get()))
+                .doOnNext(weatherData -> previousUpdate.set(weatherData.current));
     }
 
     @Override

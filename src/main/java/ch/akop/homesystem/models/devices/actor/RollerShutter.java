@@ -47,6 +47,13 @@ public class RollerShutter extends Device<RollerShutter> {
         return this;
     }
 
+    /**
+     * The deconz-connector currently doesn't offer any tilt updates.
+     *
+     * @return The angle of the shutters
+     * @deprecated because current deconz does not updating these values
+     */
+    @Deprecated(since = "not know yet")
     public RollerShutter setCurrentTilt(Integer newValue) {
         tiltWasChanged.onNext(newValue);
         currentTilt = newValue;
@@ -66,11 +73,30 @@ public class RollerShutter extends Device<RollerShutter> {
 
         //noinspection ResultOfMethodCallIgnored
         liftWasChanged
-                .filter(lift::equals)
+                .filter(newLift -> Math.abs(newLift - lift) < 20)
                 .take(1)
                 .subscribe(ignored -> {
                     log.info("lift is ok, setting tilt to {}", tilt);
                     functionToSetTilt.accept(tilt);
                 });
+    }
+
+    /**
+     * Opens the rollerShutters to maximum value
+     */
+    public void open() {
+        setLiftAndThenTilt(100, 100);
+    }
+
+    /**
+     * Coles the rollerShutters to minimum value
+     */
+    public void close() {
+        setLiftAndThenTilt(0, 0);
+    }
+
+    public boolean isCurrentlyOpen() {
+        // normally 255 means, that is open. But the actor never reaches 255.
+        return currentLift > 240;
     }
 }
