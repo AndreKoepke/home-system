@@ -7,9 +7,9 @@ import java.util.Optional;
 
 public interface DeviceService {
 
-    <T extends Device<?>> T getDeviceById(String id, Class<T> clazz);
-
     <T extends Device<?>> Optional<T> findDeviceByName(String name, Class<T> clazz);
+
+    <T extends Device<?>> Optional<T> findDeviceById(String name, Class<T> clazz);
 
     <T extends Device<?>> void registerDevice(T device);
 

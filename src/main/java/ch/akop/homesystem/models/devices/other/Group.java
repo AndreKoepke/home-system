@@ -1,5 +1,6 @@
 package ch.akop.homesystem.models.devices.other;
 
+import ch.akop.homesystem.deconz.rest.State;
 import ch.akop.homesystem.models.devices.Device;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,4 +15,10 @@ public class Group extends Device<Group> {
     private List<Scene> scenes;
 
     private List<String> lights;
+
+    @Override
+    public Group consumeUpdate(State update) {
+        // NOP
+        return this;
+    }
 }
