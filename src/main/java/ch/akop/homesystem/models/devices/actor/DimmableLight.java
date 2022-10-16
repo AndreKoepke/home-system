@@ -1,5 +1,6 @@
 package ch.akop.homesystem.models.devices.actor;
 
+import ch.akop.homesystem.deconz.rest.State;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -17,6 +18,10 @@ public class DimmableLight extends SimpleLight {
     @ToString.Exclude
     private BiConsumer<Integer, Duration> functionToSeBrightness;
 
+    @Getter
+    @Setter
+    private int currentBrightness;
+
     public DimmableLight(BiConsumer<Integer, Duration> functionToSeBrightness, Consumer<Boolean> functionToTurnOnOrOff) {
         super(functionToTurnOnOrOff);
         this.functionToSeBrightness = functionToSeBrightness;
@@ -28,5 +33,13 @@ public class DimmableLight extends SimpleLight {
 
     public void setBrightness(BigDecimal decimal, Duration transitionTime) {
         this.getFunctionToSeBrightness().accept(decimal.multiply(BigDecimal.valueOf(100)).intValue(), transitionTime);
+    }
+
+    @Override
+    public DimmableLight consumeUpdate(State update) {
+        super.consumeUpdate(update);
+        setCurrentBrightness(update.getBri());
+
+        return this;
     }
 }

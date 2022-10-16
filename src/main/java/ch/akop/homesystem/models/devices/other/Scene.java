@@ -1,5 +1,6 @@
 package ch.akop.homesystem.models.devices.other;
 
+import ch.akop.homesystem.deconz.rest.State;
 import ch.akop.homesystem.models.devices.Device;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,4 +19,9 @@ public class Scene extends Device<Scene> {
         this.activateSceneRunnable.run();
     }
 
+    @Override
+    public Scene consumeUpdate(State update) {
+        // NOP
+        return this;
+    }
 }

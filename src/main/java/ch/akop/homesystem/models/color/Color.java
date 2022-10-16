@@ -5,11 +5,8 @@ import lombok.Data;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import java.math.BigDecimal;
-import java.math.MathContext;
+import java.util.Arrays;
 import java.util.List;
-
-import static ch.obermuhlner.math.big.BigDecimalMath.pow;
-import static java.math.RoundingMode.HALF_UP;
 
 /**
  * Represents an RGB-color.
@@ -17,10 +14,6 @@ import static java.math.RoundingMode.HALF_UP;
 @SuppressWarnings("unused")
 @Data
 public class Color {
-
-    public static final BigDecimal ZERO_POINT_55 = BigDecimal.valueOf(0.055);
-    public static final BigDecimal TWO_POINT_4 = BigDecimal.valueOf(2.4);
-    public static final BigDecimal TWELFE_POINT_92 = BigDecimal.valueOf(12.92);
 
     @Min(0)
     @Max(255)
@@ -47,43 +40,87 @@ public class Color {
         return new Color().setB(255);
     }
 
-    public static BigDecimal normalize(Integer value) {
-        var maxValue = BigDecimal.valueOf(255);
-        return BigDecimal.valueOf(value).divide(maxValue, HALF_UP);
-    }
 
-    public static BigDecimal makeVivid(BigDecimal value) {
-        if (value.compareTo(BigDecimal.valueOf(0.04045)) < 0) {
-            return pow(
-                    value.add(ZERO_POINT_55).divide(BigDecimal.ONE.add(ZERO_POINT_55), HALF_UP),
-                    TWO_POINT_4,
-                    MathContext.DECIMAL64);
-        } else {
-            return value.divide(TWELFE_POINT_92, HALF_UP);
-        }
+    public static Color fromXY(List<BigDecimal> xy, int bri) {
+        var x = xy.get(0).floatValue();
+        var y = xy.get(1).floatValue();
+
+        var z = 1.0 - x - y;
+        var Y = bri / 255.0; // Brightness of lamp
+        var X = (Y / y) * x;
+        var Z = (Y / y) * z;
+        var r = X * 1.612 - Y * 0.203 - Z * 0.302;
+        var g = -X * 0.509 + Y * 1.412 + Z * 0.066;
+        var b = X * 0.026 - Y * 0.072 + Z * 0.962;
+        r = r <= 0.0031308 ? 12.92 * r : (1.0 + 0.055) * Math.pow(r, (1.0 / 2.4)) - 0.055;
+        g = g <= 0.0031308 ? 12.92 * g : (1.0 + 0.055) * Math.pow(g, (1.0 / 2.4)) - 0.055;
+        b = b <= 0.0031308 ? 12.92 * b : (1.0 + 0.055) * Math.pow(b, (1.0 / 2.4)) - 0.055;
+
+        var maxValue = maxValue(r, g, b);
+        r /= maxValue;
+        g /= maxValue;
+        b /= maxValue;
+
+        r = revertNormalize(r);
+        g = revertNormalize(g);
+        b = revertNormalize(b);
+
+        return new Color()
+                .setR((int) r)
+                .setG((int) g)
+                .setB((int) b);
     }
 
     public List<BigDecimal> toXY() {
-        // blue doesn't work correctly
-        // maybe the parameters of Z79-81 are not good
 
         var normalizedRed = normalize(getR());
         var normalizedGreen = normalize(getG());
         var normalizedBlue = normalize(getB());
 
-        var red = makeVivid(normalizedRed);
-        var green = makeVivid(normalizedGreen);
-        var blue = makeVivid(normalizedBlue);
+        var r = makeVivid(normalizedRed);
+        var g = makeVivid(normalizedGreen);
+        var b = makeVivid(normalizedBlue);
 
-        var X = red.multiply(BigDecimal.valueOf(0.649926)).add(green.multiply(BigDecimal.valueOf(0.103455))).add(blue.add(BigDecimal.valueOf(0.197109)));
-        var Y = red.multiply(BigDecimal.valueOf(0.23427)).add(green.multiply(BigDecimal.valueOf(0.743075))).add(blue.multiply(BigDecimal.valueOf(0.022598)));
-        var Z = green.multiply(BigDecimal.valueOf(0.0053077)).add(blue.multiply(BigDecimal.valueOf(1.035763)));
+        var X = r * 0.649926F + g * 0.103455F + b * 0.197109F;
+        var Y = r * 0.234327F + g * 0.743075F + b * 0.022598F;
+        var Z = g * 0.053077F + b * 1.035763F;
 
-        var sum = X.add(Y).add(Z);
+        var sum = X + Y + Z;
 
-        var x = X.divide(sum, HALF_UP);
-        var y = Y.divide(sum, HALF_UP);
+        if (sum == 0) {
+            return List.of(BigDecimal.ZERO, BigDecimal.ZERO);
+        }
+        var x = X / sum;
+        var y = Y / sum;
 
-        return List.of(x, y);
+        return List.of(BigDecimal.valueOf(x), BigDecimal.valueOf(y));
+    }
+
+    private static float makeVivid(float value) {
+        return (value > 0.04045F) ? (float) Math.pow((value + 0.055F) /
+                1.055F, 2.400000095367432D) :
+                value / 12.92F;
+    }
+
+    private static float normalize(Integer value) {
+        if (value < 0) {
+            return 255f;
+        }
+
+        return value / 255f;
+    }
+
+    private static double revertNormalize(double value) {
+        if (value < 0) {
+            return 255d;
+        }
+
+        return value * 255;
+    }
+
+    private static double maxValue(double... values) {
+        return Arrays.stream(values)
+                .max()
+                .orElse(0);
     }
 }

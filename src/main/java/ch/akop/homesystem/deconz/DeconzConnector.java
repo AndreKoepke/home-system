@@ -35,7 +35,6 @@ import reactor.netty.transport.logging.AdvancedByteBufFormat;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 
@@ -111,41 +110,24 @@ public class DeconzConnector {
         var newDevice = determineSensor(sensor);
 
         if (newDevice == null) {
-            log.warn("Sensortype '{}' isn't known", sensor.getType());
+            log.warn("Sensor of type '{}' isn't known", sensor.getType());
             return;
         }
 
         newDevice.setId(id);
         newDevice.setName(sensor.getName());
-        newDevice.setLastChange(LocalDateTime.now());
+        newDevice.consumeUpdate(sensor.getState());
 
         deviceService.registerDevice(newDevice);
-
     }
 
     @Nullable
     private Device<?> determineSensor(Sensor sensor) {
         return switch (sensor.getType()) {
-
-            case "ZHAOpenClose" -> new CloseContact()
-                    .setOpen(sensor.getState().getOpen());
-
+            case "ZHAOpenClose" -> new CloseContact();
             case "ZHASwitch" -> new Button();
-
-            case "ZHAPresence" -> {
-                var motionSensor = new MotionSensor();
-                motionSensor.updateState(sensor.getState().getPresence(), sensor.getState().getDark());
-                yield motionSensor;
-            }
-
-            case "ZHAPower" -> {
-                var powerMeter = new PowerMeter();
-                powerMeter.getPower$().onNext(sensor.getState().getPower());
-                powerMeter.getCurrent$().onNext(sensor.getState().getCurrent());
-                powerMeter.getVoltage$().onNext(sensor.getState().getVoltage());
-                yield powerMeter;
-            }
-
+            case "ZHAPresence" -> new MotionSensor();
+            case "ZHAPower" -> new PowerMeter();
             default -> null;
         };
     }
@@ -155,16 +137,17 @@ public class DeconzConnector {
                 .or(() -> tryCreateRollerShutter(id, light))
                 .map(newLight -> newLight.setId(id))
                 .map(newLight -> newLight.setName(light.getName()))
+                .map(newLight -> newLight.consumeUpdate(light.getState()))
                 .ifPresentOrElse(
                         deviceService::registerDevice,
-                        () -> log.warn("Device-type '{}' isn't implemented", light.getType()));
+                        () -> log.warn("Device of type '{}' isn't implemented", light.getType()));
     }
 
     private Optional<Device<?>> tryCreateLight(String id, Light light) {
         return switch (light.getType().toLowerCase()) {
-            case "color light", "extended color light" -> Optional.of(createColorLight(id, light));
-            case "dimmable light", "color temperature light" -> Optional.of(createDimmableLight(id, light));
-            case "on/off plug-in unit", "on/off light" -> Optional.of(registerSimpleLight(id, light));
+            case "color light", "extended color light" -> Optional.of(createColorLight(id));
+            case "dimmable light", "color temperature light" -> Optional.of(createDimmableLight(id));
+            case "on/off plug-in unit", "on/off light" -> Optional.of(registerSimpleLight(id));
             default -> Optional.empty();
         };
     }
@@ -181,44 +164,41 @@ public class DeconzConnector {
                 () -> Specs.setState(id, new State().setStop(true), webClient).subscribe()
         );
 
-        // workaround - lift is reported via bri, for tilt there are no values
-        rollerShutter.setCurrentLift(light.getState().getBri());
-
         return Optional.of(rollerShutter);
     }
 
-    private ColoredLight createColorLight(String id, Light light) {
-        var coloredLight = new ColoredLight(
+    private ColoredLight createColorLight(String id) {
+        return new ColoredLight(
                 (percent, duration) -> setBrightnessOfLight(id, percent, duration),
                 turnOn -> turnOnOrOff(id, turnOn),
                 (color, duration) -> setColorOfLight(id, color, duration)
         );
-
-        coloredLight.updateState(light.getState().getOn());
-        return coloredLight;
     }
 
-    private DimmableLight createDimmableLight(String id, Light light) {
-        var dimmableLight = new DimmableLight(
+    private DimmableLight createDimmableLight(String id) {
+        return new DimmableLight(
                 (percent, duration) -> setBrightnessOfLight(id, percent, duration),
                 on -> turnOnOrOff(id, on));
-        dimmableLight.updateState(light.getState().getOn());
-        return dimmableLight;
     }
 
-    private SimpleLight registerSimpleLight(String id, Light light) {
-        return new SimpleLight(on -> turnOnOrOff(id, on))
-                .updateState(light.getState().getOn());
+    private SimpleLight registerSimpleLight(String id) {
+        return new SimpleLight(on -> turnOnOrOff(id, on));
     }
 
     private void setBrightnessOfLight(String id, Integer percent, Duration duration) {
-        Specs.setState(
-                        id,
-                        new State()
-                                .setTransitiontime(duration != null ? (int) duration.toSeconds() * 10 : null)
-                                .setBri((int) Math.round(percent / 100d * 255))
-                                .setOn(percent > 0),
-                        webClient)
+        var newState = new State();
+
+        if (percent == 0) {
+            newState.setOn(false);
+        } else {
+            newState.setBri((int) Math.round(percent / 100d * 255));
+        }
+
+        if (duration != null) {
+            newState.setTransitiontime((int) duration.toSeconds() * 10);
+        }
+
+        Specs.setState(id, newState, webClient)
                 .subscribe(
                         success -> log.debug("Set light %s to %d was status %s".formatted(id, percent, success.getStatusCode())),
                         throwable -> {
@@ -229,13 +209,15 @@ public class DeconzConnector {
     }
 
     private void setColorOfLight(String id, Color color, Duration duration) {
-        Specs.setState(
-                        id,
-                        new State()
-                                .setTransitiontime(duration != null ? (int) duration.toSeconds() * 10 : null)
-                                .setXy(color.toXY())
-                                .setColormode("ct"),
-                        webClient)
+        var newState = new State()
+                .setXy(color.toXY())
+                .setColormode("ct");
+
+        if (duration != null) {
+            newState.setTransitiontime((int) duration.toSeconds() * 10);
+        }
+
+        Specs.setState(id, newState, webClient)
                 .subscribe(
                         success -> log.debug("Set color of light %s was status %s".formatted(id, success.getStatusCode())),
                         throwable -> {
@@ -248,9 +230,7 @@ public class DeconzConnector {
     private void turnOnOrOff(String id, boolean on) {
         Specs.setState(id, new State().setOn(on), webClient)
                 .subscribe(
-                        response -> log.debug("Set light %s to %s was status %s"
-                                .formatted(id, on ? "on" : "off", response.getStatusCode())),
-
+                        response -> log.debug("Set light {} to {} was status {}", id, on ? "on" : "off", response.getStatusCode()),
                         throwable -> {
                             if (!throwable.getClass().equals(InterruptedException.class)) {
                                 log.error(LIGHT_UPDATE_FAILED_LABEL + id, throwable);
@@ -262,7 +242,7 @@ public class DeconzConnector {
     private void activateScene(String sceneId, String groupId) {
         Specs.activateScene(groupId, sceneId, webClient)
                 .subscribe(
-                        response -> log.debug("Scene %s in group %s activated".formatted(sceneId, groupId)),
+                        response -> log.debug("Scene {} in group {} activated", sceneId, groupId),
                         throwable -> log.error("Failed to set scene {} in group {}", sceneId, groupId, throwable)
                 );
     }
@@ -273,41 +253,15 @@ public class DeconzConnector {
                 && update.getE().equals("changed")
                 && update.getState() != null) {
 
-            updateSensor(update.getId(), update.getState());
-        }
-
-        if (update.getR().equals("lights")
+            deviceService.findDeviceById(update.getId(), Device.class)
+                    .ifPresent(device -> device.consumeUpdate(update.getState()));
+        } else if (update.getR().equals("lights")
                 && update.getE().equals("changed")
                 && update.getState() != null
                 && update.getState().getOn() != null) {
 
-            updateActor(update.getId(), update.getState());
-        }
-
-    }
-
-    private void updateActor(String actorId, State state) {
-        if (state.getTilt() != null || state.getLift() != null) {
-            var rollerShutter = deviceService.getDeviceById(actorId, RollerShutter.class);
-            // bri as workaround, tilt was never updated
-            rollerShutter.setCurrentLift(state.getBri());
-        } else {
-            deviceService.getDeviceById(actorId, SimpleLight.class).updateState(state.getOn());
-        }
-    }
-
-    private void updateSensor(String sensorId, State state) {
-        if (state.getOpen() != null) {
-            deviceService.getDeviceById(sensorId, CloseContact.class).setOpen(state.getOpen());
-        } else if (state.getButtonevent() != null) {
-            deviceService.getDeviceById(sensorId, Button.class).triggerEvent(state.getButtonevent());
-        } else if (state.getPresence() != null) {
-            deviceService.getDeviceById(sensorId, MotionSensor.class).updateState(state.getPresence(), state.getDark());
-        } else if (state.getPower() != null) {
-            var powerMeter = deviceService.getDeviceById(sensorId, PowerMeter.class);
-            powerMeter.getPower$().onNext(state.getPower());
-            powerMeter.getCurrent$().onNext(state.getCurrent());
-            powerMeter.getVoltage$().onNext(state.getVoltage());
+            deviceService.findDeviceById(update.getId(), Device.class)
+                    .ifPresent(device -> device.consumeUpdate(update.getState()));
         }
     }
 }

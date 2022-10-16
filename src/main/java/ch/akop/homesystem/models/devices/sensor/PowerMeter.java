@@ -1,5 +1,6 @@
 package ch.akop.homesystem.models.devices.sensor;
 
+import ch.akop.homesystem.deconz.rest.State;
 import ch.akop.homesystem.models.devices.Device;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -15,4 +16,12 @@ public class PowerMeter extends Device<PowerMeter> {
     private final Subject<Integer> current$ = ReplaySubject.createWithSize(1);
     private final Subject<Integer> voltage$ = ReplaySubject.createWithSize(1);
 
+    @Override
+    public PowerMeter consumeUpdate(State update) {
+        getPower$().onNext(update.getPower());
+        getCurrent$().onNext(update.getCurrent());
+        getVoltage$().onNext(update.getVoltage());
+
+        return this;
+    }
 }

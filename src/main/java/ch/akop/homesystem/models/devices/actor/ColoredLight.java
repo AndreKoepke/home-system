@@ -1,6 +1,7 @@
 package ch.akop.homesystem.models.devices.actor;
 
 
+import ch.akop.homesystem.deconz.rest.State;
 import ch.akop.homesystem.models.color.Color;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,6 +19,8 @@ public class ColoredLight extends DimmableLight {
     @ToString.Exclude
     private final BiConsumer<Color, Duration> functionForRgb;
 
+    private Color currentColor;
+
     public ColoredLight(BiConsumer<Integer, Duration> functionToSeBrightness,
                         Consumer<Boolean> functionToTurnOnOrOff,
                         BiConsumer<Color, Duration> functionForRgb) {
@@ -29,4 +32,13 @@ public class ColoredLight extends DimmableLight {
     public void setColor(Color color, Duration transitionTime) {
         this.getFunctionForRgb().accept(color, transitionTime);
     }
+
+    @Override
+    public ColoredLight consumeUpdate(State update) {
+        super.consumeUpdate(update);
+        currentColor = Color.fromXY(update.getXy(), update.getBri());
+
+        return this;
+    }
+
 }

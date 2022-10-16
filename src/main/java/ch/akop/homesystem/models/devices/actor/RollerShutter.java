@@ -1,5 +1,6 @@
 package ch.akop.homesystem.models.devices.actor;
 
+import ch.akop.homesystem.deconz.rest.State;
 import ch.akop.homesystem.models.devices.Device;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -98,5 +99,13 @@ public class RollerShutter extends Device<RollerShutter> {
     public boolean isCurrentlyOpen() {
         // normally 255 means, that is open. But the actor never reaches 255.
         return currentLift > 240;
+    }
+
+    @Override
+    public RollerShutter consumeUpdate(State update) {
+        // bri as workaround, tilt was never updated
+        setCurrentLift(update.getBri());
+
+        return this;
     }
 }

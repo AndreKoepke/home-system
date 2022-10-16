@@ -1,15 +1,10 @@
 package ch.akop.homesystem.models.devices.actor;
 
+import ch.akop.homesystem.deconz.rest.State;
 import ch.akop.homesystem.models.devices.Device;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.function.Consumer;
 
@@ -32,17 +27,19 @@ public class SimpleLight extends Device<SimpleLight> {
         this.functionToTurnOnOrOff = functionToTurnOnOrOff;
     }
 
-    public SimpleLight updateState(boolean isOn) {
-        this.currentStateIsOn = isOn;
-        this.state$.onNext(isOn);
-        return this;
-    }
-
     public void turnOn(boolean on) {
         this.getFunctionToTurnOnOrOff().accept(on);
     }
 
     public boolean isCurrentlyOff() {
         return !this.currentStateIsOn;
+    }
+
+    @Override
+    public SimpleLight consumeUpdate(State update) {
+        currentStateIsOn = update.getOn();
+        state$.onNext(update.getOn());
+
+        return this;
     }
 }
