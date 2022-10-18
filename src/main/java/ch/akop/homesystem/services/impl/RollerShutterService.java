@@ -130,7 +130,7 @@ public class RollerShutterService {
                                          WeatherServiceImpl.CurrentAndPreviousWeather weather) {
         var rollerShutter = getRollerShutter(config);
 
-        if (rollerShutter.isCurrentlyOpen() && brightnessIsGoingBelowThreshold(weather, 3)) {
+        if (rollerShutter.isCurrentlyOpen() && brightnessIsGoingBelowThreshold(weather, 0)) {
             log.info("Weather close for {} because it is getting dark", rollerShutter.getName());
             rollerShutter.close();
         } else if (!rollerShutter.isCurrentlyOpen() && brightnessIsGoingBelowThreshold(weather, 100)) {
