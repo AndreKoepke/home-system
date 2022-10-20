@@ -1,7 +1,6 @@
 package ch.akop.homesystem.models.devices.actor;
 
 import ch.akop.homesystem.deconz.rest.State;
-import ch.akop.homesystem.models.devices.Device;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import lombok.Data;
@@ -18,7 +17,7 @@ import java.util.function.Consumer;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class RollerShutter extends Device<RollerShutter> {
+public class RollerShutter extends Actor<RollerShutter> {
 
     private Subject<Integer> liftWasChanged = ReplaySubject.createWithSize(1);
     private Subject<Integer> tiltWasChanged = ReplaySubject.createWithSize(1);

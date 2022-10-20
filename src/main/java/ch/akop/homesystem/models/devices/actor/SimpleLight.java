@@ -1,7 +1,6 @@
 package ch.akop.homesystem.models.devices.actor;
 
 import ch.akop.homesystem.deconz.rest.State;
-import ch.akop.homesystem.models.devices.Device;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import lombok.*;
@@ -12,7 +11,7 @@ import java.util.function.Consumer;
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
-public class SimpleLight extends Device<SimpleLight> {
+public class SimpleLight extends Actor<SimpleLight> {
 
     @Getter(AccessLevel.PROTECTED)
     @Setter(AccessLevel.PROTECTED)

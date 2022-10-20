@@ -8,10 +8,7 @@ import ch.akop.homesystem.deconz.rest.models.Sensor;
 import ch.akop.homesystem.deconz.websocket.WebSocketUpdate;
 import ch.akop.homesystem.models.color.Color;
 import ch.akop.homesystem.models.devices.Device;
-import ch.akop.homesystem.models.devices.actor.ColoredLight;
-import ch.akop.homesystem.models.devices.actor.DimmableLight;
-import ch.akop.homesystem.models.devices.actor.RollerShutter;
-import ch.akop.homesystem.models.devices.actor.SimpleLight;
+import ch.akop.homesystem.models.devices.actor.*;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
@@ -253,14 +250,14 @@ public class DeconzConnector {
                 && update.getE().equals("changed")
                 && update.getState() != null) {
 
-            deviceService.findDeviceById(update.getId(), Device.class)
+            deviceService.findDeviceById(update.getId(), ch.akop.homesystem.models.devices.sensor.Sensor.class)
                     .ifPresent(device -> device.consumeUpdate(update.getState()));
         } else if (update.getR().equals("lights")
                 && update.getE().equals("changed")
                 && update.getState() != null
                 && update.getState().getOn() != null) {
 
-            deviceService.findDeviceById(update.getId(), Device.class)
+            deviceService.findDeviceById(update.getId(), Actor.class)
                     .ifPresent(device -> device.consumeUpdate(update.getState()));
         }
     }

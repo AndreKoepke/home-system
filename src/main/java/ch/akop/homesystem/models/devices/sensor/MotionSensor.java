@@ -1,7 +1,6 @@
 package ch.akop.homesystem.models.devices.sensor;
 
 import ch.akop.homesystem.deconz.rest.State;
-import ch.akop.homesystem.models.devices.Device;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import lombok.Data;
@@ -10,7 +9,7 @@ import lombok.Getter;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class MotionSensor extends Device<MotionSensor> {
+public class MotionSensor extends Sensor<MotionSensor> {
 
     @Getter
     private final Subject<Boolean> isMoving$ = ReplaySubject.createWithSize(1);

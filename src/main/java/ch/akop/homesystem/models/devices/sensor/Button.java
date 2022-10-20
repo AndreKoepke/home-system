@@ -1,7 +1,6 @@
 package ch.akop.homesystem.models.devices.sensor;
 
 import ch.akop.homesystem.deconz.rest.State;
-import ch.akop.homesystem.models.devices.Device;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import lombok.Data;
@@ -10,7 +9,7 @@ import lombok.Getter;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class Button extends Device<Button> {
+public class Button extends Sensor<Button> {
 
     @Getter
     private final Subject<Integer> events$ = ReplaySubject.createWithSize(1);
