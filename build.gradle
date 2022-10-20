@@ -85,8 +85,8 @@ jib {
     to {
         image = 'akop/home-system:latest'
         auth {
-            username = project.findProperty("docker.user") ?: ""
-            password = project.findProperty("docker.pass") ?: ""
+            username = project.findProperty("docker.user") ?: System.getenv("DOCKER_USER") ?: ""
+            password = project.findProperty("docker.pass") ?: System.getenv("DOCKER_PASS") ?: ""
         }
     }
 }
