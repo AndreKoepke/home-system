@@ -188,7 +188,8 @@ public class DeconzConnector {
         if (percent == 0) {
             newState.setOn(false);
         } else {
-            newState.setBri((int) Math.round(percent / 100d * 255));
+            newState.setBri((int) Math.round(percent / 100d * 255))
+                    .setOn(true);
         }
 
         if (duration != null) {
