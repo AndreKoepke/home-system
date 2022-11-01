@@ -120,7 +120,9 @@ public class RollerShutterService {
                 && weather.current().getOuterTemperatur().isBiggerThan(15, DEGREE)) {
             log.info("Weather close for {} because it is too much sun", rollerShutter.getName());
             rollerShutter.setLiftAndThenTilt(0, 20);
-        } else if (!rollerShutter.isCurrentlyOpen() && brightnessIsGoingAboveThreshold(weather, 50)) {
+        } else if (!rollerShutter.isCurrentlyOpen()
+                && brightnessIsGoingAboveThreshold(weather, 50)
+                && !config.isIgnoreWeatherInTheMorning()) {
             log.info("Weather open for {}", rollerShutter.getName());
             rollerShutter.open();
         }
@@ -130,7 +132,9 @@ public class RollerShutterService {
                                          WeatherServiceImpl.CurrentAndPreviousWeather weather) {
         var rollerShutter = getRollerShutter(config);
 
-        if (rollerShutter.isCurrentlyOpen() && brightnessIsGoingBelowThreshold(weather, 0)) {
+        if (rollerShutter.isCurrentlyOpen()
+                && brightnessIsGoingBelowThreshold(weather, 0)
+                && !config.isIgnoreWeatherInTheEvening()) {
             log.info("Weather close for {} because it is getting dark", rollerShutter.getName());
             rollerShutter.close();
         } else if (!rollerShutter.isCurrentlyOpen() && brightnessIsGoingBelowThreshold(weather, 100)) {

@@ -96,6 +96,8 @@ public class HomeSystemProperties {
         @Nullable CompassDirection compassDirection;
         @Nullable LocalTime closeAt;
         @Nullable LocalTime openAt;
+        boolean ignoreWeatherInTheMorning;
+        boolean ignoreWeatherInTheEvening;
     }
 }
 
