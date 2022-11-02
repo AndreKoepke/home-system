@@ -5,17 +5,20 @@ import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.services.DeviceService;
+import ch.akop.homesystem.util.SleepUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static java.time.temporal.ChronoUnit.MILLIS;
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 
 @RequiredArgsConstructor
@@ -66,8 +69,12 @@ public class DeviceServiceImpl implements DeviceService {
         this.getDevicesOfType(SimpleLight.class).stream()
                 .filter(light -> !homeSystemProperties.getNotLights().contains(light.getName()))
                 .forEach(light -> {
+                    // see #74, if the commands are cumming to fast, then maybe lights are not correctly off
+                    // if this workaround helps, then this should be removed for a rate-limit (see #3)
+                    SleepUtil.sleep(Duration.of(25, MILLIS));
+
                     if (light instanceof DimmableLight dimmable) {
-                        dimmable.setBrightness(0, Duration.of(10, ChronoUnit.SECONDS));
+                        dimmable.setBrightness(0, Duration.of(10, SECONDS));
                     } else {
                         light.turnOn(false);
                     }
