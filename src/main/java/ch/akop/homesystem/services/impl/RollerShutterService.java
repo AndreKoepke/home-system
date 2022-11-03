@@ -137,7 +137,7 @@ public class RollerShutterService {
                 && !config.isIgnoreWeatherInTheEvening()) {
             log.info("Weather close for {} because it is getting dark", rollerShutter.getName());
             rollerShutter.close();
-        } else if (!rollerShutter.isCurrentlyOpen() && brightnessIsGoingBelowThreshold(weather, 100)) {
+        } else if (!rollerShutter.isCurrentlyOpen() && brightnessIsGoingBelowThreshold(weather, 150)) {
             log.info("Weather open for {} because it is not longer super-bright outside", rollerShutter.getName());
             rollerShutter.open();
         }
