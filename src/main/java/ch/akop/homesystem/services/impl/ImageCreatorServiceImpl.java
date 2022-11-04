@@ -8,9 +8,15 @@ import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.engine.jdbc.BlobProxy;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.io.OutputStream;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -18,6 +24,7 @@ import static ch.akop.homesystem.util.RandomUtil.pickRandomElement;
 import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ImageCreatorServiceImpl implements ImageCreatorService {
@@ -26,6 +33,9 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
     private final OpenAIImageRepository imageRepository;
     private final MessageService messageService;
     private final WeatherService weatherService;
+    private final TransactionTemplate transactionTemplate;
+
+    byte[] lastImage;
 
 
     @Override
@@ -34,19 +44,46 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
         imageService.requestImage(prompt)
                 .subscribe(image -> {
                     messageService.sendImageToMainChannel(image, prompt);
-                    imageRepository.save(new ImageOfOpenAI().setPrompt(prompt).setImage(image));
+                    imageRepository.save(new ImageOfOpenAI().setPrompt(prompt).setImage(BlobProxy.generateProxy(image)));
+                    lastImage = image;
                 });
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public ImageOfOpenAI getLastImage() {
-        var last = imageRepository.findFirstByOrderByCreatedDesc()
+        return getLastImageOrThrow();
+    }
+
+    @Override
+    @SneakyThrows
+    public void writeLastImageToStream(OutputStream outputStream) {
+        outputStream.write(getLastImageAsBytes());
+    }
+
+    public synchronized byte[] getLastImageAsBytes() {
+        if (lastImage == null) {
+            lastImage = transactionTemplate.execute(status -> getLastImageAsBytesFromDatabase());
+        }
+
+        return lastImage;
+    }
+
+    @SneakyThrows
+    private byte[] getLastImageAsBytesFromDatabase() {
+        return getLastImageOrThrow().getImage().getBinaryStream().readAllBytes();
+    }
+
+    @Override
+    @Async
+    public void increaseDownloadCounter() {
+        imageRepository.findFirstByOrderByCreatedDesc()
+                .ifPresent(image -> image.setDownloaded(image.getDownloaded() + 1));
+    }
+
+    private ImageOfOpenAI getLastImageOrThrow() {
+        return imageRepository.findFirstByOrderByCreatedDesc()
                 .orElseThrow(() -> new NoSuchElementException("There are no images right now."));
-
-        last.setDownloaded(last.getDownloaded() + 1);
-
-        return last;
     }
 
     private String generatePrompt() {
