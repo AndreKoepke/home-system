@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import static ch.akop.homesystem.util.RandomUtil.pickRandomElement;
 import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 
@@ -53,7 +54,7 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                 "as a 3D render",
                 "in Van Gogh style");
 
-        return "%s %s %s".formatted(atTheBeginning, inTheMiddle, atTheEnd);
+        return "%s %s %s".formatted(pickRandomElement(atTheBeginning), inTheMiddle, pickRandomElement(atTheEnd));
     }
 
     private String extractTextFromWeather(Weather weather) {

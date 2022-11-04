@@ -17,9 +17,9 @@ import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import static ch.akop.homesystem.util.RandomUtil.pickRandomElement;
 import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
@@ -38,7 +38,6 @@ public class SleepState implements State {
 
     private static final Duration DURATION_UNTIL_SWITCH_LIGHTS_OFF = Duration.of(3, MINUTES);
     private static final LocalTime WAKEUP_TIME = LocalTime.of(7, 0);
-    public static final Random RANDOM = new Random();
     private final List<Disposable> disposeWhenLeaveState = new ArrayList<>();
 
     private final StateServiceImpl stateService;
@@ -101,7 +100,7 @@ public class SleepState implements State {
 
     @Override
     public void leave() {
-        messageService.sendMessageToMainChannel(POSSIBLE_MORNING_TEXTS.get(RANDOM.nextInt(POSSIBLE_MORNING_TEXTS.size())));
+        messageService.sendMessageToMainChannel(pickRandomElement(POSSIBLE_MORNING_TEXTS));
         imageCreatorService.generateAndSendDailyImage();
 
         if (weatherService.isActive()) {
