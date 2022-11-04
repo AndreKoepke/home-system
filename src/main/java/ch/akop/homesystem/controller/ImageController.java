@@ -24,8 +24,8 @@ public class ImageController {
 
     private final ImageCreatorService imageCreatorService;
 
-    // @Cacheable("dailyImage")
     @GetMapping("daily.jpg")
+    @CrossOrigin(exposedHeaders = "prompt")
     public ResponseEntity<StreamingResponseBody> getDailyImage() {
         var image = imageCreatorService.getLastImage();
         imageCreatorService.increaseDownloadCounter();
