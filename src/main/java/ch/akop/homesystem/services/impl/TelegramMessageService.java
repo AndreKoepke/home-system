@@ -4,6 +4,7 @@ import ch.akop.homesystem.services.MessageService;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.request.SendPhoto;
 import com.pengrad.telegrambot.request.SetWebhook;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -61,6 +62,15 @@ public class TelegramMessageService implements MessageService {
     }
 
     @Override
+    public MessageService sendImageToMainChannel(byte @NonNull [] image, @NonNull String caption) {
+        if (mainChannel == null) {
+            return this;
+        }
+
+        return sendImageToUser(image, mainChannel, caption);
+    }
+
+    @Override
     public MessageService sendMessageToUser(@Nullable String message, @NonNull String chatId) {
         return sendMessageToUser(message, List.of(chatId));
     }
@@ -69,6 +79,15 @@ public class TelegramMessageService implements MessageService {
     public MessageService sendMessageToUser(@Nullable String message, @NonNull List<String> chatIds) {
         if (bot != null) {
             chatIds.forEach(chatId -> bot.execute(new SendMessage(chatId, message)));
+        }
+
+        return this;
+    }
+
+    public MessageService sendImageToUser(byte @NonNull [] image, @NonNull String chatId, @NonNull String text) {
+        if (bot != null) {
+            bot.execute(new SendPhoto(chatId, image)
+                    .caption(text));
         }
 
         return this;

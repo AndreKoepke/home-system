@@ -15,5 +15,7 @@ public interface MessageService {
 
     MessageService sendMessageToMainChannel(@Nullable String message);
 
+    MessageService sendImageToMainChannel(@NonNull byte [] image, @NonNull String caption);
+
     MessageService sendMessageToUser(@Nullable String message, @NonNull String chatId);
 }
