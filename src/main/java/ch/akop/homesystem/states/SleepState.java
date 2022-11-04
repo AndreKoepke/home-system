@@ -3,10 +3,7 @@ package ch.akop.homesystem.states;
 import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
-import ch.akop.homesystem.services.DeviceService;
-import ch.akop.homesystem.services.MessageService;
-import ch.akop.homesystem.services.UserService;
-import ch.akop.homesystem.services.WeatherService;
+import ch.akop.homesystem.services.*;
 import ch.akop.homesystem.services.impl.StateServiceImpl;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -50,6 +47,7 @@ public class SleepState implements State {
     private final HomeSystemProperties homeSystemProperties;
     private final WeatherService weatherService;
     private final UserService userService;
+    private final ImageCreatorService imageCreatorService;
 
 
     private Disposable timerDoorOpen;
@@ -104,6 +102,7 @@ public class SleepState implements State {
     @Override
     public void leave() {
         messageService.sendMessageToMainChannel(POSSIBLE_MORNING_TEXTS.get(RANDOM.nextInt(POSSIBLE_MORNING_TEXTS.size())));
+        imageCreatorService.generateAndSendDailyImage();
 
         if (weatherService.isActive()) {
             var weather = weatherService.getWeather().blockingFirst();
