@@ -1,7 +1,10 @@
 package ch.akop.homesystem.services;
 
-public interface ImageCreatorService {
+import ch.akop.homesystem.persistence.model.ImageOfOpenAI;
 
+public interface ImageCreatorService {
     void generateAndSendDailyImage();
+
+    ImageOfOpenAI getLastImage();
 
 }

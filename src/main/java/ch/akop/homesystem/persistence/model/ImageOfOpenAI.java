@@ -17,6 +17,9 @@ public class ImageOfOpenAI {
     private LocalDateTime created = LocalDateTime.now();
 
     @Column(nullable = false)
+    private int downloaded = 0;
+
+    @Column(nullable = false)
     @NonNull
     private String prompt;
 

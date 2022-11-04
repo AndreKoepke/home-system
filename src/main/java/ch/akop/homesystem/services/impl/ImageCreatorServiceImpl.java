@@ -9,8 +9,10 @@ import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static ch.akop.homesystem.util.RandomUtil.pickRandomElement;
 import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
@@ -34,6 +36,17 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                     messageService.sendImageToMainChannel(image, prompt);
                     imageRepository.save(new ImageOfOpenAI().setPrompt(prompt).setImage(image));
                 });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ImageOfOpenAI getLastImage() {
+        var last = imageRepository.findFirstByOrderByCreatedDesc()
+                .orElseThrow(() -> new NoSuchElementException("There are no images right now."));
+
+        last.setDownloaded(last.getDownloaded() + 1);
+
+        return last;
     }
 
     private String generatePrompt() {
