@@ -86,8 +86,7 @@ public class TelegramMessageService implements MessageService {
 
     public MessageService sendImageToUser(byte @NonNull [] image, @NonNull String chatId, @NonNull String text) {
         if (bot != null) {
-            bot.execute(new SendPhoto(chatId, image)
-                    .caption(text));
+            bot.execute(new SendPhoto(chatId, image).caption(text));
         }
 
         return this;
@@ -98,7 +97,7 @@ public class TelegramMessageService implements MessageService {
                 update.message().chat().id(),
                 update.message().text());
 
-        if (mainChannel.equals(update.message().chat().id().toString())) {
+        if (mainChannel.equals(update.message().chat().id().toString()) && update.message().text() != null) {
             messages.onNext(update.message().text());
         }
     }

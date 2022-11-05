@@ -28,10 +28,10 @@ public class ImageController {
     @CrossOrigin(exposedHeaders = "prompt")
     public ResponseEntity<StreamingResponseBody> getDailyImage() {
         var image = imageCreatorService.getLastImage();
-        imageCreatorService.increaseDownloadCounter();
+        imageCreatorService.increaseDownloadCounter(image.getCreated());
 
         return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.of(12, ChronoUnit.HOURS)))
+                .cacheControl(CacheControl.maxAge(Duration.of(1, ChronoUnit.HOURS)))
                 .eTag(image.getCreated().toString())
                 .contentType(MediaType.IMAGE_JPEG)
                 .headers(header -> header.add("prompt", image.getPrompt()))

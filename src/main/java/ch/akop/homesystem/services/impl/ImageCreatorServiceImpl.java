@@ -7,36 +7,57 @@ import ch.akop.homesystem.services.ImageCreatorService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
+import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.engine.jdbc.BlobProxy;
+import org.hibernate.Hibernate;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.io.OutputStream;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 import static ch.akop.homesystem.util.RandomUtil.pickRandomElement;
 import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
+import static java.util.Optional.ofNullable;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ImageCreatorServiceImpl implements ImageCreatorService {
 
+    public static final String CACHE_NAME = "dailyImage";
     private final OpenAIService imageService;
     private final OpenAIImageRepository imageRepository;
     private final MessageService messageService;
     private final WeatherService weatherService;
-    private final TransactionTemplate transactionTemplate;
+    private final CacheManager cacheManager;
 
-    byte[] lastImage;
+    private Disposable messageListener;
 
+    @PostConstruct
+    private void listenForRenewCommands() {
+        messageListener = messageService.getMessages()
+                .filter(message -> message.equals("/neuesBild"))
+                .subscribe(message -> generateAndSendDailyImage());
+    }
+
+    @PreDestroy
+    private void stopListening() {
+        if (messageListener != null) {
+            messageListener.dispose();
+        }
+    }
 
     @Override
     public void generateAndSendDailyImage() {
@@ -44,52 +65,42 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
         imageService.requestImage(prompt)
                 .subscribe(image -> {
                     messageService.sendImageToMainChannel(image, prompt);
-                    imageRepository.save(new ImageOfOpenAI().setPrompt(prompt).setImage(BlobProxy.generateProxy(image)));
-                    lastImage = image;
+                    imageRepository.save(new ImageOfOpenAI().setPrompt(prompt).setImage(image));
+                    ofNullable(cacheManager.getCache(CACHE_NAME)).ifPresent(Cache::clear);
                 });
     }
 
     @Override
     @Transactional
+    @Cacheable(CACHE_NAME)
     public ImageOfOpenAI getLastImage() {
-        return getLastImageOrThrow();
+        return imageRepository.findFirstByOrderByCreatedDesc()
+                .map(image -> Hibernate.unproxy(image, ImageOfOpenAI.class))
+                .orElseThrow(() -> new NoSuchElementException("There are no images right now."));
     }
 
     @Override
     @SneakyThrows
     public void writeLastImageToStream(OutputStream outputStream) {
-        outputStream.write(getLastImageAsBytes());
-    }
-
-    public synchronized byte[] getLastImageAsBytes() {
-        if (lastImage == null) {
-            lastImage = transactionTemplate.execute(status -> getLastImageAsBytesFromDatabase());
-        }
-
-        return lastImage;
-    }
-
-    @SneakyThrows
-    private byte[] getLastImageAsBytesFromDatabase() {
-        return getLastImageOrThrow().getImage().getBinaryStream().readAllBytes();
+        outputStream.write(getLastImage().getImage());
     }
 
     @Override
     @Async
-    public void increaseDownloadCounter() {
-        imageRepository.findFirstByOrderByCreatedDesc()
-                .ifPresent(image -> image.setDownloaded(image.getDownloaded() + 1));
-    }
-
-    private ImageOfOpenAI getLastImageOrThrow() {
-        return imageRepository.findFirstByOrderByCreatedDesc()
-                .orElseThrow(() -> new NoSuchElementException("There are no images right now."));
+    @Transactional
+    public void increaseDownloadCounter(LocalDateTime imageThatWasCreatedAt) {
+        imageRepository.increaseDownloadCounter(imageThatWasCreatedAt);
     }
 
     private String generatePrompt() {
-        var atTheBeginning = List.of("A swiss house in the mountains with a lake",
+        var atTheBeginning = List.of(
+                "A swiss house in the mountains with a lake",
                 "A train passing wonderful mountains",
-                "A blue Ford Kuga MK 2 on the highway");
+                "A blue Ford Kuga MK 2 on the highway",
+                "Hamburg",
+                "Switzerland",
+                "The ocean",
+                "Jungfrau-Joch");
 
         var inTheMiddle = weatherService.getWeather()
                 .take(1)
@@ -100,7 +111,7 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                 "as a stained glass window",
                 "as an abstract pencil and watercolor drawing",
                 "in digital art",
-                "as a realistic photograph",
+                "as a realistic photo",
                 "as a 3D render",
                 "in Van Gogh style");
 
@@ -114,7 +125,7 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
         var isWarm = weather.getOuterTemperatur().isBiggerThan(15, DEGREE);
 
         if (isRaining && isCold) {
-            return "on cold and rainy day";
+            return "on a cold and rainy day";
         }
 
         if (isRaining && isWarm) {
