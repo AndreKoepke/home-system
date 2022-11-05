@@ -4,7 +4,10 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import java.time.LocalDateTime;
 
 @Entity
@@ -23,7 +26,5 @@ public class ImageOfOpenAI {
     @NonNull
     private String prompt;
 
-    @Lob
     private byte[] image;
-
 }
