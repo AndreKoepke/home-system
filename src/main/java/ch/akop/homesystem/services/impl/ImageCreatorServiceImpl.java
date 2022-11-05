@@ -100,7 +100,10 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                 "Hamburg",
                 "Switzerland",
                 "The ocean",
-                "Jungfrau-Joch");
+                "Jungfrau-Joch",
+                "Space Shuttle",
+                "A lake mirroring Mountains",
+                "The sky");
 
         var inTheMiddle = weatherService.getWeather()
                 .take(1)
@@ -113,9 +116,17 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                 "in digital art",
                 "as a realistic photo",
                 "as a 3D render",
-                "in Van Gogh style");
+                "in Van Gogh style"
+                "spray-painted on a wall",
+                "as a 1960s poster",
+                "");
 
-        return "%s %s %s".formatted(pickRandomElement(atTheBeginning), inTheMiddle, pickRandomElement(atTheEnd));
+        return Stream.of(
+                pickRandomElement(atTheBeginning),
+                inTheMiddle,
+                pickRandomElement(atTheEnd))
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining(" "));
     }
 
     private String extractTextFromWeather(Weather weather) {
