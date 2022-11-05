@@ -116,7 +116,7 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                 "in digital art",
                 "as a realistic photo",
                 "as a 3D render",
-                "in Van Gogh style"
+                "in Van Gogh style",
                 "spray-painted on a wall",
                 "as a 1960s poster",
                 "");
