@@ -18,6 +18,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -25,6 +26,8 @@ import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ch.akop.homesystem.util.RandomUtil.pickRandomElement;
 import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
@@ -103,7 +106,9 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                 "Jungfrau-Joch",
                 "Space Shuttle",
                 "A lake mirroring Mountains",
-                "The sky");
+                "The sky",
+                "Fallout",
+                "Metro 2033");
 
         var inTheMiddle = weatherService.getWeather()
                 .take(1)
@@ -121,11 +126,10 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                 "as a 1960s poster",
                 "");
 
-        return Stream.of(
-                pickRandomElement(atTheBeginning),
-                inTheMiddle,
-                pickRandomElement(atTheEnd))
-                .filter(s -> !s.isEmpty())
+        return Stream.of(pickRandomElement(atTheBeginning),
+                        inTheMiddle,
+                        pickRandomElement(atTheEnd))
+                .filter(StringUtils::hasText)
                 .collect(Collectors.joining(" "));
     }
 
