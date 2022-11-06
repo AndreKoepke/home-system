@@ -6,6 +6,7 @@ import ch.akop.homesystem.persistence.repository.OpenAIImageRepository;
 import ch.akop.homesystem.services.ImageCreatorService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
+import ch.akop.homesystem.util.RandomUtil;
 import ch.akop.weathercloud.Weather;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +25,12 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.OutputStream;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ch.akop.homesystem.util.RandomUtil.pickRandomElement;
 import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 import static java.util.Optional.ofNullable;
@@ -107,15 +108,15 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                 "Space Shuttle",
                 "A lake mirroring Mountains",
                 "The sky",
-                "Fallout",
-                "Metro 2033");
+                "In a retro bar");
 
         var inTheMiddle = weatherService.getWeather()
                 .take(1)
                 .map(this::extractTextFromWeather)
                 .blockingFirst();
 
-        var atTheEnd = List.of("as an oil painting",
+        var atTheEnd = List.of(
+                "as an oil painting",
                 "as a stained glass window",
                 "as an abstract pencil and watercolor drawing",
                 "in digital art",
@@ -126,39 +127,56 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                 "as a 1960s poster",
                 "");
 
-        return Stream.of(pickRandomElement(atTheBeginning),
-                        inTheMiddle,
-                        pickRandomElement(atTheEnd))
+        return Stream.of(atTheBeginning, inTheMiddle, atTheEnd)
+                .map(RandomUtil::pickRandomElement)
                 .filter(StringUtils::hasText)
                 .collect(Collectors.joining(" "));
     }
 
-    private String extractTextFromWeather(Weather weather) {
+    private List<String> extractTextFromWeather(Weather weather) {
 
+        var possibleWeatherTexts = new ArrayList<String>();
         var isRaining = weather.getRain().isBiggerThan(0, MILLIMETER_PER_HOUR);
+        var isVeryCold = weather.getOuterTemperatur().isSmallerThan(0, DEGREE);
         var isCold = weather.getOuterTemperatur().isSmallerThan(5, DEGREE);
         var isWarm = weather.getOuterTemperatur().isBiggerThan(15, DEGREE);
 
         if (isRaining && isCold) {
-            return "on a cold and rainy day";
+            possibleWeatherTexts.add("on a cold and rainy day");
+            possibleWeatherTexts.add("with bad weather");
+            possibleWeatherTexts.add("with sad feeling");
         }
 
         if (isRaining && isWarm) {
-            return "on a summer rainy day";
+            possibleWeatherTexts.add("on a summer rainy day");
+            possibleWeatherTexts.add("and summer thunderstorms");
         }
 
         if (isRaining) {
-            return "on a rainy day";
+            possibleWeatherTexts.add("on a rainy day");
+            possibleWeatherTexts.add("with bad weather");
+
         }
 
         if (isCold) {
-            return "in the winter";
+            possibleWeatherTexts.add("in the winter");
+            possibleWeatherTexts.add("on a cold day");
+        }
+
+        if (isVeryCold) {
+            possibleWeatherTexts.add("at christmas");
+            possibleWeatherTexts.add("at a snowy day");
+            possibleWeatherTexts.add("and it is very cold outside");
+
         }
 
         if (isWarm) {
-            return "in the summer";
+            possibleWeatherTexts.add("in the summer");
+            possibleWeatherTexts.add("at a sunny day");
+            possibleWeatherTexts.add("on a nice day");
+            possibleWeatherTexts.add("and sunglasses");
         }
 
-        return "";
+        return possibleWeatherTexts;
     }
 }
