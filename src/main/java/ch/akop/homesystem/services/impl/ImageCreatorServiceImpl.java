@@ -128,6 +128,7 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                 "");
 
         return Stream.of(atTheBeginning, inTheMiddle, atTheEnd)
+                .filter(list -> !list.isEmpty())
                 .map(RandomUtil::pickRandomElement)
                 .filter(StringUtils::hasText)
                 .collect(Collectors.joining(" "));
