@@ -14,6 +14,8 @@ import ch.akop.homesystem.services.impl.RainDetectorService;
 import ch.akop.homesystem.services.impl.StateServiceImpl;
 import ch.akop.homesystem.util.TimedGateKeeper;
 import ch.akop.weathercloud.Weather;
+import io.reactivex.rxjava3.core.BackpressureStrategy;
+import io.reactivex.rxjava3.core.Flowable;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,7 @@ import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -105,6 +108,16 @@ public class NormalState extends Activatable implements State {
         super.disposeWhenClosed(userService.getPresenceMap$()
                 .filter(this::compareWithLastAndSkipFirst)
                 .subscribe(this::gotNewPresenceMap));
+
+        super.disposeWhenClosed(userService.isAnyoneAtHome$()
+                .skip(1)
+                .filter(anyOneAtHome -> !anyOneAtHome)
+                .distinctUntilChanged()
+                .filter(anyOneAtHome -> deviceService.isAnyLightOn())
+                .delay(10, TimeUnit.MINUTES)
+                .switchMap(isAnyOneAtHome -> shouldLightsTurnedOff())
+                .filter(canTurnOff -> canTurnOff)
+                .subscribe(canTurnOff -> deviceService.turnAllLightsOff()));
     }
 
     @Override
@@ -137,6 +150,20 @@ public class NormalState extends Activatable implements State {
         }
 
         deviceService.turnAllLightsOff();
+    }
+
+    private Flowable<Boolean> shouldLightsTurnedOff() {
+        messageService.sendMessageToMainChannel("Es niemand zu Hause, deswegen mache ich gleich die Lichter aus." +
+                "Es sei denn, /lassAn");
+
+        return messageService.getMessages()
+                .map(String::trim)
+                .filter("/lassAn"::equalsIgnoreCase)
+                .take(1)
+                .map(s -> false)
+                .timeout(5, TimeUnit.MINUTES)
+                .onErrorReturn(throwable -> true)
+                .toFlowable(BackpressureStrategy.LATEST);
     }
 
     private void startMainDoorOpenAnimation() {
