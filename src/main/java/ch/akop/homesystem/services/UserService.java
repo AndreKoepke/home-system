@@ -15,9 +15,7 @@ public interface UserService {
 
     Flowable<Map<HomeSystemProperties.User, Boolean>> getPresenceMap$();
 
-    void messageToUser(String name, String message);
-
-    void devMessage(String message);
+    Flowable<Boolean> isAnyoneAtHome$();
 
     boolean isAnyoneAtHome();
 }

@@ -1,7 +1,6 @@
 package ch.akop.homesystem.services.impl;
 
 import ch.akop.homesystem.config.properties.HomeSystemProperties;
-import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
 import ch.akop.homesystem.states.Event;
 import ch.akop.homesystem.util.SleepUtil;
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     private final HomeSystemProperties homeSystemProperties;
-    private final MessageService messageService;
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private final Subject<Map<HomeSystemProperties.User, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
     private Map<HomeSystemProperties.User, Boolean> presenceMap = new HashMap<>();
@@ -92,19 +90,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void messageToUser(String name, String message) {
-        homeSystemProperties.getUsers().stream()
-                .filter(user -> user.getName().equalsIgnoreCase(name))
-                .findFirst()
-                .ifPresent(user -> messageService.sendMessageToUser(message, user.getTelegramId()));
-    }
-
-    @Override
-    public void devMessage(String message) {
-        homeSystemProperties.getUsers().stream()
-                .filter(HomeSystemProperties.User::isDev)
-                .findFirst()
-                .ifPresent(user -> messageService.sendMessageToUser(message, user.getTelegramId()));
+    public Flowable<Boolean> isAnyoneAtHome$() {
+        return presenceMap$
+                .map(presenceMap -> presenceMap.values().stream().anyMatch(isAtHome -> isAtHome))
+                .toFlowable(BackpressureStrategy.DROP);
     }
 
     @Override
