@@ -1,4 +1,4 @@
-package ch.akop.homesystem.openai;
+package ch.akop.homesystem.external.openai;
 
 import ch.akop.homesystem.config.properties.OpenAIProperties;
 import lombok.RequiredArgsConstructor;
@@ -12,8 +12,6 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.util.Base64;
-
-import static ch.akop.homesystem.openai.ImageRequest.ResponseFormat.B64_JSON;
 
 @Slf4j
 @Service
@@ -36,7 +34,7 @@ public class OpenAIService {
     @SneakyThrows
     public Mono<byte[]> requestImage(String text) {
         var requestBody = new ImageRequest()
-                .setResponseFormat(B64_JSON)
+                .setResponseFormat(ImageRequest.ResponseFormat.B64_JSON)
                 .setN(1)
                 .setSize(openAIProperties.getSize())
                 .setPrompt(text);

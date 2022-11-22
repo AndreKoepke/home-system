@@ -1,4 +1,4 @@
-package ch.akop.homesystem.openai;
+package ch.akop.homesystem.external.openai;
 
 import lombok.Data;
 

@@ -1,4 +1,4 @@
-package ch.akop.homesystem.openai;
+package ch.akop.homesystem.external.openai;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
