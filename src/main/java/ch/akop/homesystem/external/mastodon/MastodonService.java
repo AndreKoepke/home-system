@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 
@@ -27,10 +26,8 @@ public class MastodonService {
         apiWebClient = WebClient.builder()
                 .baseUrl("https://%s/api/".formatted(properties.getServer()))
                 .defaultHeaders(header -> header.setBearerAuth(properties.getToken()))
-                .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(1024 * 1024 * 10))
                 .build();
     }
-
 
     @Async
     public void publishImage(String text, byte[] image) {
@@ -41,7 +38,9 @@ public class MastodonService {
     private void postStatus(String text, String imageId) {
         var form = new LinkedMultiValueMap<String, String>();
         form.add("status", text);
-        form.add("media_ids", "[%s]".formatted(imageId));
+        form.add("media_ids[]", imageId);
+        form.add("visibility", "public");
+        form.add("language", "en");
 
         apiWebClient.post()
                 .uri("v1/statuses")
@@ -53,16 +52,15 @@ public class MastodonService {
 
     private MediaCreateResponse postImage(byte[] image) {
         var form = new MultipartBodyBuilder();
-        form.part("description", "An automated generated image");
         form.part("file", new ByteArrayResource(image))
-                .contentType(MediaType.IMAGE_JPEG);
+                .contentType(MediaType.IMAGE_JPEG)
+                .filename("image.jpg");
 
         return apiWebClient.post()
                 .uri("v2/media")
                 .body(BodyInserters.fromMultipartData(form.build()))
-                .exchangeToMono(response -> {
-                    return Mono.just(new MediaCreateResponse());
-                })
+                .retrieve()
+                .bodyToMono(MediaCreateResponse.class)
                 .block();
     }
 

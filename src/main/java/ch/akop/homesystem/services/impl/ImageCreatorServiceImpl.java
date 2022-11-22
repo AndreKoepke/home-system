@@ -74,7 +74,8 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                     imageRepository.save(new ImageOfOpenAI().setPrompt(prompt).setImage(image));
                     ofNullable(cacheManager.getCache(CACHE_NAME)).ifPresent(Cache::clear);
 
-                    mastodonService.publishImage(prompt, image);
+                    mastodonService.publishImage(("Generated image for: \"%s\"\n#openai #dall·e")
+                            .formatted(prompt), image);
                 });
     }
 
