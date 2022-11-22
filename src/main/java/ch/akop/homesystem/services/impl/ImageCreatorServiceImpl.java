@@ -1,6 +1,7 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.openai.OpenAIService;
+import ch.akop.homesystem.external.mastodon.MastodonService;
+import ch.akop.homesystem.external.openai.OpenAIService;
 import ch.akop.homesystem.persistence.model.ImageOfOpenAI;
 import ch.akop.homesystem.persistence.repository.OpenAIImageRepository;
 import ch.akop.homesystem.services.ImageCreatorService;
@@ -45,6 +46,7 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
     private final OpenAIImageRepository imageRepository;
     private final MessageService messageService;
     private final WeatherService weatherService;
+    private final MastodonService mastodonService;
     private final CacheManager cacheManager;
 
     private Disposable messageListener;
@@ -71,6 +73,9 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
                     messageService.sendImageToMainChannel(image, prompt);
                     imageRepository.save(new ImageOfOpenAI().setPrompt(prompt).setImage(image));
                     ofNullable(cacheManager.getCache(CACHE_NAME)).ifPresent(Cache::clear);
+
+                    mastodonService.publishImage(("Generated image for: \"%s\"\n#openai #dall·e")
+                            .formatted(prompt), image);
                 });
     }
 
