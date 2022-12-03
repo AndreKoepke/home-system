@@ -1,11 +1,10 @@
 package ch.akop.homesystem.config.properties;
 
 import ch.akop.homesystem.models.CompassDirection;
+import lombok.Data;
 import lombok.NonNull;
 import lombok.ToString;
-import lombok.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.lang.Nullable;
 
 import java.time.Duration;
@@ -13,8 +12,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
 
-@Value
-@ConstructorBinding
+@Data
 @ConfigurationProperties(prefix = "home-automation.special")
 public class HomeSystemProperties {
 
@@ -34,23 +32,20 @@ public class HomeSystemProperties {
     @NonNull List<RollerShutterConfig> rollerShutters;
     @NonNull Set<String> notLights;
 
-    @Value
-    @ConstructorBinding
+    @Data
     public static class MotionSensorConfig {
         String sensor;
         List<String> lights;
         Duration keepMovingFor;
     }
 
-    @Value
-    @ConstructorBinding
+    @Data
     public static class OffButton {
         @NonNull String name;
         @NonNull Integer buttonEvent;
     }
 
-    @Value
-    @ConstructorBinding
+    @Data
     public static class FanControlConfig {
         @NonNull List<OffButton> buttons;
         @NonNull String fan;
@@ -59,8 +54,7 @@ public class HomeSystemProperties {
         @Nullable String increaseMotionSensorTimeout;
     }
 
-    @Value
-    @ConstructorBinding
+    @Data
     public static class PowerMeterConfigs {
         @NonNull String sensorName;
         @NonNull Integer isOnWhenMoreThan;
@@ -69,15 +63,13 @@ public class HomeSystemProperties {
         @Nullable String linkToFan;
     }
 
-    @Value
-    @ConstructorBinding
+    @Data
     public static class GoodNightButton {
         String name;
         Integer buttonEvent;
     }
 
-    @Value
-    @ConstructorBinding
+    @Data
     @ToString(onlyExplicitlyIncluded = true)
     public static class User {
 
@@ -89,8 +81,7 @@ public class HomeSystemProperties {
         boolean dev;
     }
 
-    @Value
-    @ConstructorBinding
+    @Data
     public static class RollerShutterConfig {
         @NonNull String name;
         @Nullable CompassDirection compassDirection;

@@ -7,12 +7,12 @@ import ch.akop.homesystem.services.WeatherService;
 import ch.akop.homesystem.util.TimeUtil;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;

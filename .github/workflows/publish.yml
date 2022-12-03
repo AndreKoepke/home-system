@@ -1,7 +1,7 @@
 name: Publish to DockerHub
 on:
   push:
-    branches: [ master ]
+    branches: [ master, "feature/#85" ]
     paths:
       - 'src/**'
       - 'build.gradle'
@@ -23,7 +23,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Build and publish
-        run: ./gradlew jib
+        run: ./gradlew bootBuildImage
         env:
           DOCKER_USER: '${{ secrets.DOCKER_USER }}'
           DOCKER_PASS: '${{ secrets.DOCKER_PASS }}'

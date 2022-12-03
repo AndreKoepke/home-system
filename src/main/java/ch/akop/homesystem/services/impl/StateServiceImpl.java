@@ -4,13 +4,13 @@ import ch.akop.homesystem.states.HolidayState;
 import ch.akop.homesystem.states.NormalState;
 import ch.akop.homesystem.states.SleepState;
 import ch.akop.homesystem.states.State;
+import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 

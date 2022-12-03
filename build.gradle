@@ -3,7 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.0.0'
     id 'io.spring.dependency-management' version '1.1.0'
     id 'java'
-    id 'com.google.cloud.tools.jib' version '3.3.1'
+    id 'org.graalvm.buildtools.native' version '0.9.18'
 }
 
 group = 'ch.akop'
@@ -63,44 +63,14 @@ test {
 }
 
 
-jib {
-
-    extraDirectories {
-        paths {
-            path {
-                from = file('executables')
-                into = '/bin'
-            }
-        }
-        permissions = [
-                '/bin/*': '755'
-        ]
-    }
-
-    from {
-        image = 'openjdk:17'
-    }
-
-    to {
-        image = 'akop/home-system:latest'
-        auth {
+tasks.named("bootBuildImage") {
+    imageName.set("akop/home-system:native")
+    publish = true
+    docker {
+        publishRegistry {
             username = project.findProperty("docker.user") ?: System.getenv("DOCKER_USER") ?: ""
             password = project.findProperty("docker.pass") ?: System.getenv("DOCKER_PASS") ?: ""
         }
     }
+    environment = ['BP_NATIVE_IMAGE': 'true']
 }
-
-task ensureDepsExist() {
-    doLast {
-        configurations.implementation.canBeResolved(true)
-        Set<File> impFiles = configurations.implementation.resolve()
-
-        impFiles.forEach { f ->
-            if (!f.exists()) {
-                ant.fail "${f} could not be found"
-            }
-        }
-    }
-}
-
-compileJava.dependsOn ensureDepsExist
