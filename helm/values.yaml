@@ -1,6 +1,6 @@
 image:
   base: akop/home-system
-  tag: latest
+  tag: native
 
-host: telegram.akop.online
+host: telegram2.akop.online
 timezone: Europe/Berlin
