@@ -62,7 +62,6 @@ test {
     useJUnitPlatform()
 }
 
-
 tasks.named("bootBuildImage") {
     imageName.set("akop/home-system:native")
     publish = true

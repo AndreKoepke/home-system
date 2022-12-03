@@ -1,10 +1,10 @@
 package ch.akop.homesystem.config.properties;
 
 import ch.akop.homesystem.external.openai.ImageRequest;
-import lombok.Data;
+import lombok.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Data
+@Value
 @ConfigurationProperties(prefix = "home-automation.openai")
 public class OpenAIProperties {
     String apiKey;

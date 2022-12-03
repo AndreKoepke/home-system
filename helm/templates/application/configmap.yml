@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: home-system-config
+  name: {{ .Release.Name}}-config
 
 data:
   application.yaml: |-

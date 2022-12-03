@@ -1,9 +1,10 @@
 package ch.akop.homesystem.config.properties;
 
 import ch.akop.homesystem.models.CompassDirection;
-import lombok.Data;
+import ch.akop.homesystem.models.animation.config.AnimationConfig;
 import lombok.NonNull;
 import lombok.ToString;
+import lombok.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.lang.Nullable;
 
@@ -12,7 +13,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Set;
 
-@Data
+@Value
 @ConfigurationProperties(prefix = "home-automation.special")
 public class HomeSystemProperties {
 
@@ -31,21 +32,23 @@ public class HomeSystemProperties {
     @NonNull List<PowerMeterConfigs> powerMeters;
     @NonNull List<RollerShutterConfig> rollerShutters;
     @NonNull Set<String> notLights;
+    @NonNull List<AnimationConfig> whenMainDoorOpened;
+    @NonNull String mainDoorName;
 
-    @Data
+    @Value
     public static class MotionSensorConfig {
         String sensor;
         List<String> lights;
         Duration keepMovingFor;
     }
 
-    @Data
+    @Value
     public static class OffButton {
         @NonNull String name;
         @NonNull Integer buttonEvent;
     }
 
-    @Data
+    @Value
     public static class FanControlConfig {
         @NonNull List<OffButton> buttons;
         @NonNull String fan;
@@ -54,7 +57,7 @@ public class HomeSystemProperties {
         @Nullable String increaseMotionSensorTimeout;
     }
 
-    @Data
+    @Value
     public static class PowerMeterConfigs {
         @NonNull String sensorName;
         @NonNull Integer isOnWhenMoreThan;
@@ -63,13 +66,13 @@ public class HomeSystemProperties {
         @Nullable String linkToFan;
     }
 
-    @Data
+    @Value
     public static class GoodNightButton {
         String name;
         Integer buttonEvent;
     }
 
-    @Data
+    @Value
     @ToString(onlyExplicitlyIncluded = true)
     public static class User {
 
@@ -81,7 +84,7 @@ public class HomeSystemProperties {
         boolean dev;
     }
 
-    @Data
+    @Value
     public static class RollerShutterConfig {
         @NonNull String name;
         @Nullable CompassDirection compassDirection;

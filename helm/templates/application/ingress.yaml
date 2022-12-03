@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: home-system-api
+  name: {{ .Release.Name }}-api
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 
@@ -15,7 +15,7 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: home-system-backend
+                name: {{ .Release.Name }}-backend
                 port:
                   number: 8080
 

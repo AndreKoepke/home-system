@@ -1,18 +1,16 @@
 package ch.akop.homesystem.models.animation.config;
 
 import ch.akop.homesystem.models.animation.steps.PauseStep;
-import lombok.Data;
+import lombok.Value;
 
 import java.time.Duration;
 
-@Data
+@Value
 public class PauseConfig {
 
-    private Duration waitFor;
-
+    Duration waitFor;
 
     public PauseStep toPauseStep() {
-        return new PauseStep(this.waitFor);
+        return new PauseStep(waitFor);
     }
-
 }

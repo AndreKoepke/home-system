@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: home-system
+  name: {{ .Release.Name }}-backend
   labels:
     product: home-system
     component: backend
@@ -33,22 +33,19 @@ spec:
       volumes:
         - name: spring-config
           configMap:
-            name: home-system-config
+            name: {{ .Release.Name}}-config
 
       containers:
         - name: backend
-          image: { { .Values.image.base } }:native
+          image: {{ .Values.image.base }}:{{ .Values.image.tag }}
           imagePullPolicy: Always
-          command: "sh"
           args:
-            - "-c"
-            - "./home-system"
             - "-Dspring.config.location=./config/"
           env:
             - name: TZ
-              value: { { .Values.timezone } }
+              value: {{ .Values.timezone }}
           volumeMounts:
-            - mountPath: /config
+            - mountPath: /workspace/config
               name: spring-config
           ports:
             - containerPort: 8080
