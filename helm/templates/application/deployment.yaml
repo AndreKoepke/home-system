@@ -23,7 +23,7 @@ spec:
         component: backend
 
       annotations:
-        # set timestamp to trick k8s to rollout a new version (even when nothing else changed)
+        # set timestamp to trick k8s to roll out a new version (even when nothing else changed)
         timstamp: "{{ now | date "20060102150405" }}"
 
 
@@ -37,20 +37,20 @@ spec:
 
       containers:
         - name: backend
-          image: {{ .Values.image.base }}:{{ .Values.image.tag }}
+          image: { { .Values.image.base } }:native
           imagePullPolicy: Always
+          command: "sh"
+          args:
+            - "-c"
+            - "./home-system"
+            - "-Dspring.config.location=./config/"
           env:
             - name: TZ
-              value: {{ .Values.timezone }}
-            - name: JAVA_TOOL_OPTIONS
-              value: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:62222
+              value: { { .Values.timezone } }
           volumeMounts:
-            - mountPath: /app/resources/
+            - mountPath: /config
               name: spring-config
           ports:
             - containerPort: 8080
               name: http
-              protocol: TCP
-            - containerPort: 62222
-              name: jvm-debug
               protocol: TCP
