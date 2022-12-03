@@ -1,7 +1,7 @@
 name: Publish to DockerHub
 on:
   push:
-    branches: [ master, "feature/#85" ]
+    branches: [ master, "feature/#86" ]
     paths:
       - 'src/**'
       - 'build.gradle'
