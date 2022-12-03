@@ -1,6 +1,7 @@
 package ch.akop.homesystem.external.mastodon;
 
 import ch.akop.homesystem.config.properties.MastodonProperties;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -10,8 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import javax.annotation.PostConstruct;
 
 @RequiredArgsConstructor
 @Service

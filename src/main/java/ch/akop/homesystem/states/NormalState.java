@@ -16,6 +16,7 @@ import ch.akop.homesystem.util.TimedGateKeeper;
 import ch.akop.weathercloud.Weather;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +24,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Map;

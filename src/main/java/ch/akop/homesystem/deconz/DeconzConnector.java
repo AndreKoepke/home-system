@@ -18,6 +18,7 @@ import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.logging.LogLevel;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -30,7 +31,6 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.transport.logging.AdvancedByteBufFormat;
 
-import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.Optional;
 

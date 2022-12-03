@@ -1,6 +1,7 @@
 package ch.akop.homesystem.external.openai;
 
 import ch.akop.homesystem.config.properties.OpenAIProperties;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +11,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import javax.annotation.PostConstruct;
 import java.util.Base64;
 
 @Slf4j

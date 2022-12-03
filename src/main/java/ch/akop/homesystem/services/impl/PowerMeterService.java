@@ -4,11 +4,10 @@ import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
-import io.reactivex.rxjava3.core.Observable;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
