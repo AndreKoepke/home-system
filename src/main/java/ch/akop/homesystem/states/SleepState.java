@@ -1,8 +1,8 @@
 package ch.akop.homesystem.states;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
+import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.*;
 import ch.akop.homesystem.services.impl.StateServiceImpl;
 import io.reactivex.rxjava3.core.Observable;
@@ -43,14 +43,14 @@ public class SleepState implements State {
     private final StateServiceImpl stateService;
     private final MessageService messageService;
     private final DeviceService deviceService;
-    private final HomeSystemProperties homeSystemProperties;
     private final WeatherService weatherService;
     private final UserService userService;
     private final ImageCreatorService imageCreatorService;
+    private final BasicConfigRepository basicConfigRepository;
 
 
     private Disposable timerDoorOpen;
-    private Map<HomeSystemProperties.User, Boolean> presenceAtBeginning;
+    private Map<String, Boolean> presenceAtBeginning;
     private boolean sleepButtonState;
 
 
@@ -94,7 +94,7 @@ public class SleepState implements State {
         deviceService.getDevicesOfType(Group.class)
                 .stream()
                 .flatMap(group -> group.getScenes().stream())
-                .filter(scene -> scene.getName().equals(homeSystemProperties.getNightSceneName()))
+                .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc().getNightSceneName()))
                 .forEach(Scene::activate);
     }
 
@@ -124,8 +124,8 @@ public class SleepState implements State {
         if (!currentPresence.equals(presenceAtBeginning)) {
             currentPresence.forEach((user, isAtHome) -> {
                 if (!presenceAtBeginning.get(user).equals(isAtHome)) {
-                    messageService.sendMessageToMainChannel("In der Nacht ist %s %s".formatted(user.getName(),
-                            isAtHome ? "nach Hause gekommen." : "weggegangen."));
+                    messageService.sendMessageToMainChannel("In der Nacht ist %s %s".formatted(user,
+                            Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen."));
                 }
             });
         }
@@ -154,7 +154,7 @@ public class SleepState implements State {
         if (!sleepButtonState) {
             deviceService.getDevicesOfType(Group.class).stream()
                     .flatMap(group -> group.getScenes().stream())
-                    .filter(scene -> scene.getName().equals(homeSystemProperties.getNightRunSceneName()))
+                    .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc().getNightRunSceneName()))
                     .forEach(Scene::activate);
         } else {
             turnLightsOff();

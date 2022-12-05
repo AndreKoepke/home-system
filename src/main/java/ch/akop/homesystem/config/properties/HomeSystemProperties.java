@@ -15,6 +15,7 @@ import java.util.Set;
 
 @Value
 @ConfigurationProperties(prefix = "home-automation.special")
+@Deprecated
 public class HomeSystemProperties {
 
     @NonNull Double latitude;
@@ -54,7 +55,6 @@ public class HomeSystemProperties {
         @NonNull String fan;
         @Nullable String turnOffWhenLightTurnedOff;
         @Nullable String increaseTimeoutForMotionSensor;
-        @Nullable String increaseMotionSensorTimeout;
     }
 
     @Value

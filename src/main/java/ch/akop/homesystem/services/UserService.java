@@ -1,6 +1,5 @@
 package ch.akop.homesystem.services;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import io.reactivex.rxjava3.core.Flowable;
 
 import java.util.Map;
@@ -13,7 +12,7 @@ public interface UserService {
      */
     void hintCheckPresence();
 
-    Flowable<Map<HomeSystemProperties.User, Boolean>> getPresenceMap$();
+    Flowable<Map<String, Boolean>> getPresenceMap$();
 
     Flowable<Boolean> isAnyoneAtHome$();
 
