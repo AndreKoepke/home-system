@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final MessageService messageService;
     private final UserConfigRepository userConfigRepository;
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
@@ -42,7 +41,6 @@ public class UserServiceImpl implements UserService {
     public void hintCheckPresence() {
         executorService.submit(this::checkPresenceUntilChangedWithin);
     }
-
 
     @EventListener
     public void gotEvent(Event event) {

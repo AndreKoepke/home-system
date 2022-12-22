@@ -1,7 +1,6 @@
 package ch.akop.homesystem.external.mastodon;
 
-import ch.akop.homesystem.config.properties.MastodonProperties;
-import jakarta.annotation.PostConstruct;
+import ch.akop.homesystem.persistence.repository.config.MastodonConfigRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -16,17 +15,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Service
 public class MastodonService {
 
-    private final MastodonProperties properties;
+    private final MastodonConfigRepository mastodonConfigRepository;
 
-    private WebClient apiWebClient;
-
-    @PostConstruct
-    public void initializeWebClients() {
-        apiWebClient = WebClient.builder()
-                .baseUrl("https://%s/api/".formatted(properties.getServer()))
-                .defaultHeaders(header -> header.setBearerAuth(properties.getToken()))
-                .build();
-    }
+    private WebClient apiWebClient = WebClient.builder()
+            .build();
 
     @Async
     public void publishImage(String text, byte[] image) {
