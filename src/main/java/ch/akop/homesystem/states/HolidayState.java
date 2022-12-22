@@ -1,6 +1,7 @@
 package ch.akop.homesystem.states;
 
 
+import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
@@ -8,15 +9,14 @@ import ch.akop.homesystem.services.activatable.Activatable;
 import ch.akop.homesystem.services.activatable.SunsetReactor;
 import ch.akop.homesystem.services.impl.StateServiceImpl;
 import io.reactivex.rxjava3.core.Observable;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.time.*;
 import java.util.concurrent.TimeUnit;
 
-@Lazy
 @Service
 @RequiredArgsConstructor
 public class HolidayState extends Activatable implements State {
@@ -31,6 +31,11 @@ public class HolidayState extends Activatable implements State {
     private final UserService userService;
 
 
+    @PostConstruct
+    private void registerState() {
+        stateService.registerState(HolidayState.class, this);
+    }
+
     @Override
     protected void started() {
         entered();
@@ -39,23 +44,23 @@ public class HolidayState extends Activatable implements State {
     @Override
     public void entered() {
 
-        this.messageService.sendMessageToMainChannel("Ich wünsche euch einen schönen Urlaub. Wenn ihr wieder da seid, " +
+        messageService.sendMessageToMainChannel("Ich wünsche euch einen schönen Urlaub. Wenn ihr wieder da seid, " +
                 "dann schreibt /back .");
 
         var durationToLightOffTime = Duration.between(ZonedDateTime.now(), getLightOffTime()).toSeconds();
         super.disposeWhenClosed(
                 Observable.interval(durationToLightOffTime, ONE_DAY_AS_SECONDS, TimeUnit.SECONDS)
-                        .subscribe(ignore -> this.deviceService.turnAllLightsOff()));
+                        .subscribe(ignore -> deviceService.turnAllLightsOff()));
 
-        super.disposeWhenClosed(this.sunsetReactor.start());
-        super.disposeWhenClosed(this.userService.getPresenceMap$()
+        super.disposeWhenClosed(sunsetReactor.start());
+        super.disposeWhenClosed(userService.getPresenceMap$()
                 .skip(10, TimeUnit.MINUTES)
                 .map(ignored -> userService.isAnyoneAtHome())
                 .filter(anyOneAtHome -> anyOneAtHome)
-                .subscribe(ignore -> this.stateService.switchState(NormalState.class)));
-        super.disposeWhenClosed(this.messageService.getMessages()
+                .subscribe(ignore -> stateService.switchState(NormalState.class)));
+        super.disposeWhenClosed(messageService.getMessages()
                 .filter(message -> message.equals("/back"))
-                .subscribe(ignore -> this.stateService.switchState(NormalState.class)));
+                .subscribe(ignore -> stateService.switchState(NormalState.class)));
     }
 
     private ZonedDateTime getLightOffTime() {
@@ -70,14 +75,14 @@ public class HolidayState extends Activatable implements State {
 
     @Override
     public void leave() {
-        this.messageService.sendMessageToMainChannel("Willkommen zurück. 👋");
+        messageService.sendMessageToMainChannel("Willkommen zurück. 👋");
         super.dispose();
     }
 
     @EventListener
     public void event(Event event) {
-        if (event == Event.DOOR_OPENED && this.stateService.getCurrentState() instanceof HolidayState) {
-            this.messageService.sendMessageToMainChannel("Irgendwer ist grade in die Wohnung gegangen");
+        if (event == Event.DOOR_OPENED && stateService.getCurrentState() instanceof HolidayState) {
+            messageService.sendMessageToMainChannel("Irgendwer ist grade in die Wohnung gegangen");
         }
     }
 }

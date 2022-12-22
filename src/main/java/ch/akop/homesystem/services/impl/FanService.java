@@ -7,6 +7,7 @@ import ch.akop.homesystem.persistence.repository.config.FanConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.lang.Nullable;
@@ -29,6 +30,7 @@ public class FanService {
     private final Map<String, Disposable> waitingToTurnOff = new ConcurrentHashMap<>();
 
     @EventListener
+    @Transactional
     public void buttonEventHandler(ButtonPressEvent event) {
         fanConfigRepository.findAll()
                 .stream()

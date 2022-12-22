@@ -1,9 +1,9 @@
 package ch.akop.homesystem.services.impl;
 
+import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.model.config.UserConfig;
 import ch.akop.homesystem.persistence.repository.config.UserConfigRepository;
 import ch.akop.homesystem.services.UserService;
-import ch.akop.homesystem.states.Event;
 import ch.akop.homesystem.util.SleepUtil;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;

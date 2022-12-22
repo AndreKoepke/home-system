@@ -42,28 +42,28 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class DeconzConnector {
 
-    
+
     public static final String NO_RESPONSE_FROM_RASPBERRY = "No response from raspberry";
     public static final String LIGHT_UPDATE_FAILED_LABEL = "Failed to update light ";
     private final DeviceService deviceService;
     private final AutomationService automationService;
     private final ObjectMapper objectMapper;
     private final DeconzConfigRepository deconzConfigRepository;
-
     private WebClient webClient;
 
 
     @PostConstruct
     private void tryToStart() {
         // TODO restart when config changes
-        var config = deconzConfigRepository.findFirstByOrderByModifiedDesc();
+        var configOpt = deconzConfigRepository.findFirstByOrderByModifiedDesc();
 
-        if (config == null) {
+        if (configOpt.isEmpty()) {
+            log.warn("No deCONZ found. DeCONZ-Service will not be started.");
             return;
         }
 
         try {
-            connectToDeconz(config);
+            connectToDeconz(configOpt.get());
         } catch (Exception e) {
             log.error("Cannot connect to deconz", e);
         }
@@ -91,6 +91,8 @@ public class DeconzConnector {
 
         registerDevices();
         automationService.discoverNewDevices();
+
+        log.info("deCONZ is up");
     }
 
     private void registerDevices() {

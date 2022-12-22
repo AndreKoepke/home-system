@@ -6,6 +6,7 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.util.SleepUtil;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,7 @@ public class DeviceServiceImpl implements DeviceService {
 
     @Override
     public <T extends Device<?>> Optional<T> findDeviceByName(String name, Class<T> clazz) {
-        return this.getDevicesOfType(clazz)
+        return getDevicesOfType(clazz)
                 .stream()
                 .filter(device -> device.getName().equalsIgnoreCase(name))
                 .findFirst();
@@ -40,34 +41,37 @@ public class DeviceServiceImpl implements DeviceService {
 
     @Override
     public <T extends Device<?>> Optional<T> findDeviceById(String name, Class<T> clazz) {
-        return this.getDevicesOfType(clazz)
+        return getDevicesOfType(clazz)
                 .stream()
                 .filter(device -> device.getId().equals(name))
                 .findFirst();
     }
 
     @Override
-    public <T extends Device<?>> void registerDevice(final T device) {
-        this.devices.add(device);
+    public <T extends Device<?>> void registerDevice(T device) {
+        devices.add(device);
     }
 
     @Override
     public Collection<Device<?>> getAllDevices() {
-        return new ArrayList<>(this.devices);
+        return new ArrayList<>(devices);
     }
 
     @Override
-    public <T> Collection<T> getDevicesOfType(final Class<T> clazz) {
-        return this.devices.stream()
+    public <T> Collection<T> getDevicesOfType(Class<T> clazz) {
+        return devices.stream()
                 .filter(clazz::isInstance)
                 .map(clazz::cast)
                 .collect(Collectors.toSet());
     }
 
     @Override
+    @Transactional
     public void turnAllLightsOff() {
-        this.getDevicesOfType(SimpleLight.class).stream()
-                .filter(light -> !basicConfigRepository.findFirstByOrderByModifiedDesc().getNotLights().contains(light.getName()))
+        getDevicesOfType(SimpleLight.class).stream()
+                .filter(light -> !basicConfigRepository.findFirstByOrderByModifiedDesc()
+                        .orElseThrow()
+                        .getNotLights().contains(light.getName()))
                 .forEach(light -> {
                     // see #74, if the commands are cumming to fast, then maybe lights are not correctly off
                     // if this workaround helps, then this should be removed for a rate-limit (see #3)
@@ -82,10 +86,13 @@ public class DeviceServiceImpl implements DeviceService {
     }
 
     @Override
+    @Transactional
     public boolean isAnyLightOn() {
         return getDevicesOfType(SimpleLight.class)
                 .stream()
-                .filter(light -> !basicConfigRepository.findFirstByOrderByModifiedDesc().getNotLights().contains(light.getName()))
+                .filter(light -> !basicConfigRepository.findFirstByOrderByModifiedDesc()
+                        .orElseThrow()
+                        .getNotLights().contains(light.getName()))
                 .anyMatch(SimpleLight::isCurrentStateIsOn);
     }
 }

@@ -2,13 +2,14 @@ package ch.akop.homesystem.states;
 
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
+import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.*;
 import ch.akop.homesystem.services.impl.StateServiceImpl;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +26,6 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 
 @RequiredArgsConstructor
 @Component
-@Lazy
 public class SleepState implements State {
 
     private static final List<String> POSSIBLE_MORNING_TEXTS = List.of("Naaa, gut geschlafen?",
@@ -53,6 +53,11 @@ public class SleepState implements State {
     private Map<String, Boolean> presenceAtBeginning;
     private boolean sleepButtonState;
 
+
+    @PostConstruct
+    private void registerState() {
+        stateService.registerState(SleepState.class, this);
+    }
 
     @Override
     public void entered() {
@@ -94,7 +99,9 @@ public class SleepState implements State {
         deviceService.getDevicesOfType(Group.class)
                 .stream()
                 .flatMap(group -> group.getScenes().stream())
-                .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc().getNightSceneName()))
+                .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc()
+                        .orElseThrow()
+                        .getNightSceneName()))
                 .forEach(Scene::activate);
     }
 
@@ -154,7 +161,9 @@ public class SleepState implements State {
         if (!sleepButtonState) {
             deviceService.getDevicesOfType(Group.class).stream()
                     .flatMap(group -> group.getScenes().stream())
-                    .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc().getNightRunSceneName()))
+                    .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc()
+                            .orElseThrow()
+                            .getNightRunSceneName()))
                     .forEach(Scene::activate);
         } else {
             turnLightsOff();

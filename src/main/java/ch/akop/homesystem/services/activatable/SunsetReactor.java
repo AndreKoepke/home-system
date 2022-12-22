@@ -64,7 +64,9 @@ public class SunsetReactor extends Activatable {
                 .stream()
                 .filter(this::areAllLampsAreOff)
                 .flatMap(group -> group.getScenes().stream())
-                .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc().getSunsetSceneName()))
+                .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc()
+                        .orElseThrow()
+                        .getSunsetSceneName()))
                 .forEach(Scene::activate);
     }
 

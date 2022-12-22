@@ -1,5 +1,6 @@
 package ch.akop.homesystem.states;
 
+import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
@@ -18,9 +19,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -35,7 +34,6 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-@Lazy
 public class NormalState extends Activatable implements State {
 
     public static final Duration DEFAULT_DURATION_ANIMATION_BLOCKER = Duration.of(1, MINUTES);
@@ -54,6 +52,12 @@ public class NormalState extends Activatable implements State {
 
     private Map<String, Boolean> lastPresenceMap;
 
+
+    @PostConstruct
+    private void registerState() {
+        stateService.registerState(NormalState.class, this);
+        stateService.switchState(NormalState.class);
+    }
 
     @PostConstruct
     public void reactOnHolidayMessage() {
@@ -123,7 +127,6 @@ public class NormalState extends Activatable implements State {
     }
 
     @EventListener
-    @Async
     public void event(Event event) {
 
         if (!(stateService.getCurrentState() instanceof NormalState)) {
@@ -169,6 +172,7 @@ public class NormalState extends Activatable implements State {
         canStartMainDoorAnimation.setForever(true);
         try {
             var mainDoorOpenAnimation = basicConfigRepository.findFirstByOrderByModifiedDesc()
+                    .orElseThrow()
                     .getWhenMainDoorOpened();
             mainDoorOpenAnimation.play();
         } finally {
