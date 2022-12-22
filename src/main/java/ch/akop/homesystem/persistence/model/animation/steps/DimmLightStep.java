@@ -3,12 +3,8 @@ package ch.akop.homesystem.persistence.model.animation.steps;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.persistence.model.animation.Animation;
 import ch.akop.homesystem.services.DeviceService;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -31,9 +27,12 @@ public class DimmLightStep implements Step {
 
     @Autowired
     @Transient
+    @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
     private DeviceService deviceService;
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @NonNull

@@ -5,15 +5,18 @@ import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.models.devices.sensor.CloseContactState;
 import ch.akop.homesystem.models.events.ButtonPressEvent;
+import ch.akop.homesystem.models.events.ButtonPressInternalEvent;
+import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.persistence.repository.config.OffButtonConfigRepository;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
-import ch.akop.homesystem.states.Event;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -44,8 +47,6 @@ public class AutomationServiceImpl implements AutomationService {
         deviceService.getAllDevices().stream()
                 .filter(this::unknownDevice)
                 .forEach(this::addDevice);
-
-        log.info("deCONZ is up!");
     }
 
     private boolean unknownDevice(Device<?> device) {
@@ -59,6 +60,7 @@ public class AutomationServiceImpl implements AutomationService {
 
         if (device instanceof CloseContact closeContact) {
             var mainDoorName = basicConfigRepository.findFirstByOrderByModifiedDesc()
+                    .orElseThrow()
                     .getMainDoorName();
             if (closeContact.getName()
                     .equals(mainDoorName)) {
@@ -74,23 +76,25 @@ public class AutomationServiceImpl implements AutomationService {
         if (device instanceof Button button) {
             //noinspection ResultOfMethodCallIgnored
             button.getEvents$()
-                    .subscribe(integer -> buttonWasPressed(button.getName(), integer));
+                    .subscribe(integer -> eventPublisher.publishEvent(new ButtonPressInternalEvent(button.getName(), integer)));
         }
     }
 
-    private void buttonWasPressed(String buttonName, int buttonEvent) {
-        if (wasCentralOffPressed(buttonName, buttonEvent)) {
+    @Transactional
+    @EventListener
+    public void buttonWasPressed(ButtonPressInternalEvent internalEvent) {
+        if (wasCentralOffPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
             eventPublisher.publishEvent(Event.CENTRAL_OFF_PRESSED);
-        } else if (wasGoodNightButtonPressed(buttonName, buttonEvent)) {
+        } else if (wasGoodNightButtonPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
             eventPublisher.publishEvent(Event.GOOD_NIGHT_PRESSED);
         } else {
-            eventPublisher.publishEvent(new ButtonPressEvent(buttonName, buttonEvent));
+            eventPublisher.publishEvent(new ButtonPressEvent(internalEvent.getButtonName(), internalEvent.getButtonEvent()));
         }
     }
 
 
     private boolean wasGoodNightButtonPressed(String buttonName, int buttonEvent) {
-        var basicConfig = basicConfigRepository.findFirstByOrderByModifiedDesc();
+        var basicConfig = basicConfigRepository.findFirstByOrderByModifiedDesc().orElseThrow();
         if (basicConfig.getGoodNightButtonName() == null || basicConfig.getGoodNightButtonEvent() == null) {
             return false;
         }

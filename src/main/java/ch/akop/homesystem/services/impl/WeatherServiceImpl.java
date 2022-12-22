@@ -1,6 +1,7 @@
 package ch.akop.homesystem.services.impl;
 
 import ch.akop.homesystem.models.CompassDirection;
+import ch.akop.homesystem.persistence.model.config.BasicConfig;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
@@ -44,16 +45,17 @@ public class WeatherServiceImpl implements WeatherService {
     @PostConstruct
     public void startFetchingData() {
         // TODO restart when config changes
-        var config = basicConfigRepository.findFirstByOrderByModifiedDesc();
-        if (config.getNearestWeatherCloudStation() == null) {
-            active = false;
+        var nearestWeatherCloudStation = basicConfigRepository.findFirstByOrderByModifiedDesc()
+                .map(BasicConfig::getNearestWeatherCloudStation)
+                .orElse(null);
+
+        if (nearestWeatherCloudStation == null) {
             return;
         }
 
         active = true;
-        log.info("WeatherService will be started.");
         weather = new Scraper()
-                .scrape$(config.getNearestWeatherCloudStation(), Duration.of(5, MINUTES))
+                .scrape$(nearestWeatherCloudStation, Duration.of(5, MINUTES))
                 .compose(ReplayingShare.instance());
 
         weather.subscribe(weatherUpdate -> {
@@ -62,6 +64,7 @@ public class WeatherServiceImpl implements WeatherService {
                         .formatted(weatherUpdate.getWind()));
             }
         });
+        log.info("WeatherService is up");
     }
 
 
@@ -81,7 +84,7 @@ public class WeatherServiceImpl implements WeatherService {
 
     @Override
     public CompassDirection getCurrentSunDirection() {
-        var config = basicConfigRepository.findFirstByOrderByModifiedDesc();
+        var config = basicConfigRepository.findFirstByOrderByModifiedDesc().orElseThrow();
         var position = Grena3.calculateSolarPosition(new GregorianCalendar(), config.getLatitude(), config.getLongitude(), 68);
 
         return Arrays.stream(CompassDirection.values())

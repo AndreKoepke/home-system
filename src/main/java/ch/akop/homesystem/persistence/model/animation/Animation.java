@@ -4,15 +4,12 @@ import ch.akop.homesystem.persistence.model.animation.steps.DimmLightStep;
 import ch.akop.homesystem.persistence.model.animation.steps.OnOffStep;
 import ch.akop.homesystem.persistence.model.animation.steps.PauseStep;
 import ch.akop.homesystem.persistence.model.animation.steps.Step;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -25,20 +22,20 @@ import java.util.stream.Stream;
 public class Animation {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @NonNull
-    @OneToMany
-    @OrderBy("sortOrder")
-    private List<PauseStep> pauseSteps;
+    @OneToMany(cascade = CascadeType.ALL)
+    private List<PauseStep> pauseSteps = new ArrayList<>();
 
     @NonNull
-    @OneToMany
-    private List<OnOffStep> onOffSteps;
+    @OneToMany(cascade = CascadeType.ALL)
+    private List<OnOffStep> onOffSteps = new ArrayList<>();
 
     @NonNull
-    @OneToMany
-    private List<DimmLightStep> dimmLightSteps;
+    @OneToMany(cascade = CascadeType.ALL)
+    private List<DimmLightStep> dimmLightSteps = new ArrayList<>();
 
     /**
      * Call in an async-context, this method can run for a while (blocking)

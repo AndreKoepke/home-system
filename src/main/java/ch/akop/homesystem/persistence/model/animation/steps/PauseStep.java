@@ -1,9 +1,7 @@
 package ch.akop.homesystem.persistence.model.animation.steps;
 
 import ch.akop.homesystem.util.SleepUtil;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -19,6 +17,7 @@ import java.util.UUID;
 public class PauseStep implements Step {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @NonNull
@@ -32,11 +31,10 @@ public class PauseStep implements Step {
         var started = LocalTime.now();
         try {
             Thread.sleep(waitFor.toMillis());
-        } catch (final InterruptedException ignored) {
+        } catch (InterruptedException ignored) {
             // don't interrupt animation
             // they are very short, so we can allow them to finish
-            var waitingTimeLeft = Duration.between(started, LocalTime.now())
-                    .abs();
+            var waitingTimeLeft = Duration.between(started, LocalTime.now()).abs();
             SleepUtil.sleep(waitingTimeLeft);
         }
     }
