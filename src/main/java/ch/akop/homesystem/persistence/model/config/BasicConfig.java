@@ -1,11 +1,19 @@
 package ch.akop.homesystem.persistence.model.config;
 
+import ch.akop.homesystem.persistence.model.animation.Animation;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.lang.Nullable;
 
-import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -55,4 +63,10 @@ public class BasicConfig {
     @Nullable
     @Column(columnDefinition = "TEXT")
     private String nightRunSceneName;
+
+    @Nullable
+    private String mainDoorName;
+
+    @ManyToOne
+    private Animation whenMainDoorOpened;
 }

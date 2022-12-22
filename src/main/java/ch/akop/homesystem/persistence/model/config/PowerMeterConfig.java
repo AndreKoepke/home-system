@@ -1,11 +1,14 @@
 package ch.akop.homesystem.persistence.model.config;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.springframework.lang.Nullable;
-
-import javax.persistence.*;
 
 @Entity
 @Table(name = "config_power_meter")

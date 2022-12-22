@@ -1,7 +1,6 @@
 package ch.akop.homesystem.external.openai;
 
-import ch.akop.homesystem.config.properties.OpenAIProperties;
-import jakarta.annotation.PostConstruct;
+import ch.akop.homesystem.persistence.repository.config.OpenAIConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -18,31 +17,37 @@ import java.util.Base64;
 @RequiredArgsConstructor
 public class OpenAIService {
 
-    private final OpenAIProperties openAIProperties;
-    private WebClient apiWebClient;
+    private final OpenAIConfigRepository openAIConfigRepository;
 
+    private WebClient apiWebClient = WebClient.builder()
+            .baseUrl("https://api.openai.com/v1/")
+            .codecs(codecs -> codecs.defaultCodecs()
+                    .maxInMemorySize(1024 * 1024 * 10))
+            .build();
+    ;
 
-    @PostConstruct
-    protected void initializeWebClients() {
-        apiWebClient = WebClient.builder()
-                .baseUrl("https://api.openai.com/v1/")
-                .defaultHeaders(header -> header.setBearerAuth(openAIProperties.getApiKey()))
-                .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(1024 * 1024 * 10))
-                .build();
-    }
 
     @SneakyThrows
     public Mono<byte[]> requestImage(String text) {
+        var config = openAIConfigRepository.findFirstByOrderByModifiedDesc()
+                .orElse(null);
+
+        if (config == null) {
+            log.warn("Image requested, but openAI is not configured. Ignoring.");
+            return Mono.empty();
+        }
+
         var requestBody = new ImageRequest()
                 .setResponseFormat(ImageRequest.ResponseFormat.B64_JSON)
                 .setN(1)
-                .setSize(openAIProperties.getSize())
+                .setSize(config.getSize())
                 .setPrompt(text);
 
         log.info("Request a {} open-ai image for: {}", requestBody.getSize(), text);
 
         return apiWebClient.post()
                 .uri("images/generations")
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(config.getApiKey()))
                 .body(BodyInserters.fromValue(requestBody))
                 .headers(header -> header.setContentType(MediaType.APPLICATION_JSON))
                 .retrieve()

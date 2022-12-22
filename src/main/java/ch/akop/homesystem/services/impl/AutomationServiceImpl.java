@@ -1,8 +1,5 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
-import ch.akop.homesystem.models.animation.Animation;
-import ch.akop.homesystem.models.animation.AnimationFactory;
 import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
@@ -57,15 +54,21 @@ public class AutomationServiceImpl implements AutomationService {
     }
 
     private void addDevice(Device<?> device) {
-        knownDevices.get(device.getClass()).add(device);
+        knownDevices.get(device.getClass())
+                .add(device);
 
-        if (device instanceof CloseContact closeContact && closeContact.getName().equals(homeSystemProperties.getMainDoorName())) {
-            //noinspection ResultOfMethodCallIgnored
-            closeContact.getState$()
-                    .skip(0)
-                    .distinctUntilChanged()
-                    .throttleLatest(MARCEL_CONSTANT_SECONDS, TimeUnit.SECONDS)
-                    .subscribe(this::mainDoorStateChanged);
+        if (device instanceof CloseContact closeContact) {
+            var mainDoorName = basicConfigRepository.findFirstByOrderByModifiedDesc()
+                    .getMainDoorName();
+            if (closeContact.getName()
+                    .equals(mainDoorName)) {
+                //noinspection ResultOfMethodCallIgnored
+                closeContact.getState$()
+                        .skip(0)
+                        .distinctUntilChanged()
+                        .throttleLatest(MARCEL_CONSTANT_SECONDS, TimeUnit.SECONDS)
+                        .subscribe(this::mainDoorStateChanged);
+            }
         }
 
         if (device instanceof Button button) {
