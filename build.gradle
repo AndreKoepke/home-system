@@ -1,9 +1,9 @@
 //file:noinspection GroovyUnusedAssignment
 plugins {
-    id 'org.springframework.boot' version '2.7.7'
+    id 'org.springframework.boot' version '3.0.1'
     id 'io.spring.dependency-management' version '1.1.0'
     id 'java'
-    id 'org.graalvm.buildtools.native' version '0.9.18'
+    id 'org.graalvm.buildtools.native' version '0.9.19'
 }
 
 group = 'ch.akop'
@@ -37,7 +37,6 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok'
 
     // Spring
-    implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -56,6 +55,10 @@ dependencies {
     // rxJava
     implementation 'io.reactivex.rxjava3:rxjava:3.1.5'
     implementation 'com.jakewharton.rx3:replaying-share:3.0.0'
+}
+
+configurations.implementation {
+    exclude group: 'ch.qos.logback', module: 'logback-classic'
 }
 
 test {
