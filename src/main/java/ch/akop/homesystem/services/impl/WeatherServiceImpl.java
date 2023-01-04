@@ -7,8 +7,8 @@ import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.scraper.weathercloud.Scraper;
-import com.jakewharton.rx3.ReplayingShare;
-import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.ReplaySubject;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ public class WeatherServiceImpl implements WeatherService {
     private final MessageService messageService;
 
     @Getter
-    private Flowable<Weather> weather;
+    private final ReplaySubject<Weather> weather = ReplaySubject.createWithSize(1);
 
     @Getter
     private boolean active;
@@ -54,9 +54,9 @@ public class WeatherServiceImpl implements WeatherService {
         }
 
         active = true;
-        weather = new Scraper()
+        new Scraper()
                 .scrape$(nearestWeatherCloudStation, Duration.of(5, MINUTES))
-                .compose(ReplayingShare.instance());
+                .subscribe(weather::onNext);
 
         weather.subscribe(weatherUpdate -> {
             if (weatherUpdate.getWind().getAs(KILOMETERS_PER_SECOND).compareTo(new BigDecimal(50)) > 0) {
@@ -69,7 +69,7 @@ public class WeatherServiceImpl implements WeatherService {
 
 
     @Override
-    public Flowable<CurrentAndPreviousWeather> getCurrentAndPreviousWeather() {
+    public Observable<CurrentAndPreviousWeather> getCurrentAndPreviousWeather() {
         var previousUpdate = new AtomicReference<Weather>();
 
         weather

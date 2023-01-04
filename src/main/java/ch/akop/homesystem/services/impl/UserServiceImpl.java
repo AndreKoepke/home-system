@@ -90,17 +90,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void messageToUser(String name, String message) {
-        userConfigRepository.findById(name)
-                .ifPresent(user -> messageService.sendMessageToUser(message, user.getTelegramId()));
-    }
-
-    @Override
-    public void devMessage(String message) {
-        userConfigRepository.findAll()
-                .stream()
-                .filter(UserConfig::isDev)
-                .forEach(user -> messageService.sendMessageToUser(message, user.getTelegramId()));
+    public Flowable<Boolean> isAnyoneAtHome$() {
+        return presenceMap$
+                .map(presenceMap -> presenceMap.values().stream().anyMatch(isAtHome -> isAtHome))
+                .toFlowable(BackpressureStrategy.DROP);
     }
 
     @Override

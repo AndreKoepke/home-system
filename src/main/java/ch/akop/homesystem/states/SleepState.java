@@ -46,6 +46,7 @@ public class SleepState implements State {
     private final WeatherService weatherService;
     private final UserService userService;
     private final BasicConfigRepository basicConfigRepository;
+    private final ImageCreatorService imageCreatorService;
 
 
     private Disposable timerDoorOpen;
