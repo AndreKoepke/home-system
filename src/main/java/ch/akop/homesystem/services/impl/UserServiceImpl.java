@@ -1,8 +1,9 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
+import ch.akop.homesystem.models.events.Event;
+import ch.akop.homesystem.persistence.model.config.UserConfig;
+import ch.akop.homesystem.persistence.repository.config.UserConfigRepository;
 import ch.akop.homesystem.services.UserService;
-import ch.akop.homesystem.states.Event;
 import ch.akop.homesystem.util.SleepUtil;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
@@ -30,17 +31,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final HomeSystemProperties homeSystemProperties;
+    private final UserConfigRepository userConfigRepository;
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-    private final Subject<Map<HomeSystemProperties.User, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
-    private Map<HomeSystemProperties.User, Boolean> presenceMap = new HashMap<>();
+    private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
+    private Map<String, Boolean> presenceMap = new HashMap<>();
 
 
     @Override
     public void hintCheckPresence() {
         executorService.submit(this::checkPresenceUntilChangedWithin);
     }
-
 
     @EventListener
     public void gotEvent(Event event) {
@@ -62,10 +62,10 @@ public class UserServiceImpl implements UserService {
 
 
     private void updatePresence() {
-        var newPresenceMap = homeSystemProperties.getUsers().stream()
+        var newPresenceMap = userConfigRepository.findAll().stream()
                 .collect(Collectors.toMap(
-                        user -> user,
-                        user -> canPingIp(user.getDeviceIp())
+                        UserConfig::getName,
+                        this::canPingIp
                 ));
 
         var hasChanges = !newPresenceMap.equals(presenceMap);
@@ -76,16 +76,16 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private boolean canPingIp(String ip) {
+    private boolean canPingIp(UserConfig userConfig) {
         try {
-            return InetAddress.getByName(ip).isReachable(5000);
+            return InetAddress.getByName(userConfig.getDeviceIp()).isReachable(5000);
         } catch (IOException ignored) {
             return false;
         }
     }
 
     @Override
-    public Flowable<Map<HomeSystemProperties.User, Boolean>> getPresenceMap$() {
+    public Flowable<Map<String, Boolean>> getPresenceMap$() {
         return presenceMap$.toFlowable(BackpressureStrategy.DROP);
     }
 

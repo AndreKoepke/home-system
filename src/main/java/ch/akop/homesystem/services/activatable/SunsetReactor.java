@@ -1,9 +1,9 @@
 package ch.akop.homesystem.services.activatable;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
+import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
@@ -24,7 +24,7 @@ public class SunsetReactor extends Activatable {
     private final WeatherService weatherService;
     private final MessageService messageService;
     private final DeviceService deviceService;
-    private final HomeSystemProperties homeSystemProperties;
+    private final BasicConfigRepository basicConfigRepository;
     private final UserService userService;
 
     private Weather previousWeather;
@@ -64,7 +64,9 @@ public class SunsetReactor extends Activatable {
                 .stream()
                 .filter(this::areAllLampsAreOff)
                 .flatMap(group -> group.getScenes().stream())
-                .filter(scene -> scene.getName().equals(homeSystemProperties.getSunsetSceneName()))
+                .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc()
+                        .orElseThrow()
+                        .getSunsetSceneName()))
                 .forEach(Scene::activate);
     }
 

@@ -1,4 +1,4 @@
-package ch.akop.homesystem.states;
+package ch.akop.homesystem.models.events;
 
 public enum Event {
 

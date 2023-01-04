@@ -1,15 +1,16 @@
 package ch.akop.homesystem.deconz;
 
 import ch.akop.homesystem.deconz.websocket.WebSocketUpdate;
+import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
@@ -27,9 +28,9 @@ import java.util.concurrent.TimeoutException;
 public class DeconzWebsocketListener implements WebSocket.Listener {
 
     public static final int TIMEOUT_HANDLER_INTERVAL = 30;
-    private final DeconzConfig deconzConfig;
     private final DeconzConnector deconzConnector;
     private final ObjectMapper objectMapper;
+    private final DeconzConfigRepository deconzConfigRepository;
 
     private LocalDateTime lastContact = LocalDateTime.MIN;
     private StringBuilder messageBuilder = new StringBuilder();
@@ -40,12 +41,15 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
 
     @PostConstruct
     public void setupWebSocketListener() {
-        var wsUrl = URI.create("ws://%s:%d/ws".formatted(deconzConfig.getHost(), deconzConfig.getWebsocketPort()));
+        deconzConfigRepository.findFirstByOrderByModifiedDesc()
+                .ifPresent(config -> {
+                    var wsUrl = URI.create("ws://%s:%d/ws".formatted(config.getHost(), config.getWebsocketPort()));
 
-        //noinspection ResultOfMethodCallIgnored
-        Observable.defer(() -> Observable.fromFuture(getWebSocketCompletableFuture(wsUrl, this)))
-                .retry()
-                .subscribe(webSocket -> this.webSocket = webSocket);
+                    //noinspection ResultOfMethodCallIgnored
+                    Observable.defer(() -> Observable.fromFuture(getWebSocketCompletableFuture(wsUrl, this)))
+                            .retry()
+                            .subscribe(webSocket -> this.webSocket = webSocket);
+                });
     }
 
     @PreDestroy

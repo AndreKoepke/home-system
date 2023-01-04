@@ -1,8 +1,7 @@
 package ch.akop.homesystem.states;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
-import ch.akop.homesystem.models.animation.Animation;
-import ch.akop.homesystem.models.animation.AnimationFactory;
+import ch.akop.homesystem.models.events.Event;
+import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
@@ -16,14 +15,13 @@ import ch.akop.homesystem.util.TimedGateKeeper;
 import ch.akop.weathercloud.Weather;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Map;
@@ -36,14 +34,12 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-@Lazy
 public class NormalState extends Activatable implements State {
 
     public static final Duration DEFAULT_DURATION_ANIMATION_BLOCKER = Duration.of(1, MINUTES);
     public static final BigDecimal THRESHOLD_NOT_TURN_LIGHTS_ON = BigDecimal.valueOf(20);
     private final TimedGateKeeper canStartMainDoorAnimation = new TimedGateKeeper();
 
-    private final AnimationFactory animationFactory;
     private final MessageService messageService;
     private final StateServiceImpl stateService;
     private final DeviceService deviceService;
@@ -52,11 +48,16 @@ public class NormalState extends Activatable implements State {
     private final WeatherPoster weatherPoster;
     private final RainDetectorService rainDetectorService;
     private final UserService userService;
+    private final BasicConfigRepository basicConfigRepository;
 
-    private Animation mainDoorOpenAnimation;
-    private Thread animationThread;
-    private Map<HomeSystemProperties.User, Boolean> lastPresenceMap;
+    private Map<String, Boolean> lastPresenceMap;
 
+
+    @PostConstruct
+    private void registerState() {
+        stateService.registerState(NormalState.class, this);
+        stateService.switchState(NormalState.class);
+    }
 
     @PostConstruct
     public void reactOnHolidayMessage() {
@@ -74,10 +75,10 @@ public class NormalState extends Activatable implements State {
                 .subscribe(canStartMainDoorAnimation::setForever);
     }
 
-    private void gotNewPresenceMap(Map<HomeSystemProperties.User, Boolean> presenceMap) {
+    private void gotNewPresenceMap(Map<String, Boolean> presenceMap) {
         presenceMap.forEach((user, isAtHome) -> {
             if (!lastPresenceMap.get(user).equals(isAtHome)) {
-                messageService.sendMessageToMainChannel("%s ist %s".formatted(user.getName(),
+                messageService.sendMessageToMainChannel("%s ist %s".formatted(user,
                         Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen"));
             }
         });
@@ -85,7 +86,7 @@ public class NormalState extends Activatable implements State {
         lastPresenceMap = presenceMap;
     }
 
-    private boolean compareWithLastAndSkipFirst(Map<HomeSystemProperties.User, Boolean> presenceMap) {
+    private boolean compareWithLastAndSkipFirst(Map<String, Boolean> presenceMap) {
         if (lastPresenceMap == null) {
             lastPresenceMap = presenceMap;
             return false;
@@ -143,12 +144,6 @@ public class NormalState extends Activatable implements State {
     @SneakyThrows
     private void doCentralOff() {
         canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
-
-        if (animationThread != null && animationThread.isAlive()) {
-            animationThread.interrupt();
-            // it is possible, that lights can be still on
-        }
-
         deviceService.turnAllLightsOff();
     }
 
@@ -167,31 +162,21 @@ public class NormalState extends Activatable implements State {
     }
 
     private void startMainDoorOpenAnimation() {
-
         log.info("MAIN-DOOR IS OPENED!");
         messageService.sendMessageToMainChannel("Wohnungstür wurde geöffnet.");
 
-        if (!canStartMainDoorAnimation.isGateOpen()) {
+        if (!canStartMainDoorAnimation.isGateOpen() || deviceService.isAnyLightOn()) {
             return;
         }
 
-        canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
-        createAnimationIfNotExists();
-
-        if (deviceService.isAnyLightOn()) {
-            // NOP when any light is on
-            return;
-        }
-
-        if (animationThread == null || !animationThread.isAlive()) {
-            animationThread = new Thread(mainDoorOpenAnimation::play);
-            animationThread.start();
-        }
-    }
-
-    private void createAnimationIfNotExists() {
-        if (mainDoorOpenAnimation == null) {
-            mainDoorOpenAnimation = animationFactory.buildMainDoorAnimation();
+        canStartMainDoorAnimation.setForever(true);
+        try {
+            var mainDoorOpenAnimation = basicConfigRepository.findFirstByOrderByModifiedDesc()
+                    .orElseThrow()
+                    .getWhenMainDoorOpened();
+            mainDoorOpenAnimation.play();
+        } finally {
+            canStartMainDoorAnimation.reset();
         }
     }
 

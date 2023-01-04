@@ -14,10 +14,13 @@ import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.PowerMeter;
+import ch.akop.homesystem.persistence.model.config.DeconzConfig;
+import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.logging.LogLevel;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -30,7 +33,6 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.transport.logging.AdvancedByteBufFormat;
 
-import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -40,17 +42,35 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class DeconzConnector {
 
+
     public static final String NO_RESPONSE_FROM_RASPBERRY = "No response from raspberry";
     public static final String LIGHT_UPDATE_FAILED_LABEL = "Failed to update light ";
     private final DeviceService deviceService;
-    private final DeconzConfig deconzConfig;
     private final AutomationService automationService;
     private final ObjectMapper objectMapper;
-
+    private final DeconzConfigRepository deconzConfigRepository;
     private WebClient webClient;
 
+
     @PostConstruct
-    public void initialSetup() {
+    private void tryToStart() {
+        // TODO restart when config changes
+        var configOpt = deconzConfigRepository.findFirstByOrderByModifiedDesc();
+
+        if (configOpt.isEmpty()) {
+            log.warn("No deCONZ found. DeCONZ-Service will not be started.");
+            return;
+        }
+
+        try {
+            connectToDeconz(configOpt.get());
+        } catch (Exception e) {
+            log.error("Cannot connect to deconz", e);
+        }
+    }
+
+    private void connectToDeconz(DeconzConfig config) {
+
         var strategies = ExchangeStrategies
                 .builder()
                 .codecs(configurer -> {
@@ -60,9 +80,9 @@ public class DeconzConnector {
 
         //noinspection HttpUrlsUsage
         webClient = WebClient.builder()
-                .baseUrl("http://%s:%d/api/%s/".formatted(deconzConfig.getHost(),
-                        deconzConfig.getPort(),
-                        deconzConfig.getApiKey()))
+                .baseUrl("http://%s:%d/api/%s/".formatted(config.getHost(),
+                        config.getPort(),
+                        config.getApiKey()))
                 .exchangeStrategies(strategies)
                 // full log available in DEBUG
                 .clientConnector(new ReactorClientHttpConnector(reactor.netty.http.client.HttpClient.create()
@@ -71,6 +91,8 @@ public class DeconzConnector {
 
         registerDevices();
         automationService.discoverNewDevices();
+
+        log.info("deCONZ is up");
     }
 
     private void registerDevices() {

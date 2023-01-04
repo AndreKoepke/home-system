@@ -1,16 +1,17 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
+import ch.akop.homesystem.persistence.model.config.MotionSensorConfig;
+import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.states.SleepState;
 import io.reactivex.rxjava3.core.Observable;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
@@ -22,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class MotionSensorService {
 
-    private final HomeSystemProperties homeSystemProperties;
+    private final MotionSensorConfigRepository motionSensorConfigRepository;
     private final DeviceService deviceService;
     private final StateServiceImpl stateService;
     private final Set<String> sensorsWithHigherTimeout = new HashSet<>();
@@ -30,25 +31,27 @@ public class MotionSensorService {
     @SuppressWarnings({"ResultOfMethodCallIgnored"})
     @PostConstruct
     protected void setup() {
-        homeSystemProperties.getMotionSensors().forEach(motionSensorConfig -> deviceService.getDevicesOfType(MotionSensor.class)
-                .stream()
-                .filter(motionSensor -> motionSensor.getName().equals(motionSensorConfig.getSensor()))
-                .findFirst()
-                .orElseThrow()
-                .getIsMoving$()
-                .switchMap(isMoving -> delayWhenNoMovement(isMoving, motionSensorConfig))
-                .distinctUntilChanged()
-                .subscribe(isMoving -> {
-                    if (Boolean.TRUE.equals(isMoving)) {
-                        turnLightsOn(motionSensorConfig.getLights());
-                    } else {
-                        turnLightsOff(motionSensorConfig.getLights());
-                        sensorsWithHigherTimeout.remove(motionSensorConfig.getSensor().toLowerCase());
-                    }
-                }));
+        // TODO restart when config changes
+        motionSensorConfigRepository.findAll()
+                .forEach(motionSensorConfig -> deviceService.getDevicesOfType(MotionSensor.class)
+                        .stream()
+                        .filter(motionSensor -> motionSensor.getName().equals(motionSensorConfig.getName()))
+                        .findFirst()
+                        .orElseThrow()
+                        .getIsMoving$()
+                        .switchMap(isMoving -> delayWhenNoMovement(isMoving, motionSensorConfig))
+                        .distinctUntilChanged()
+                        .subscribe(isMoving -> {
+                            if (Boolean.TRUE.equals(isMoving)) {
+                                turnLightsOn(motionSensorConfig.getLights());
+                            } else {
+                                turnLightsOff(motionSensorConfig.getLights());
+                                sensorsWithHigherTimeout.remove(motionSensorConfig.getName().toLowerCase());
+                            }
+                        }));
     }
 
-    public Observable<Boolean> delayWhenNoMovement(Boolean movementDetected, HomeSystemProperties.MotionSensorConfig motionSensorConfig) {
+    public Observable<Boolean> delayWhenNoMovement(Boolean movementDetected, MotionSensorConfig motionSensorConfig) {
         if (Boolean.TRUE.equals(movementDetected)) {
             // don't delay, when movement was detected
             return Observable.just(true);
@@ -76,8 +79,8 @@ public class MotionSensorService {
         sensorsWithHigherTimeout.add(sensorName.toLowerCase());
     }
 
-    public boolean isHigherTimeoutRequested(HomeSystemProperties.MotionSensorConfig motionSensorConfig) {
-        return sensorsWithHigherTimeout.contains(motionSensorConfig.getSensor().toLowerCase());
+    public boolean isHigherTimeoutRequested(MotionSensorConfig motionSensorConfig) {
+        return sensorsWithHigherTimeout.contains(motionSensorConfig.getName().toLowerCase());
     }
 
     private void turnLightsOn(List<String> lights) {

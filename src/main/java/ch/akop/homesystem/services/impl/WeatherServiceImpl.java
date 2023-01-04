@@ -1,20 +1,21 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
 import ch.akop.homesystem.models.CompassDirection;
+import ch.akop.homesystem.persistence.model.config.BasicConfig;
+import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.scraper.weathercloud.Scraper;
-import com.jakewharton.rx3.ReplayingShare;
-import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.ReplaySubject;
+import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.e175.klaus.solarpositioning.Grena3;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Arrays;
@@ -32,27 +33,30 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 @Slf4j
 public class WeatherServiceImpl implements WeatherService {
 
-    private final HomeSystemProperties config;
+    private final BasicConfigRepository basicConfigRepository;
     private final MessageService messageService;
 
     @Getter
-    private Flowable<Weather> weather;
+    private final ReplaySubject<Weather> weather = ReplaySubject.createWithSize(1);
 
     @Getter
     private boolean active;
 
     @PostConstruct
     public void startFetchingData() {
-        if (config.getNearestWeatherCloudStation() == null) {
-            active = false;
+        // TODO restart when config changes
+        var nearestWeatherCloudStation = basicConfigRepository.findFirstByOrderByModifiedDesc()
+                .map(BasicConfig::getNearestWeatherCloudStation)
+                .orElse(null);
+
+        if (nearestWeatherCloudStation == null) {
             return;
         }
 
         active = true;
-        log.info("WeatherService will be started.");
-        weather = new Scraper()
-                .scrape$(config.getNearestWeatherCloudStation(), Duration.of(5, MINUTES))
-                .compose(ReplayingShare.instance());
+        new Scraper()
+                .scrape$(nearestWeatherCloudStation, Duration.of(5, MINUTES))
+                .subscribe(weather::onNext);
 
         weather.subscribe(weatherUpdate -> {
             if (weatherUpdate.getWind().getAs(KILOMETERS_PER_SECOND).compareTo(new BigDecimal(50)) > 0) {
@@ -60,11 +64,12 @@ public class WeatherServiceImpl implements WeatherService {
                         .formatted(weatherUpdate.getWind()));
             }
         });
+        log.info("WeatherService is up");
     }
 
 
     @Override
-    public Flowable<CurrentAndPreviousWeather> getCurrentAndPreviousWeather() {
+    public Observable<CurrentAndPreviousWeather> getCurrentAndPreviousWeather() {
         var previousUpdate = new AtomicReference<Weather>();
 
         weather
@@ -79,6 +84,7 @@ public class WeatherServiceImpl implements WeatherService {
 
     @Override
     public CompassDirection getCurrentSunDirection() {
+        var config = basicConfigRepository.findFirstByOrderByModifiedDesc().orElseThrow();
         var position = Grena3.calculateSolarPosition(new GregorianCalendar(), config.getLatitude(), config.getLongitude(), 68);
 
         return Arrays.stream(CompassDirection.values())

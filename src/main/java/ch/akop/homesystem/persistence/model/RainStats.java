@@ -1,12 +1,12 @@
 package ch.akop.homesystem.persistence.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class RainStats {
+
     @Id
     @Column(name = "measured_at", nullable = false)
     private LocalDateTime measuredAt = LocalDateTime.now();

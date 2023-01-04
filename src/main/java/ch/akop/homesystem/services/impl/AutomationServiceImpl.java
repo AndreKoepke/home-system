@@ -1,23 +1,22 @@
 package ch.akop.homesystem.services.impl;
 
-import ch.akop.homesystem.config.properties.HomeSystemProperties;
-import ch.akop.homesystem.models.animation.Animation;
-import ch.akop.homesystem.models.animation.AnimationFactory;
 import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.models.devices.sensor.CloseContactState;
 import ch.akop.homesystem.models.events.ButtonPressEvent;
+import ch.akop.homesystem.models.events.ButtonPressInternalEvent;
+import ch.akop.homesystem.models.events.Event;
+import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
+import ch.akop.homesystem.persistence.repository.config.OffButtonConfigRepository;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
-import ch.akop.homesystem.states.Event;
-import lombok.Getter;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -29,23 +28,17 @@ import java.util.concurrent.TimeUnit;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@ConfigurationProperties(prefix = "home-automation.sensors")
-@Setter
-@Getter
 public class AutomationServiceImpl implements AutomationService {
 
     private static final int MARCEL_CONSTANT_SECONDS = 30;
 
-    private final AnimationFactory animationFactory;
     private final DeviceService deviceService;
-    private final HomeSystemProperties homeSystemProperties;
+    private final BasicConfigRepository basicConfigRepository;
+    private final OffButtonConfigRepository offButtonConfigRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private Animation mainDoorOpenAnimation;
 
     @SuppressWarnings("rawtypes")
     private final Map<Class<? extends Device>, List<Device<?>>> knownDevices = new HashMap<>();
-
-    private String mainDoorName;
 
 
     @Override
@@ -54,10 +47,6 @@ public class AutomationServiceImpl implements AutomationService {
         deviceService.getAllDevices().stream()
                 .filter(this::unknownDevice)
                 .forEach(this::addDevice);
-
-        mainDoorOpenAnimation = animationFactory.buildMainDoorAnimation();
-
-        log.info("deCONZ is up!");
     }
 
     private boolean unknownDevice(Device<?> device) {
@@ -66,48 +55,57 @@ public class AutomationServiceImpl implements AutomationService {
     }
 
     private void addDevice(Device<?> device) {
-        knownDevices.get(device.getClass()).add(device);
+        knownDevices.get(device.getClass())
+                .add(device);
 
-        if (device instanceof CloseContact closeContact && closeContact.getName().equals(mainDoorName)) {
-            //noinspection ResultOfMethodCallIgnored
-            closeContact.getState$()
-                    .skip(0)
-                    .distinctUntilChanged()
-                    .throttleLatest(MARCEL_CONSTANT_SECONDS, TimeUnit.SECONDS)
-                    .subscribe(this::mainDoorStateChanged);
+        if (device instanceof CloseContact closeContact) {
+            var mainDoorName = basicConfigRepository.findFirstByOrderByModifiedDesc()
+                    .orElseThrow()
+                    .getMainDoorName();
+            if (closeContact.getName()
+                    .equals(mainDoorName)) {
+                //noinspection ResultOfMethodCallIgnored
+                closeContact.getState$()
+                        .skip(0)
+                        .distinctUntilChanged()
+                        .throttleLatest(MARCEL_CONSTANT_SECONDS, TimeUnit.SECONDS)
+                        .subscribe(this::mainDoorStateChanged);
+            }
         }
 
         if (device instanceof Button button) {
             //noinspection ResultOfMethodCallIgnored
             button.getEvents$()
-                    .subscribe(integer -> buttonWasPressed(button.getName(), integer));
+                    .subscribe(integer -> eventPublisher.publishEvent(new ButtonPressInternalEvent(button.getName(), integer)));
         }
     }
 
-    private void buttonWasPressed(String buttonName, int buttonEvent) {
-        if (wasCentralOffPressed(buttonName, buttonEvent)) {
+    @Transactional
+    @EventListener
+    public void buttonWasPressed(ButtonPressInternalEvent internalEvent) {
+        if (wasCentralOffPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
             eventPublisher.publishEvent(Event.CENTRAL_OFF_PRESSED);
-        } else if (wasGoodNightButtonPressed(buttonName, buttonEvent)) {
+        } else if (wasGoodNightButtonPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
             eventPublisher.publishEvent(Event.GOOD_NIGHT_PRESSED);
         } else {
-            eventPublisher.publishEvent(new ButtonPressEvent(buttonName, buttonEvent));
+            eventPublisher.publishEvent(new ButtonPressEvent(internalEvent.getButtonName(), internalEvent.getButtonEvent()));
         }
     }
 
 
     private boolean wasGoodNightButtonPressed(String buttonName, int buttonEvent) {
-        var properties = homeSystemProperties.getGoodNightButton();
-        if (properties == null) {
+        var basicConfig = basicConfigRepository.findFirstByOrderByModifiedDesc().orElseThrow();
+        if (basicConfig.getGoodNightButtonName() == null || basicConfig.getGoodNightButtonEvent() == null) {
             return false;
         }
 
-        return buttonName.equals(properties.getName()) && buttonEvent == properties.getButtonEvent();
+        return basicConfig.getGoodNightButtonName().equals(buttonName)
+                && basicConfig.getGoodNightButtonEvent().equals(buttonEvent);
     }
 
     private boolean wasCentralOffPressed(String buttonName, int buttonEvent) {
-        return homeSystemProperties.getCentralOffSwitches().stream()
-                .anyMatch(offButton -> offButton.getName().equals(buttonName)
-                        && offButton.getButtonEvent() == buttonEvent);
+        return offButtonConfigRepository.findAllByNameAndButtonEvent(buttonName, buttonEvent)
+                .findAny().isPresent();
     }
 
 

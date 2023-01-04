@@ -1,5 +1,6 @@
 package ch.akop.homesystem.services.impl;
 
+import ch.akop.homesystem.persistence.repository.config.TelegramConfigRepository;
 import ch.akop.homesystem.services.MessageService;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Update;
@@ -8,44 +9,40 @@ import com.pengrad.telegrambot.request.SendPhoto;
 import com.pengrad.telegrambot.request.SetWebhook;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 import reactor.util.annotation.Nullable;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Getter
-@Setter
 @Slf4j
-@ConfigurationProperties(prefix = "home-automation.telegram")
 public class TelegramMessageService implements MessageService {
 
-    private String botToken;
-    private String botUsername;
-    private String botPath;
-    private String mainChannel;
+    private final TelegramConfigRepository telegramConfigRepository;
 
     @Setter(AccessLevel.NONE)
     private TelegramBot bot;
 
-    private Subject<String> messages = PublishSubject.create();
+    @Getter
+    private final Subject<String> messages = PublishSubject.create();
 
     @PostConstruct
     @SneakyThrows
     public void turnBotOn() {
-        if (botToken == null || botPath == null) {
+        var configOpt = telegramConfigRepository.findFirstByOrderByModifiedDesc();
+        if (configOpt.isEmpty()) {
             log.info("No telegrambot will be started.");
             return;
         }
 
-        bot = new TelegramBot(botToken);
+        bot = new TelegramBot(configOpt.get().getBotToken());
 
-        SetWebhook request = new SetWebhook().url(botPath);
+        SetWebhook request = new SetWebhook().url(configOpt.get().getBotPath());
         var response = bot.execute(request);
         if (!response.isOk()) {
             throw new IllegalStateException(response.description());
@@ -53,21 +50,24 @@ public class TelegramMessageService implements MessageService {
     }
 
     @Override
+    @Transactional
     public MessageService sendMessageToMainChannel(@Nullable String message) {
-        if (mainChannel == null || message == null) {
+
+        if (message == null) {
             return this;
         }
 
-        return sendMessageToUser(message, mainChannel);
+        telegramConfigRepository.findFirstByOrderByModifiedDesc()
+                .ifPresent(config -> sendMessageToUser(message, config.getMainChannel()));
+
+        return this;
     }
 
     @Override
     public MessageService sendImageToMainChannel(byte @NonNull [] image, @NonNull String caption) {
-        if (mainChannel == null) {
-            return this;
-        }
-
-        return sendImageToUser(image, mainChannel, caption);
+        telegramConfigRepository.findFirstByOrderByModifiedDesc()
+                .ifPresent(config -> sendImageToUser(image, config.getMainChannel(), caption));
+        return this;
     }
 
     @Override
@@ -92,13 +92,19 @@ public class TelegramMessageService implements MessageService {
         return this;
     }
 
-    public void process(Update update) {
-        log.info("Message from {}@{}: {}", update.message().from().firstName(),
-                update.message().chat().id(),
-                update.message().text());
+    @Transactional
+    public void process(Update update, String transferredApiKey) {
+        telegramConfigRepository.findFirstByOrderByModifiedDesc()
+                .filter(telegramConfig -> telegramConfig.getBotToken().equals(transferredApiKey))
+                .ifPresent(config -> {
+                    log.info("Message from {}@{}: {}", update.message().from().firstName(),
+                            update.message().chat().id(),
+                            update.message().text());
 
-        if (mainChannel.equals(update.message().chat().id().toString()) && update.message().text() != null) {
-            messages.onNext(update.message().text());
-        }
+                    if (config.getMainChannel().equals(update.message().chat().id().toString())
+                            && update.message().text() != null) {
+                        messages.onNext(update.message().text());
+                    }
+                });
     }
 }

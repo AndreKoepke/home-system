@@ -10,6 +10,8 @@ import ch.akop.homesystem.services.WeatherService;
 import ch.akop.homesystem.util.RandomUtil;
 import ch.akop.weathercloud.Weather;
 import io.reactivex.rxjava3.disposables.Disposable;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +24,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;

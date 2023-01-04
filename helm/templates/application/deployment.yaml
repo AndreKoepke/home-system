@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: home-system
+  name: {{ .Release.Name }}-backend
   labels:
     product: home-system
     component: backend
@@ -23,7 +23,7 @@ spec:
         component: backend
 
       annotations:
-        # set timestamp to trick k8s to rollout a new version (even when nothing else changed)
+        # set timestamp to trick k8s to roll out a new version (even when nothing else changed)
         timstamp: "{{ now | date "20060102150405" }}"
 
 
@@ -33,24 +33,21 @@ spec:
       volumes:
         - name: spring-config
           configMap:
-            name: home-system-config
+            name: {{ .Release.Name}}-config
 
       containers:
         - name: backend
           image: {{ .Values.image.base }}:{{ .Values.image.tag }}
           imagePullPolicy: Always
+          args:
+            - "-Dspring.config.location=./config/"
           env:
             - name: TZ
               value: {{ .Values.timezone }}
-            - name: JAVA_TOOL_OPTIONS
-              value: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:62222
           volumeMounts:
-            - mountPath: /app/resources/
+            - mountPath: /workspace/config
               name: spring-config
           ports:
             - containerPort: 8080
               name: http
-              protocol: TCP
-            - containerPort: 62222
-              name: jvm-debug
               protocol: TCP
