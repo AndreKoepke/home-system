@@ -23,7 +23,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Build and publish
-        run: ./gradlew bootBuildImage
+        run: ./gradlew jib
         env:
           DOCKER_USER: '${{ secrets.DOCKER_USER }}'
           DOCKER_PASS: '${{ secrets.DOCKER_PASS }}'
