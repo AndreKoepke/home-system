@@ -96,13 +96,9 @@ public class SleepState implements State {
 
 
     public void turnLightsOff() {
-        deviceService.getDevicesOfType(Group.class)
-                .stream()
-                .flatMap(group -> group.getScenes().stream())
-                .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc()
-                        .orElseThrow()
-                        .getNightSceneName()))
-                .forEach(Scene::activate);
+        deviceService.activeSceneForAllGroups(basicConfigRepository.findFirstByOrderByModifiedDesc()
+                .orElseThrow()
+                .getNightSceneName());
     }
 
     @Override

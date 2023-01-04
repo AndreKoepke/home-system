@@ -1,12 +1,6 @@
 package ch.akop.homesystem.persistence.model.config;
 
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.MapKeyColumn;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -25,7 +19,7 @@ public class MotionSensorConfig {
     private String name;
 
     @NonNull
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "config_motion_sensor_lights")
     @MapKeyColumn(columnDefinition = "TEXT")
     @Column(columnDefinition = "TEXT")

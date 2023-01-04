@@ -1,7 +1,9 @@
 package ch.akop.homesystem.states;
 
+import ch.akop.homesystem.models.events.CubeEvent;
 import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
+import ch.akop.homesystem.persistence.repository.config.CubeConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.UserService;
@@ -21,6 +23,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -49,7 +52,7 @@ public class NormalState extends Activatable implements State {
     private final RainDetectorService rainDetectorService;
     private final UserService userService;
     private final BasicConfigRepository basicConfigRepository;
-
+    private final CubeConfigRepository cubeConfigRepository;
     private Map<String, Boolean> lastPresenceMap;
 
 
@@ -139,6 +142,26 @@ public class NormalState extends Activatable implements State {
             case GOOD_NIGHT_PRESSED -> stateService.switchState(SleepState.class);
             case CENTRAL_OFF_PRESSED -> doCentralOff();
         }
+    }
+
+    @EventListener
+    public void event(CubeEvent cubeEvent) {
+        cubeConfigRepository.findById(cubeEvent.getCubeName())
+                .ifPresent(cubeConfig -> {
+                    var sceneName = switch (cubeEvent.getEventType()) {
+                        case FLIPPED_TO_SIDE_1 -> cubeConfig.getSceneNameOnSide_1();
+                        case FLIPPED_TO_SIDE_2 -> cubeConfig.getSceneNameOnSide_2();
+                        case FLIPPED_TO_SIDE_3 -> cubeConfig.getSceneNameOnSide_3();
+                        case FLIPPED_TO_SIDE_4 -> cubeConfig.getSceneNameOnSide_4();
+                        case FLIPPED_TO_SIDE_5 -> cubeConfig.getSceneNameOnSide_5();
+                        case FLIPPED_TO_SIDE_6 -> cubeConfig.getSceneNameOnSide_6();
+                        case SHAKED -> cubeConfig.getSceneNameOnShake();
+                    };
+
+                    if (StringUtils.hasText(sceneName)) {
+                        deviceService.activeSceneForAllGroups(sceneName);
+                    }
+                });
     }
 
     @SneakyThrows
