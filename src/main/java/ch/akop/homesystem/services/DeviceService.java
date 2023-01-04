@@ -21,4 +21,6 @@ public interface DeviceService {
 
     boolean isAnyLightOn();
 
+    void activeSceneForAllGroups(String sceneName);
+
 }

@@ -10,10 +10,7 @@ import ch.akop.homesystem.models.color.Color;
 import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.actor.*;
 import ch.akop.homesystem.models.devices.other.Scene;
-import ch.akop.homesystem.models.devices.sensor.Button;
-import ch.akop.homesystem.models.devices.sensor.CloseContact;
-import ch.akop.homesystem.models.devices.sensor.MotionSensor;
-import ch.akop.homesystem.models.devices.sensor.PowerMeter;
+import ch.akop.homesystem.models.devices.sensor.*;
 import ch.akop.homesystem.persistence.model.config.DeconzConfig;
 import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import ch.akop.homesystem.services.AutomationService;
@@ -144,7 +141,7 @@ public class DeconzConnector {
     private Device<?> determineSensor(Sensor sensor) {
         return switch (sensor.getType()) {
             case "ZHAOpenClose" -> new CloseContact();
-            case "ZHASwitch" -> new Button();
+            case "ZHASwitch" -> sensor.getModelid().equals("lumi.sensor_cube.aqgl01") ? new AqaraCube() : new Button();
             case "ZHAPresence" -> new MotionSensor();
             case "ZHAPower" -> new PowerMeter();
             default -> null;

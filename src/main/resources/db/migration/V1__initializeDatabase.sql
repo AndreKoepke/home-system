@@ -216,3 +216,15 @@ create table if not exists public.rain_stats
     raining     boolean      not null
 );
 
+create table if not exists public.config_cube
+(
+    name                 text primary key,
+    scene_name_on_side_1 text null,
+    scene_name_on_side_2 text null,
+    scene_name_on_side_3 text null,
+    scene_name_on_side_4 text null,
+    scene_name_on_side_5 text null,
+    scene_name_on_side_6 text null,
+    scene_name_on_shake  text null
+);
+

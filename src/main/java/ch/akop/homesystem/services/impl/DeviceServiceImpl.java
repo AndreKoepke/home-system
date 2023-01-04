@@ -3,6 +3,8 @@ package ch.akop.homesystem.services.impl;
 import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
+import ch.akop.homesystem.models.devices.other.Group;
+import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.util.SleepUtil;
@@ -94,5 +96,14 @@ public class DeviceServiceImpl implements DeviceService {
                         .orElseThrow()
                         .getNotLights().contains(light.getName()))
                 .anyMatch(SimpleLight::isCurrentStateIsOn);
+    }
+
+    @Override
+    public void activeSceneForAllGroups(String sceneName) {
+        getDevicesOfType(Group.class)
+                .stream()
+                .flatMap(group -> group.getScenes().stream())
+                .filter(scene -> scene.getName().equals(sceneName))
+                .forEach(Scene::activate);
     }
 }
