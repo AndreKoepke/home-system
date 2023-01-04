@@ -52,14 +52,14 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
     private Disposable messageListener;
 
     @PostConstruct
-    private void listenForRenewCommands() {
+    public void listenForRenewCommands() {
         messageListener = messageService.getMessages()
                 .filter(message -> message.equals("/neuesBild"))
                 .subscribe(message -> generateAndSendDailyImage());
     }
 
     @PreDestroy
-    private void stopListening() {
+    public void stopListening() {
         if (messageListener != null) {
             messageListener.dispose();
         }
