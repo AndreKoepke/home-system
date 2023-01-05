@@ -3,13 +3,16 @@ package ch.akop.homesystem.persistence.model.animation.steps;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.persistence.model.animation.Animation;
 import ch.akop.homesystem.services.DeviceService;
-import jakarta.persistence.*;
-import lombok.AccessLevel;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.lang.Nullable;
 
 import java.math.BigDecimal;
@@ -20,16 +23,9 @@ import java.util.UUID;
 @Table(name = "animation_step_dimmer")
 @Getter
 @Setter
-@Configurable
 public class DimmLightStep implements Step {
 
     public static final Duration DEFAULT_DURATION = Duration.ofSeconds(10);
-
-    @Autowired
-    @Transient
-    @Setter(AccessLevel.NONE)
-    @Getter(AccessLevel.NONE)
-    private DeviceService deviceService;
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -52,7 +48,7 @@ public class DimmLightStep implements Step {
 
 
     @Override
-    public void play() {
+    public void play(DeviceService deviceService) {
         deviceService.findDeviceByName(nameOfLight, DimmableLight.class)
                 .orElseThrow(() -> new EntityNotFoundException("Light with name " + nameOfLight + " was not found"))
                 .setBrightness(dimmLightTo, dimmDuration != null ? dimmDuration : DEFAULT_DURATION);

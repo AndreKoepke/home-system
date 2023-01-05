@@ -4,7 +4,14 @@ import ch.akop.homesystem.persistence.model.animation.steps.DimmLightStep;
 import ch.akop.homesystem.persistence.model.animation.steps.OnOffStep;
 import ch.akop.homesystem.persistence.model.animation.steps.PauseStep;
 import ch.akop.homesystem.persistence.model.animation.steps.Step;
-import jakarta.persistence.*;
+import ch.akop.homesystem.services.DeviceService;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -40,11 +47,11 @@ public class Animation {
     /**
      * Call in an async-context, this method can run for a while (blocking)
      */
-    public void play() {
+    public void play(DeviceService deviceService) {
         Stream.of(pauseSteps.stream(), onOffSteps.stream(), dimmLightSteps.stream())
                 .flatMap(stream -> stream)
                 .sorted(Comparator.comparingInt(Step::getSortOrder))
-                .forEachOrdered(Step::play);
+                .forEachOrdered(step -> step.play(deviceService));
     }
 
 }

@@ -5,7 +5,11 @@ import ch.akop.homesystem.models.devices.sensor.AqaraCube;
 import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.models.devices.sensor.CloseContactState;
-import ch.akop.homesystem.models.events.*;
+import ch.akop.homesystem.models.events.ButtonPressEvent;
+import ch.akop.homesystem.models.events.ButtonPressInternalEvent;
+import ch.akop.homesystem.models.events.CubeEvent;
+import ch.akop.homesystem.models.events.CubeEventType;
+import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.persistence.repository.config.OffButtonConfigRepository;
 import ch.akop.homesystem.services.AutomationService;
@@ -79,9 +83,11 @@ public class AutomationServiceImpl implements AutomationService {
         }
 
         if (device instanceof AqaraCube cube) {
+            //noinspection ResultOfMethodCallIgnored
             cube.getActiveSide$()
                     .skip(1)
                     .subscribe(activeSide -> eventPublisher.publishEvent(new CubeEvent(cube.getName(), determineFlippedSide(activeSide))));
+            //noinspection ResultOfMethodCallIgnored
             cube.getShacked$()
                     .subscribe(empty -> eventPublisher.publishEvent(new CubeEvent(cube.getName(), CubeEventType.SHAKED)));
         }

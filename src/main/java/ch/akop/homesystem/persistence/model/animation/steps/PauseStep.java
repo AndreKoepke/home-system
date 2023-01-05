@@ -1,7 +1,12 @@
 package ch.akop.homesystem.persistence.model.animation.steps;
 
+import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.util.SleepUtil;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -27,14 +32,15 @@ public class PauseStep implements Step {
     private Duration waitFor;
 
     @Override
-    public void play() {
+    public void play(DeviceService deviceService) {
         var started = LocalTime.now();
         try {
             Thread.sleep(waitFor.toMillis());
         } catch (InterruptedException ignored) {
             // don't interrupt animation
             // they are very short, so we can allow them to finish
-            var waitingTimeLeft = Duration.between(started, LocalTime.now()).abs();
+            var waitingTimeLeft = Duration.between(started, LocalTime.now())
+                    .abs();
             SleepUtil.sleep(waitingTimeLeft);
         }
     }

@@ -3,13 +3,16 @@ package ch.akop.homesystem.persistence.model.animation.steps;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.persistence.model.animation.Animation;
 import ch.akop.homesystem.services.DeviceService;
-import jakarta.persistence.*;
-import lombok.AccessLevel;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Configurable;
 
 import java.util.UUID;
 
@@ -17,13 +20,7 @@ import java.util.UUID;
 @Table(name = "animation_step_on_off")
 @Getter
 @Setter
-@Configurable
 public class OnOffStep implements Step {
-
-    @Autowired
-    @Transient
-    @Setter(AccessLevel.NONE)
-    private DeviceService deviceService;
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -43,7 +40,7 @@ public class OnOffStep implements Step {
 
 
     @Override
-    public void play() {
+    public void play(DeviceService deviceService) {
         deviceService.findDeviceByName(nameOfLight, SimpleLight.class)
                 .orElseThrow(() -> new EntityNotFoundException("Light with name " + nameOfLight + " was not found"))
                 .turnOn(turnItOn);

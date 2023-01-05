@@ -18,10 +18,12 @@ import ch.akop.weathercloud.Weather;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -130,6 +132,8 @@ public class NormalState extends Activatable implements State {
     }
 
     @EventListener
+    @Async
+    @Transactional
     public void event(Event event) {
 
         if (!(stateService.getCurrentState() instanceof NormalState)) {
@@ -194,10 +198,10 @@ public class NormalState extends Activatable implements State {
 
         canStartMainDoorAnimation.setForever(true);
         try {
-            var mainDoorOpenAnimation = basicConfigRepository.findFirstByOrderByModifiedDesc()
+            basicConfigRepository.findFirstByOrderByModifiedDesc()
                     .orElseThrow()
-                    .getWhenMainDoorOpened();
-            mainDoorOpenAnimation.play();
+                    .getWhenMainDoorOpened()
+                    .play(deviceService);
         } finally {
             canStartMainDoorAnimation.reset();
         }
