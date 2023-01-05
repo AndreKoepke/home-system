@@ -18,9 +18,9 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.GregorianCalendar;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -84,8 +84,9 @@ public class WeatherServiceImpl implements WeatherService {
 
     @Override
     public CompassDirection getCurrentSunDirection() {
-        var config = basicConfigRepository.findFirstByOrderByModifiedDesc().orElseThrow();
-        var position = Grena3.calculateSolarPosition(new GregorianCalendar(), config.getLatitude(), config.getLongitude(), 68);
+        var config = basicConfigRepository.findFirstByOrderByModifiedDesc()
+                .orElseThrow();
+        var position = Grena3.calculateSolarPosition(ZonedDateTime.now(), config.getLatitude(), config.getLongitude(), 68);
 
         return Arrays.stream(CompassDirection.values())
                 .min(Comparator.comparing(value -> Math.abs(value.getDirection() - position.getAzimuth())))
