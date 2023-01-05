@@ -2,6 +2,7 @@ package ch.akop.homesystem.external.mastodon;
 
 import ch.akop.homesystem.persistence.repository.config.MastodonConfigRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
@@ -11,17 +12,35 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import javax.annotation.PostConstruct;
+
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class MastodonService {
 
     private final MastodonConfigRepository mastodonConfigRepository;
 
-    private WebClient apiWebClient = WebClient.builder()
-            .build();
+    private WebClient apiWebClient;
+
+    @PostConstruct
+    public void initializeWebClients() {
+        mastodonConfigRepository.findFirstByOrderByModifiedDesc()
+                .ifPresent(properties -> apiWebClient = WebClient.builder()
+                        .baseUrl("https://%s/api/".formatted(properties.getServer()))
+                        .defaultHeaders(header -> header.setBearerAuth(properties.getToken()))
+                        .build()
+                );
+    }
 
     @Async
     public void publishImage(String text, byte[] image) {
+
+        if (apiWebClient == null) {
+            log.warn("Tried to post mastodon-image, but there no mastodon-config. This call will be ignored");
+            return;
+        }
+
         var createdImage = postImage(image);
         postStatus(text, createdImage.getId());
     }
