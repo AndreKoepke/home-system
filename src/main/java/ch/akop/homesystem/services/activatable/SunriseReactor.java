@@ -4,7 +4,7 @@ import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import ch.akop.homesystem.services.WeatherService;
-import ch.akop.weathercloud.Weather;
+import ch.akop.homesystem.services.impl.WeatherServiceImpl;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,6 @@ public class SunriseReactor extends Activatable {
     private final MessageService messageService;
     private final BasicConfigRepository basicConfigRepository;
 
-    private Weather previousWeather;
 
     @PostConstruct
     public void startForAllStates() {
@@ -30,16 +29,13 @@ public class SunriseReactor extends Activatable {
 
     @Override
     protected void started() {
-        super.disposeWhenClosed(weatherService.getWeather()
-                .doOnNext(this::turnLightsOffWhenItIsGettingLight)
-                .doOnNext(weather -> previousWeather = weather)
-                .subscribe());
+        super.disposeWhenClosed(weatherService.getCurrentAndPreviousWeather()
+                .subscribe(this::turnLightsOffWhenItIsGettingLight));
     }
 
-    private void turnLightsOffWhenItIsGettingLight(Weather weather) {
-        if (previousWeather == null
-                || previousWeather.getLight().isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)
-                || weather.getLight().isSmallerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)) {
+    private void turnLightsOffWhenItIsGettingLight(WeatherServiceImpl.CurrentAndPreviousWeather weather) {
+        if (weather.previous().getLight().isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)
+                || weather.current().getLight().isSmallerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)) {
             return;
         }
 

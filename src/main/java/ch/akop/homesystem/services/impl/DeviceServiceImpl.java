@@ -5,6 +5,7 @@ import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
+import ch.akop.homesystem.persistence.model.config.BasicConfig;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.util.SleepUtil;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -70,10 +72,12 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     @Transactional
     public void turnAllLightsOff() {
+        var notLights = basicConfigRepository.findFirstByOrderByModifiedDesc()
+                .map(BasicConfig::getNotLights)
+                .orElse(new HashSet<>());
+
         getDevicesOfType(SimpleLight.class).stream()
-                .filter(light -> !basicConfigRepository.findFirstByOrderByModifiedDesc()
-                        .orElseThrow()
-                        .getNotLights().contains(light.getName()))
+                .filter(light -> !notLights.contains(light.getName()))
                 .forEach(light -> {
                     // see #74, if the commands are cumming to fast, then maybe lights are not correctly off
                     // if this workaround helps, then this should be removed for a rate-limit (see #3)
@@ -90,11 +94,13 @@ public class DeviceServiceImpl implements DeviceService {
     @Override
     @Transactional
     public boolean isAnyLightOn() {
+        var notLights = basicConfigRepository.findFirstByOrderByModifiedDesc()
+                .map(BasicConfig::getNotLights)
+                .orElse(new HashSet<>());
+
         return getDevicesOfType(SimpleLight.class)
                 .stream()
-                .filter(light -> !basicConfigRepository.findFirstByOrderByModifiedDesc()
-                        .orElseThrow()
-                        .getNotLights().contains(light.getName()))
+                .filter(light -> !notLights.contains(light.getName()))
                 .anyMatch(SimpleLight::isCurrentStateIsOn);
     }
 

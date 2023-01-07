@@ -4,7 +4,11 @@ import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
-import ch.akop.homesystem.services.*;
+import ch.akop.homesystem.services.DeviceService;
+import ch.akop.homesystem.services.ImageCreatorService;
+import ch.akop.homesystem.services.MessageService;
+import ch.akop.homesystem.services.UserService;
+import ch.akop.homesystem.services.WeatherService;
 import ch.akop.homesystem.services.impl.StateServiceImpl;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -14,7 +18,11 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.time.*;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +69,8 @@ public class SleepState implements State {
 
     @Override
     public void entered() {
-        messageService.sendMessageToMainChannel("Gute Nacht. Ich mache die Lichter in %dmin aus. Falls ich sofort aufwachen soll, schreibt einfach /aufwachen."
+        messageService.sendMessageToMainChannel(("Gute Nacht. Ich mache die Lichter in %dmin aus. " +
+                "Falls ich sofort aufwachen soll, schreibt einfach /aufwachen.")
                 .formatted(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes()));
 
         disposeWhenLeaveState.add(Observable.timer(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes(), TimeUnit.MINUTES)
