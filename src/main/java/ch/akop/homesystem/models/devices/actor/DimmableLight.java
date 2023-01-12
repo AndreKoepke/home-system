@@ -42,7 +42,7 @@ public class DimmableLight extends SimpleLight {
 
     @Override
     protected void consumeInternalUpdate(State update) {
-        super.consumeUpdate(update);
+        super.consumeInternalUpdate(update);
         setCurrentBrightness(update.getBri());
     }
 }

@@ -35,7 +35,7 @@ public class ColoredLight extends DimmableLight {
 
     @Override
     protected void consumeInternalUpdate(State update) {
-        super.consumeUpdate(update);
+        super.consumeInternalUpdate(update);
         currentColor = Color.fromXY(update.getXy(), update.getBri());
     }
 
