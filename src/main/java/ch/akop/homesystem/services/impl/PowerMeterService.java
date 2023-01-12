@@ -1,5 +1,6 @@
 package ch.akop.homesystem.services.impl;
 
+import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.persistence.model.config.PowerMeterConfig;
 import ch.akop.homesystem.persistence.repository.config.PowerMeterConfigRepository;
@@ -50,6 +51,11 @@ public class PowerMeterService {
 
                     if (!Objects.equals(wasLastTimeRunning, isNowRunning)) {
                         stateSwitched(powerMeterConfig, isNowRunning);
+                    }
+
+                    if (wasLastTimeRunning && !isNowRunning && powerMeterConfig.getTurnOffWhenReady()) {
+                        deviceService.findDeviceByName(powerMeterConfig.getName(), SimpleLight.class)
+                                .ifPresent(powerMeterSwitch -> powerMeterSwitch.turnOn(false));
                     }
 
                     configToIsRunningMap.put(powerMeterConfig.getName(), isNowRunning);
