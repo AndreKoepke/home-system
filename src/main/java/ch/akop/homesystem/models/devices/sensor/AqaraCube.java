@@ -22,7 +22,7 @@ public class AqaraCube extends Sensor<AqaraCube> {
     public enum EMPTY {INSTANCE}
 
     @Override
-    public Sensor<AqaraCube> consumeUpdate(State update) {
+    protected void consumeInternalUpdate(State update) {
         if (update.getButtonevent() != null) {
             if (update.getButtonevent() < 7000) {
                 var firstNumber = update.getButtonevent() / 1000;
@@ -31,7 +31,6 @@ public class AqaraCube extends Sensor<AqaraCube> {
                 shacked$.onNext(EMPTY.INSTANCE);
             }
         }
-        return this;
     }
 
 }

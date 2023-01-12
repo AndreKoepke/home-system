@@ -3,7 +3,13 @@ package ch.akop.homesystem.models.devices.actor;
 import ch.akop.homesystem.deconz.rest.State;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.util.function.Consumer;
 
@@ -35,10 +41,8 @@ public class SimpleLight extends Actor<SimpleLight> {
     }
 
     @Override
-    public SimpleLight consumeUpdate(State update) {
+    protected void consumeInternalUpdate(State update) {
         currentStateIsOn = update.getOn();
-        state$.onNext(update.getOn());
-
-        return this;
+        state$.onNext(currentStateIsOn);
     }
 }

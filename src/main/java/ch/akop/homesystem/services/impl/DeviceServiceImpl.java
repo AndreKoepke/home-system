@@ -78,6 +78,7 @@ public class DeviceServiceImpl implements DeviceService {
 
         getDevicesOfType(SimpleLight.class).stream()
                 .filter(light -> !notLights.contains(light.getName()))
+                .filter(Device::isReachable)
                 .forEach(light -> {
                     // see #74, if the commands are cumming to fast, then maybe lights are not correctly off
                     // if this workaround helps, then this should be removed for a rate-limit (see #3)
@@ -100,6 +101,7 @@ public class DeviceServiceImpl implements DeviceService {
 
         return getDevicesOfType(SimpleLight.class)
                 .stream()
+                .filter(Device::isReachable)
                 .filter(light -> !notLights.contains(light.getName()))
                 .anyMatch(SimpleLight::isCurrentStateIsOn);
     }

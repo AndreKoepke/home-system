@@ -15,8 +15,7 @@ public class Button extends Sensor<Button> {
     private final Subject<Integer> events$ = ReplaySubject.createWithSize(1);
 
     @Override
-    public Button consumeUpdate(State update) {
+    protected void consumeInternalUpdate(State update) {
         events$.onNext(update.getButtonevent());
-        return this;
     }
 }

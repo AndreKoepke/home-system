@@ -101,10 +101,8 @@ public class RollerShutter extends Actor<RollerShutter> {
     }
 
     @Override
-    public RollerShutter consumeUpdate(State update) {
+    protected void consumeInternalUpdate(State update) {
         // bri as workaround, tilt was never updated
         setCurrentLift(update.getBri());
-
-        return this;
     }
 }

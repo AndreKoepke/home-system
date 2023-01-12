@@ -9,8 +9,15 @@ public abstract class Device<T extends Device<?>> {
 
     private String name;
     private String id;
+    private boolean reachable;
 
-    public abstract T consumeUpdate(State update);
+    protected abstract void consumeInternalUpdate(State update);
+
+    public T consumeUpdate(State update) {
+        reachable = update.getReachable();
+        consumeInternalUpdate(update);
+        return (T) this;
+    }
 
     //<editor-fold desc="These setter are necessary, because they're returning <T>. It is the type of the subclass.">
     public T setName(String name) {

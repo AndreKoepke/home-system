@@ -17,10 +17,8 @@ public class CloseContact extends Sensor<CloseContact> {
     private CloseContactState state;
 
     @Override
-    public CloseContact consumeUpdate(State update) {
+    protected void consumeInternalUpdate(State update) {
         setState(Boolean.TRUE.equals(update.getOpen()) ? OPENED : CLOSED);
         state$.onNext(getState());
-
-        return this;
     }
 }

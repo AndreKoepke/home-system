@@ -18,10 +18,8 @@ public class MotionSensor extends Sensor<MotionSensor> {
     private final Subject<Boolean> isDark$ = ReplaySubject.createWithSize(1);
 
     @Override
-    public MotionSensor consumeUpdate(State update) {
+    protected void consumeInternalUpdate(State update) {
         isMoving$.onNext(update.getPresence());
         isDark$.onNext(update.getDark() != null && update.getDark());
-
-        return this;
     }
 }

@@ -16,11 +16,9 @@ public class PowerMeter extends Sensor<PowerMeter> {
     private final Subject<Integer> voltage$ = ReplaySubject.createWithSize(1);
 
     @Override
-    public PowerMeter consumeUpdate(State update) {
+    protected void consumeInternalUpdate(State update) {
         getPower$().onNext(update.getPower());
         getCurrent$().onNext(update.getCurrent());
         getVoltage$().onNext(update.getVoltage());
-
-        return this;
     }
 }
