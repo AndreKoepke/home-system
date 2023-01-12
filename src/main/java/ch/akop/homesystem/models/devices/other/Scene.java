@@ -20,8 +20,7 @@ public class Scene extends Device<Scene> {
     }
 
     @Override
-    public Scene consumeUpdate(State update) {
+    protected void consumeInternalUpdate(State update) {
         // NOP
-        return this;
     }
 }

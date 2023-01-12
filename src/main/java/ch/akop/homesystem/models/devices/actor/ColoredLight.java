@@ -34,11 +34,9 @@ public class ColoredLight extends DimmableLight {
     }
 
     @Override
-    public ColoredLight consumeUpdate(State update) {
+    protected void consumeInternalUpdate(State update) {
         super.consumeUpdate(update);
         currentColor = Color.fromXY(update.getXy(), update.getBri());
-
-        return this;
     }
 
 }

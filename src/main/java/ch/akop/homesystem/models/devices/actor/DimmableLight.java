@@ -1,7 +1,12 @@
 package ch.akop.homesystem.models.devices.actor;
 
 import ch.akop.homesystem.deconz.rest.State;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -36,10 +41,8 @@ public class DimmableLight extends SimpleLight {
     }
 
     @Override
-    public DimmableLight consumeUpdate(State update) {
+    protected void consumeInternalUpdate(State update) {
         super.consumeUpdate(update);
         setCurrentBrightness(update.getBri());
-
-        return this;
     }
 }

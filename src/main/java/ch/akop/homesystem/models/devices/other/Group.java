@@ -17,8 +17,7 @@ public class Group extends Device<Group> {
     private List<String> lights;
 
     @Override
-    public Group consumeUpdate(State update) {
+    protected void consumeInternalUpdate(State update) {
         // NOP
-        return this;
     }
 }
