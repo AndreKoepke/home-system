@@ -35,4 +35,13 @@ public class PowerMeterConfig {
     @Nullable
     private FanConfig linkedFan;
 
+    @NonNull
+    private Boolean turnOffWhenReady;
+
+    @NonNull
+    private Boolean gotReadyWhenNobodyWasHome;
+
+    @NonNull
+    private Integer sendRemindersCount;
+
 }
