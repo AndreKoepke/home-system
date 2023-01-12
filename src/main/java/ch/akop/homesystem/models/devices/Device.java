@@ -14,7 +14,7 @@ public abstract class Device<T extends Device<?>> {
     protected abstract void consumeInternalUpdate(State update);
 
     public T consumeUpdate(State update) {
-        reachable = update.getReachable();
+        reachable = update.getReachable() != null ? update.getReachable() : true;
         consumeInternalUpdate(update);
         return (T) this;
     }
