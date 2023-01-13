@@ -38,6 +38,9 @@ public class PowerMeterConfig {
     @NonNull
     private Boolean turnOffWhenReady;
 
+    @Nullable
+    private Integer pausesDuringRun;
+
     @NonNull
     private Boolean gotReadyWhenNobodyWasHome;
 

@@ -8,6 +8,7 @@ import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PowerMeterService {
@@ -25,6 +27,7 @@ public class PowerMeterService {
     private final MessageService messageService;
 
     private final Map<String, Boolean> configToIsRunningMap = new HashMap<>();
+    private final Map<String, Integer> pauses = new HashMap<>();
 
 
     @PostConstruct
@@ -46,6 +49,7 @@ public class PowerMeterService {
                 // delay, when on-value not changed
                 .debounce(1, TimeUnit.MINUTES)
                 .distinctUntilChanged()
+                .filter(isNowRunning -> makingAPause(powerMeterConfig, isNowRunning))
                 .subscribe(isNowRunning -> {
                     var wasLastTimeRunning = configToIsRunningMap.getOrDefault(powerMeterConfig.getName(), false);
 
@@ -60,6 +64,36 @@ public class PowerMeterService {
 
                     configToIsRunningMap.put(powerMeterConfig.getName(), isNowRunning);
                 });
+    }
+
+
+    private boolean makingAPause(PowerMeterConfig config, boolean isNowRunning) {
+
+        var wasLastTimeRunning = configToIsRunningMap.get(config.getName());
+
+        if (config.getPausesDuringRun() == null || wasLastTimeRunning == null) {
+            return false;
+        }
+
+        var alreadyNoticedPauses = pauses.getOrDefault(config.getName(), 0);
+        if (wasLastTimeRunning && !isNowRunning && alreadyNoticedPauses < config.getPausesDuringRun()) {
+            // it is a pause
+            pauses.put(config.getName(), alreadyNoticedPauses + 1);
+            return true;
+        } else if (!wasLastTimeRunning && isNowRunning) {
+            // finished a pause
+            return true;
+        } else if (wasLastTimeRunning && !isNowRunning) {
+            // ready
+            pauses.remove(config.getName());
+            return false;
+        }
+
+        log.warn("Never should get into the code. PowerMeter '{}' is {} and before it {}",
+                config.getName(),
+                isNowRunning ? "RUNNING" : "NOT RUNNING",
+                wasLastTimeRunning ? "RUNS" : "NOT RUNS");
+        return false;
     }
 
     private void stateSwitched(PowerMeterConfig powerMeterConfig, boolean isRunning) {
