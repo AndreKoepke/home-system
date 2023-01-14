@@ -49,7 +49,7 @@ public class PowerMeterService {
                 // delay, when on-value not changed
                 .debounce(1, TimeUnit.MINUTES)
                 .distinctUntilChanged()
-                .filter(isNowRunning -> makingAPause(powerMeterConfig, isNowRunning))
+                .filter(isNowRunning -> !makingAPause(powerMeterConfig, isNowRunning))
                 .subscribe(isNowRunning -> {
                     var wasLastTimeRunning = configToIsRunningMap.getOrDefault(powerMeterConfig.getName(), false);
 
