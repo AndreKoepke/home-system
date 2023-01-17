@@ -77,11 +77,13 @@ public class PowerMeterService {
 
         var alreadyNoticedPauses = pauses.getOrDefault(config.getName(), 0);
         if (wasLastTimeRunning && !isNowRunning && alreadyNoticedPauses < config.getPausesDuringRun()) {
-            // it is a pause
+            // starts a pause
             pauses.put(config.getName(), alreadyNoticedPauses + 1);
+            configToIsRunningMap.put(config.getName(), false);
             return true;
         } else if (!wasLastTimeRunning && isNowRunning) {
             // finished a pause
+            configToIsRunningMap.put(config.getName(), true);
             return true;
         } else if (wasLastTimeRunning && !isNowRunning) {
             // ready
