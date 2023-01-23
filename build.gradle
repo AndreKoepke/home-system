@@ -1,6 +1,6 @@
 //file:noinspection GroovyUnusedAssignment
 plugins {
-    id 'org.springframework.boot' version '3.0.1'
+    id 'org.springframework.boot' version '3.0.2'
     id 'java'
     id 'com.google.cloud.tools.jib' version '3.3.1'
 }
