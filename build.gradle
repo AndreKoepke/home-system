@@ -55,7 +55,7 @@ dependencies {
     implementation 'net.e175.klaus:solarpositioning:0.1.4'
 
     // rxJava
-    implementation 'io.reactivex.rxjava3:rxjava:3.1.5'
+    implementation 'io.reactivex.rxjava3:rxjava:3.1.6'
     implementation 'com.jakewharton.rx3:replaying-share:3.0.0'
 }
 
