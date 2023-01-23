@@ -1,7 +1,6 @@
 package ch.akop.homesystem.external.mastodon;
 
 import ch.akop.homesystem.persistence.repository.config.MastodonConfigRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
@@ -12,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import javax.annotation.PostConstruct;
 
 
 @RequiredArgsConstructor

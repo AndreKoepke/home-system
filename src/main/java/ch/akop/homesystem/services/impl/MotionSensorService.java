@@ -8,10 +8,10 @@ import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigReposi
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.states.SleepState;
 import io.reactivex.rxjava3.core.Observable;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;

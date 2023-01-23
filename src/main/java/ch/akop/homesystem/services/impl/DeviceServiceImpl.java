@@ -9,11 +9,11 @@ import ch.akop.homesystem.persistence.model.config.BasicConfig;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.util.SleepUtil;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;

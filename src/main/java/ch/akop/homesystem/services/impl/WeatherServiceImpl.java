@@ -9,13 +9,13 @@ import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.scraper.weathercloud.Scraper;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
-import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.e175.klaus.solarpositioning.Grena3;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.ZonedDateTime;

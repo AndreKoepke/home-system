@@ -12,11 +12,11 @@ import ch.akop.homesystem.services.WeatherService;
 import ch.akop.homesystem.services.impl.StateServiceImpl;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;

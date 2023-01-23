@@ -14,7 +14,9 @@ import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.persistence.repository.config.OffButtonConfigRepository;
 import ch.akop.homesystem.services.AutomationService;
 import ch.akop.homesystem.services.DeviceService;
-import jakarta.transaction.Transactional;
+
+import javax.transaction.Transactional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

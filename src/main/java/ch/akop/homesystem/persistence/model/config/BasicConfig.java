@@ -1,18 +1,20 @@
 package ch.akop.homesystem.persistence.model.config;
 
 import ch.akop.homesystem.persistence.model.animation.Animation;
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapKeyColumn;
-import jakarta.persistence.Table;
+
+import javax.persistence.CollectionTable;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.MapKeyColumn;
+import javax.persistence.Table;
+
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.lang.Nullable;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -24,7 +26,7 @@ import java.util.Set;
 public class BasicConfig {
 
     @Id
-    @LastModifiedDate
+    @UpdateTimestamp
     private LocalDateTime modified = LocalDateTime.now();
 
     @Nullable

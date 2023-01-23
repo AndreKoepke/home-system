@@ -6,11 +6,11 @@ import ch.akop.homesystem.persistence.model.config.PowerMeterConfig;
 import ch.akop.homesystem.persistence.repository.config.PowerMeterConfigRepository;
 import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.services.MessageService;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

@@ -5,17 +5,17 @@ import ch.akop.homesystem.persistence.model.animation.steps.OnOffStep;
 import ch.akop.homesystem.persistence.model.animation.steps.PauseStep;
 import ch.akop.homesystem.persistence.model.animation.steps.Step;
 import ch.akop.homesystem.services.DeviceService;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.hibernate.annotations.GenericGenerator;
 
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -29,7 +29,8 @@ import java.util.stream.Stream;
 public class Animation {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     private UUID id;
 
     @NonNull

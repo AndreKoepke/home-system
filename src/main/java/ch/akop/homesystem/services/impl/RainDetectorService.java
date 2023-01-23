@@ -4,10 +4,10 @@ import ch.akop.homesystem.persistence.model.RainStats;
 import ch.akop.homesystem.persistence.repository.RainStatsRepository;
 import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.LocalDateTime;
 

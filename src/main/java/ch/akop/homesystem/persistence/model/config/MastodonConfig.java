@@ -1,13 +1,13 @@
 package ch.akop.homesystem.persistence.model.config;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 public class MastodonConfig {
 
     @Id
-    @LastModifiedDate
+    @UpdateTimestamp
     private LocalDateTime modified = LocalDateTime.now();
 
     @NonNull

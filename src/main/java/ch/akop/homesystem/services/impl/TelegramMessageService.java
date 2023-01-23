@@ -9,13 +9,18 @@ import com.pengrad.telegrambot.request.SendPhoto;
 import com.pengrad.telegrambot.request.SetWebhook;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import jakarta.annotation.PostConstruct;
-import jakarta.transaction.Transactional;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.util.annotation.Nullable;
 
+import javax.annotation.PostConstruct;
+import javax.transaction.Transactional;
 import java.util.List;
 
 @Service
