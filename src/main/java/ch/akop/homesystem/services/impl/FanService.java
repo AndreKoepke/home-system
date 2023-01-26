@@ -82,7 +82,7 @@ public class FanService {
                 .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class))
                 .map(light -> waitUntilLightTurnedOff(light)
                         .subscribe(ignore -> {
-                            if (!waitingToTurnOff.containsKey(light.getName())) {
+                            if (!waitingToTurnOff.containsKey(triggeredFan.getName())) {
                                 fan.turnOn(false);
                             }
                             subscribeMap.remove(triggeredFan.getName());
