@@ -12,11 +12,12 @@ import javax.ws.rs.PathParam;
 
 @RequiredArgsConstructor
 @Slf4j
+@Path("/telegram")
 public class TelegramWebhookReceiverController {
 
     private final TelegramMessageService telegramMessageService;
 
-    @Path("/telegram/{apikey}")
+    @Path("{apikey}")
     @POST
     public void gotWebhookUpdate(@PathParam("apikey") String apikey, String json) {
         try {
