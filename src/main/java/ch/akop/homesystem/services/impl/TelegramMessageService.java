@@ -38,6 +38,7 @@ public class TelegramMessageService {
     private final Subject<String> messages = PublishSubject.create();
 
     @PostConstruct
+    @Transactional
     @SneakyThrows
     void turnBotOn() {
         var configOpt = telegramConfigRepository.findFirstByOrderByModifiedDesc();
