@@ -32,6 +32,7 @@ import org.springframework.lang.Nullable;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Optional;
@@ -52,6 +53,7 @@ public class DeconzConnector {
 
 
     @PostConstruct
+    @Transactional
     void tryToStart() {
         // TODO restart when config changes
         var configOpt = deconzConfigRepository.findFirstByOrderByModifiedDesc();
