@@ -6,9 +6,9 @@ import ch.akop.homesystem.persistence.model.ImageOfOpenAI;
 import ch.akop.homesystem.persistence.repository.OpenAIImageRepository;
 import ch.akop.homesystem.util.RandomUtil;
 import ch.akop.weathercloud.Weather;
+import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.springframework.util.StringUtils;
@@ -16,7 +16,6 @@ import org.springframework.util.StringUtils;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
-import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +27,7 @@ import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 
 @Slf4j
+@Startup
 @ApplicationScoped
 @RequiredArgsConstructor
 public class ImageCreatorService {
@@ -43,7 +43,7 @@ public class ImageCreatorService {
     private Disposable messageListener;
 
     @PostConstruct
-    public void listenForRenewCommands() {
+    void listenForRenewCommands() {
         messageListener = messageService.getMessages()
                 .filter(message -> message.equals("/neuesBild"))
                 .subscribe(message -> generateAndSendDailyImage());
@@ -70,12 +70,6 @@ public class ImageCreatorService {
         return imageRepository.findFirstByOrderByCreatedDesc()
                 .map(image -> Hibernate.unproxy(image, ImageOfOpenAI.class))
                 .orElseThrow(() -> new NoSuchElementException("There are no images right now."));
-    }
-
-
-    @SneakyThrows
-    public void writeLastImageToStream(OutputStream outputStream) {
-        outputStream.write(getLastImage().getImage());
     }
 
     public void increaseDownloadCounter(LocalDateTime imageThatWasCreatedAt) {
