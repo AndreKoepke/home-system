@@ -1,16 +1,18 @@
 package ch.akop.homesystem.persistence.model.animation.steps;
 
-import ch.akop.homesystem.services.DeviceService;
+import ch.akop.homesystem.persistence.model.animation.Animation;
+import ch.akop.homesystem.services.impl.DeviceService;
 import ch.akop.homesystem.util.SleepUtil;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.hibernate.annotations.GenericGenerator;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -22,11 +24,15 @@ import java.util.UUID;
 public class PauseStep implements Step {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     private UUID id;
 
     @NonNull
     private Integer sortOrder;
+
+    @ManyToOne
+    private Animation animation;
 
     @NonNull
     private Duration waitFor;

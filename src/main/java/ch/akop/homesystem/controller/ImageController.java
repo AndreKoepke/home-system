@@ -1,42 +1,39 @@
 package ch.akop.homesystem.controller;
 
-import ch.akop.homesystem.services.ImageCreatorService;
+
+import ch.akop.homesystem.services.impl.ImageCreatorService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.CacheControl;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.CacheControl;
+import javax.ws.rs.core.MediaType;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 
-@Slf4j
-@RestController
-@RequestMapping("/v1/images")
+
+@Path("/v1/images")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ImageController {
 
     private final ImageCreatorService imageCreatorService;
 
-    @GetMapping("daily.jpg")
-    @CrossOrigin(exposedHeaders = "prompt")
-    public ResponseEntity<StreamingResponseBody> getDailyImage() {
+    @Path("daily.jpg")
+    @GET
+    public RestResponse<byte[]> getDailyImage() {
         var image = imageCreatorService.getLastImage();
         imageCreatorService.increaseDownloadCounter(image.getCreated());
 
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.of(1, ChronoUnit.HOURS)))
-                .eTag(image.getCreated().toString())
-                .contentType(MediaType.IMAGE_JPEG)
-                .headers(header -> header.add("prompt", image.getPrompt()))
-                .body(imageCreatorService::writeLastImageToStream);
+        var cacheControl = new CacheControl();
+        cacheControl.setMaxAge((int) Duration.ofHours(10).toSeconds());
+        cacheControl.setMustRevalidate(false);
 
+        return ResponseBuilder.ok(image.getImage(), new MediaType("image", "jpeg"))
+                .tag(image.getCreated().toString())
+                .header("prompt", image.getPrompt())
+                .cacheControl(cacheControl)
+                .build();
     }
 
 

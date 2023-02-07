@@ -1,7 +1,6 @@
 package ch.akop.homesystem.services.impl;
 
 import ch.akop.homesystem.persistence.repository.config.TelegramConfigRepository;
-import ch.akop.homesystem.services.MessageService;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
@@ -9,19 +8,24 @@ import com.pengrad.telegrambot.request.SendPhoto;
 import com.pengrad.telegrambot.request.SetWebhook;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import jakarta.annotation.PostConstruct;
-import jakarta.transaction.Transactional;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import reactor.util.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import java.util.List;
 
-@Service
+@ApplicationScoped
 @RequiredArgsConstructor
 @Slf4j
-public class TelegramMessageService implements MessageService {
+public class TelegramMessageService {
 
     private final TelegramConfigRepository telegramConfigRepository;
 
@@ -49,9 +53,8 @@ public class TelegramMessageService implements MessageService {
         }
     }
 
-    @Override
     @Transactional
-    public MessageService sendMessageToMainChannel(@Nullable String message) {
+    public TelegramMessageService sendMessageToMainChannel(@Nullable String message) {
 
         if (message == null) {
             return this;
@@ -63,20 +66,20 @@ public class TelegramMessageService implements MessageService {
         return this;
     }
 
-    @Override
-    public MessageService sendImageToMainChannel(byte @NonNull [] image, @NonNull String caption) {
+
+    public TelegramMessageService sendImageToMainChannel(byte @NonNull [] image, @NonNull String caption) {
         telegramConfigRepository.findFirstByOrderByModifiedDesc()
                 .ifPresent(config -> sendImageToUser(image, config.getMainChannel(), caption));
         return this;
     }
 
-    @Override
-    public MessageService sendMessageToUser(@Nullable String message, @NonNull String chatId) {
+
+    public TelegramMessageService sendMessageToUser(@Nullable String message, @NonNull String chatId) {
         return sendMessageToUser(message, List.of(chatId));
     }
 
-    @Override
-    public MessageService sendMessageToUser(@Nullable String message, @NonNull List<String> chatIds) {
+
+    public TelegramMessageService sendMessageToUser(@Nullable String message, @NonNull List<String> chatIds) {
         if (bot != null) {
             chatIds.forEach(chatId -> bot.execute(new SendMessage(chatId, message)));
         }
@@ -84,7 +87,7 @@ public class TelegramMessageService implements MessageService {
         return this;
     }
 
-    public MessageService sendImageToUser(byte @NonNull [] image, @NonNull String chatId, @NonNull String text) {
+    public TelegramMessageService sendImageToUser(byte @NonNull [] image, @NonNull String chatId, @NonNull String text) {
         if (bot != null) {
             bot.execute(new SendPhoto(chatId, image).caption(text));
         }

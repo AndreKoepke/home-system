@@ -5,13 +5,12 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.persistence.model.config.MotionSensorConfig;
 import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigRepository;
-import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.states.SleepState;
 import io.reactivex.rxjava3.core.Observable;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
@@ -19,13 +18,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-@Service
+@ApplicationScoped
 @RequiredArgsConstructor
 public class MotionSensorService {
 
     private final MotionSensorConfigRepository motionSensorConfigRepository;
     private final DeviceService deviceService;
-    private final StateServiceImpl stateService;
+    private final StateService stateService;
     private final Set<String> sensorsWithHigherTimeout = new HashSet<>();
 
     @SuppressWarnings({"ResultOfMethodCallIgnored"})

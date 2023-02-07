@@ -3,8 +3,8 @@ package ch.akop.homesystem.services.impl;
 import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.model.config.UserConfig;
 import ch.akop.homesystem.persistence.repository.config.UserConfigRepository;
-import ch.akop.homesystem.services.UserService;
 import ch.akop.homesystem.util.SleepUtil;
+import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
@@ -12,9 +12,8 @@ import io.reactivex.rxjava3.subjects.Subject;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Service;
 
+import javax.enterprise.context.ApplicationScoped;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.time.Duration;
@@ -27,9 +26,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Service
+@ApplicationScoped
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
+public class UserService {
 
     private final UserConfigRepository userConfigRepository;
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
@@ -37,12 +36,11 @@ public class UserServiceImpl implements UserService {
     private Map<String, Boolean> presenceMap = new HashMap<>();
 
 
-    @Override
     public void hintCheckPresence() {
         executorService.submit(this::checkPresenceUntilChangedWithin);
     }
 
-    @EventListener
+    @ConsumeEvent("home/general")
     public void gotEvent(Event event) {
         if (event == Event.DOOR_CLOSED) {
             hintCheckPresence();
@@ -84,19 +82,16 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    @Override
     public Flowable<Map<String, Boolean>> getPresenceMap$() {
         return presenceMap$.toFlowable(BackpressureStrategy.DROP);
     }
 
-    @Override
     public Flowable<Boolean> isAnyoneAtHome$() {
         return presenceMap$
                 .map(presenceMap -> presenceMap.values().stream().anyMatch(isAtHome -> isAtHome))
                 .toFlowable(BackpressureStrategy.DROP);
     }
 
-    @Override
     public boolean isAnyoneAtHome() {
         return presenceMap.values().stream().anyMatch(isAtHome -> isAtHome);
     }

@@ -1,26 +1,19 @@
-//file:noinspection GroovyUnusedAssignment
 plugins {
-    id 'org.springframework.boot' version '3.0.2'
     id 'java'
-    id 'com.google.cloud.tools.jib' version '3.3.1'
+    id 'io.quarkus'
 }
-
-apply plugin: 'io.spring.dependency-management'
-
 
 group = 'ch.akop'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = 17
-targetCompatibility = 17
 
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
-    }
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 repositories {
     mavenCentral()
+    mavenLocal()
     maven {
         url "https://maven.pkg.github.com/AndreKoepke/weathercloud"
         credentials {
@@ -32,20 +25,26 @@ repositories {
 }
 
 dependencies {
-    // Lombok
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
+    // lombok
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    testCompileOnly 'org.projectlombok:lombok:1.18.24'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
 
-    // Spring
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    implementation 'com.zaxxer:HikariCP:5.0.1'
-    implementation 'org.flywaydb:flyway-core:9.14.1'
+    // quarkus
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-hibernate-orm'
+    implementation 'io.quarkus:quarkus-rest-client-reactive'
+    implementation 'io.quarkus:quarkus-rest-client-reactive-jackson'
+    implementation 'io.quarkus:quarkus-websockets'
+    implementation 'io.quarkus:quarkus-resteasy-reactive'
+    implementation 'io.quarkus:quarkus-jdbc-postgresql'
+    implementation 'io.quarkus:quarkus-arc'
+    implementation 'io.quarkus:quarkus-config-yaml'
+    implementation 'io.quarkus:quarkus-spring-data-jpa'
+    implementation 'io.quarkus:quarkus-container-image-docker'
+    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.rest-assured:rest-assured'
 
     // misc
     runtimeOnly 'org.postgresql:postgresql'
@@ -53,6 +52,7 @@ dependencies {
     implementation 'com.github.pengrad:java-telegram-bot-api:6.3.0'
     implementation 'ch.akop:weathercloud:0.1.1'
     implementation 'net.e175.klaus:solarpositioning:0.1.7'
+    implementation 'org.jetbrains:annotations:24.0.0'
 
     // rxJava
     implementation 'io.reactivex.rxjava3:rxjava:3.1.6'
@@ -60,47 +60,14 @@ dependencies {
 }
 
 test {
-    useJUnitPlatform()
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
 }
 
-jib {
-
-    extraDirectories {
-        paths {
-            path {
-                from = file('executables')
-                into = '/bin'
-            }
-        }
-        permissions = [
-                '/bin/*': '755'
-        ]
-    }
-
-    from {
-        image = 'openjdk:17'
-    }
-
-    to {
-        image = 'akop/home-system:latest'
-        auth {
-            username = project.findProperty("docker.user") ?: System.getenv("DOCKER_USER") ?: ""
-            password = project.findProperty("docker.pass") ?: System.getenv("DOCKER_PASS") ?: ""
-        }
-    }
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
 }
 
-task ensureDepsExist() {
-    doLast {
-        configurations.implementation.canBeResolved(true)
-        Set<File> impFiles = configurations.implementation.resolve()
-
-        impFiles.forEach { f ->
-            if (!f.exists()) {
-                ant.fail "${f} could not be found"
-            }
-        }
-    }
+compileTestJava {
+    options.encoding = 'UTF-8'
 }
-
-compileJava.dependsOn ensureDepsExist

@@ -12,39 +12,34 @@ import ch.akop.homesystem.models.events.CubeEventType;
 import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.persistence.repository.config.OffButtonConfigRepository;
-import ch.akop.homesystem.services.AutomationService;
-import ch.akop.homesystem.services.DeviceService;
-import jakarta.transaction.Transactional;
+import io.quarkus.vertx.ConsumeEvent;
+import io.vertx.core.eventbus.EventBus;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Service;
 
+import javax.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-@Service
-@Slf4j
-@RequiredArgsConstructor
-public class AutomationServiceImpl implements AutomationService {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+@ApplicationScoped
+public class AutomationService {
 
     private static final int MARCEL_CONSTANT_SECONDS = 30;
 
     private final DeviceService deviceService;
     private final BasicConfigRepository basicConfigRepository;
     private final OffButtonConfigRepository offButtonConfigRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final EventBus eventPublisher;
 
     @SuppressWarnings("rawtypes")
     private final Map<Class<? extends Device>, List<Device<?>>> knownDevices = new HashMap<>();
 
 
-    @Override
     @SneakyThrows
     public void discoverNewDevices() {
         deviceService.getAllDevices().stream()
@@ -79,17 +74,17 @@ public class AutomationServiceImpl implements AutomationService {
         if (device instanceof Button button) {
             //noinspection ResultOfMethodCallIgnored
             button.getEvents$()
-                    .subscribe(integer -> eventPublisher.publishEvent(new ButtonPressInternalEvent(button.getName(), integer)));
+                    .subscribe(integer -> eventPublisher.send("home/button-internal", new ButtonPressInternalEvent(button.getName(), integer)));
         }
 
         if (device instanceof AqaraCube cube) {
             //noinspection ResultOfMethodCallIgnored
             cube.getActiveSide$()
                     .skip(1)
-                    .subscribe(activeSide -> eventPublisher.publishEvent(new CubeEvent(cube.getName(), determineFlippedSide(activeSide))));
+                    .subscribe(activeSide -> eventPublisher.send("home/cube", new CubeEvent(cube.getName(), determineFlippedSide(activeSide))));
             //noinspection ResultOfMethodCallIgnored
             cube.getShacked$()
-                    .subscribe(empty -> eventPublisher.publishEvent(new CubeEvent(cube.getName(), CubeEventType.SHAKED)));
+                    .subscribe(empty -> eventPublisher.send("home/cube", new CubeEvent(cube.getName(), CubeEventType.SHAKED)));
         }
     }
 
@@ -105,15 +100,14 @@ public class AutomationServiceImpl implements AutomationService {
         };
     }
 
-    @Transactional
-    @EventListener
+    @ConsumeEvent(value = "home/button-internal", blocking = true)
     public void buttonWasPressed(ButtonPressInternalEvent internalEvent) {
         if (wasCentralOffPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
-            eventPublisher.publishEvent(Event.CENTRAL_OFF_PRESSED);
+            eventPublisher.send("home/general", Event.CENTRAL_OFF_PRESSED);
         } else if (wasGoodNightButtonPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
-            eventPublisher.publishEvent(Event.GOOD_NIGHT_PRESSED);
+            eventPublisher.send("home/general", Event.GOOD_NIGHT_PRESSED);
         } else {
-            eventPublisher.publishEvent(new ButtonPressEvent(internalEvent.getButtonName(), internalEvent.getButtonEvent()));
+            eventPublisher.send("home/button", new ButtonPressEvent(internalEvent.getButtonName(), internalEvent.getButtonEvent()));
         }
     }
 
@@ -136,9 +130,9 @@ public class AutomationServiceImpl implements AutomationService {
 
     private void mainDoorStateChanged(CloseContactState state) {
         if (state == CloseContactState.CLOSED) {
-            eventPublisher.publishEvent(Event.DOOR_CLOSED);
+            eventPublisher.send("home/general", Event.DOOR_CLOSED);
         } else {
-            eventPublisher.publishEvent(Event.DOOR_OPENED);
+            eventPublisher.send("home/general", Event.DOOR_OPENED);
         }
     }
 }

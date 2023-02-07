@@ -7,13 +7,12 @@ import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.persistence.model.config.BasicConfig;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
-import ch.akop.homesystem.services.DeviceService;
 import ch.akop.homesystem.util.SleepUtil;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,15 +26,14 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 
 
 @RequiredArgsConstructor
-@Service
+@ApplicationScoped
 @Slf4j
-public class DeviceServiceImpl implements DeviceService {
+public class DeviceService {
 
     private final List<Device<?>> devices = new ArrayList<>();
     private final BasicConfigRepository basicConfigRepository;
 
 
-    @Override
     public <T extends Device<?>> Optional<T> findDeviceByName(String name, Class<T> clazz) {
         return getDevicesOfType(clazz)
                 .stream()
@@ -43,7 +41,7 @@ public class DeviceServiceImpl implements DeviceService {
                 .findFirst();
     }
 
-    @Override
+
     public <T extends Device<?>> Optional<T> findDeviceById(String name, Class<T> clazz) {
         return getDevicesOfType(clazz)
                 .stream()
@@ -51,17 +49,17 @@ public class DeviceServiceImpl implements DeviceService {
                 .findFirst();
     }
 
-    @Override
+
     public <T extends Device<?>> void registerDevice(T device) {
         devices.add(device);
     }
 
-    @Override
+
     public Collection<Device<?>> getAllDevices() {
         return new ArrayList<>(devices);
     }
 
-    @Override
+
     public <T> Collection<T> getDevicesOfType(Class<T> clazz) {
         return devices.stream()
                 .filter(clazz::isInstance)
@@ -69,7 +67,6 @@ public class DeviceServiceImpl implements DeviceService {
                 .collect(Collectors.toSet());
     }
 
-    @Override
     @Transactional
     public void turnAllLightsOff() {
         var notLights = basicConfigRepository.findFirstByOrderByModifiedDesc()
@@ -92,7 +89,7 @@ public class DeviceServiceImpl implements DeviceService {
                 });
     }
 
-    @Override
+
     @Transactional
     public boolean isAnyLightOn() {
         var notLights = basicConfigRepository.findFirstByOrderByModifiedDesc()
@@ -106,7 +103,7 @@ public class DeviceServiceImpl implements DeviceService {
                 .anyMatch(SimpleLight::isCurrentStateIsOn);
     }
 
-    @Override
+
     public void activeSceneForAllGroups(String sceneName) {
         getDevicesOfType(Group.class)
                 .stream()

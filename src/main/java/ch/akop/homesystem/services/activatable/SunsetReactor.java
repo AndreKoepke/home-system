@@ -4,25 +4,27 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
-import ch.akop.homesystem.services.DeviceService;
-import ch.akop.homesystem.services.MessageService;
-import ch.akop.homesystem.services.UserService;
-import ch.akop.homesystem.services.WeatherService;
+import ch.akop.homesystem.services.impl.DeviceService;
+import ch.akop.homesystem.services.impl.TelegramMessageService;
+import ch.akop.homesystem.services.impl.UserService;
+import ch.akop.homesystem.services.impl.WeatherService;
 import ch.akop.homesystem.states.NormalState;
 import ch.akop.weathercloud.Weather;
+import io.quarkus.runtime.Startup;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
+import javax.enterprise.context.ApplicationScoped;
 import java.util.concurrent.TimeUnit;
 
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 
-@Service
+@Startup
+@ApplicationScoped
 @RequiredArgsConstructor
 public class SunsetReactor extends Activatable {
 
     private final WeatherService weatherService;
-    private final MessageService messageService;
+    private final TelegramMessageService messageService;
     private final DeviceService deviceService;
     private final BasicConfigRepository basicConfigRepository;
     private final UserService userService;

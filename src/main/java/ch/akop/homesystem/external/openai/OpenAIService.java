@@ -2,14 +2,11 @@ package ch.akop.homesystem.external.openai;
 
 import ch.akop.homesystem.persistence.repository.config.OpenAIConfigRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
+import java.net.URI;
 import java.util.Base64;
 
 @Slf4j
@@ -19,22 +16,19 @@ public class OpenAIService {
 
     private final OpenAIConfigRepository openAIConfigRepository;
 
-    private WebClient apiWebClient = WebClient.builder()
-            .baseUrl("https://api.openai.com/v1/")
-            .codecs(codecs -> codecs.defaultCodecs()
-                    .maxInMemorySize(1024 * 1024 * 10))
-            .build();
+    private final OpenAIServiceSpec apiWebClient = RestClientBuilder.newBuilder()
+            .baseUri(URI.create("https://api.openai.com/v1/"))
+            .build(OpenAIServiceSpec.class);
     ;
 
 
-    @SneakyThrows
-    public Mono<byte[]> requestImage(String text) {
+    public byte[] requestImage(String text) {
         var config = openAIConfigRepository.findFirstByOrderByModifiedDesc()
                 .orElse(null);
 
         if (config == null) {
             log.warn("Image requested, but openAI is not configured. Ignoring.");
-            return Mono.empty();
+            return null;
         }
 
         var requestBody = new ImageRequest()
@@ -45,15 +39,7 @@ public class OpenAIService {
 
         log.info("Request a {} open-ai image for: {}", requestBody.getSize(), text);
 
-        return apiWebClient.post()
-                .uri("images/generations")
-                .headers(httpHeaders -> httpHeaders.setBearerAuth(config.getApiKey()))
-                .body(BodyInserters.fromValue(requestBody))
-                .headers(header -> header.setContentType(MediaType.APPLICATION_JSON))
-                .retrieve()
-                .bodyToMono(Response.class)
-                .map(response -> response.getData().get(0).getB64_json())
-                .map(b64 -> Base64.getDecoder().decode(b64));
+        return Base64.getDecoder().decode(apiWebClient.requestImage(requestBody).getData().get(0).getB64_json());
     }
 
 }

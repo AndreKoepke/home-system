@@ -4,21 +4,20 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.events.ButtonPressEvent;
 import ch.akop.homesystem.persistence.model.config.FanConfig;
 import ch.akop.homesystem.persistence.repository.config.FanConfigRepository;
-import ch.akop.homesystem.services.DeviceService;
+import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener;
 import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Service;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-@Service
+@ApplicationScoped
 @RequiredArgsConstructor
 public class FanService {
 
@@ -29,7 +28,7 @@ public class FanService {
     private final Map<String, Disposable> subscribeMap = new ConcurrentHashMap<>();
     private final Map<String, Disposable> waitingToTurnOff = new ConcurrentHashMap<>();
 
-    @EventListener
+    @ConsumeEvent(value = "home/button", blocking = true)
     @Transactional
     public void buttonEventHandler(ButtonPressEvent event) {
         fanConfigRepository.findAll()

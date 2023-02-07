@@ -4,19 +4,20 @@ import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
-import ch.akop.homesystem.services.DeviceService;
-import ch.akop.homesystem.services.ImageCreatorService;
-import ch.akop.homesystem.services.MessageService;
-import ch.akop.homesystem.services.UserService;
-import ch.akop.homesystem.services.WeatherService;
-import ch.akop.homesystem.services.impl.StateServiceImpl;
+import ch.akop.homesystem.services.impl.DeviceService;
+import ch.akop.homesystem.services.impl.ImageCreatorService;
+import ch.akop.homesystem.services.impl.StateService;
+import ch.akop.homesystem.services.impl.TelegramMessageService;
+import ch.akop.homesystem.services.impl.UserService;
+import ch.akop.homesystem.services.impl.WeatherService;
+import io.quarkus.runtime.Startup;
+import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -32,8 +33,9 @@ import static ch.akop.homesystem.util.RandomUtil.pickRandomElement;
 import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
+@Startup
 @RequiredArgsConstructor
-@Component
+@ApplicationScoped
 public class SleepState implements State {
 
     private static final List<String> POSSIBLE_MORNING_TEXTS = List.of("Naaa, gut geschlafen?",
@@ -48,8 +50,8 @@ public class SleepState implements State {
     private static final LocalTime WAKEUP_TIME = LocalTime.of(7, 0);
     private final List<Disposable> disposeWhenLeaveState = new ArrayList<>();
 
-    private final StateServiceImpl stateService;
-    private final MessageService messageService;
+    private final StateService stateService;
+    private final TelegramMessageService messageService;
     private final DeviceService deviceService;
     private final WeatherService weatherService;
     private final UserService userService;
@@ -63,7 +65,7 @@ public class SleepState implements State {
 
 
     @PostConstruct
-    private void registerState() {
+    void registerState() {
         stateService.registerState(SleepState.class, this);
     }
 
@@ -145,7 +147,7 @@ public class SleepState implements State {
         presenceAtBeginning = null;
     }
 
-    @EventListener
+    @ConsumeEvent("home/general")
     public void event(Event event) {
 
         if (!(stateService.getCurrentState() instanceof SleepState)) {

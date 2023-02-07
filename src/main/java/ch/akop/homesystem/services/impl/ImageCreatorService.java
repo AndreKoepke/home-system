@@ -4,26 +4,18 @@ import ch.akop.homesystem.external.mastodon.MastodonService;
 import ch.akop.homesystem.external.openai.OpenAIService;
 import ch.akop.homesystem.persistence.model.ImageOfOpenAI;
 import ch.akop.homesystem.persistence.repository.OpenAIImageRepository;
-import ch.akop.homesystem.services.ImageCreatorService;
-import ch.akop.homesystem.services.MessageService;
-import ch.akop.homesystem.services.WeatherService;
 import ch.akop.homesystem.util.RandomUtil;
 import ch.akop.weathercloud.Weather;
 import io.reactivex.rxjava3.disposables.Disposable;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.enterprise.context.ApplicationScoped;
 import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,20 +26,19 @@ import java.util.stream.Stream;
 
 import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
-import static java.util.Optional.ofNullable;
 
 @Slf4j
-@Service
+@ApplicationScoped
 @RequiredArgsConstructor
-public class ImageCreatorServiceImpl implements ImageCreatorService {
+public class ImageCreatorService {
 
-    public static final String CACHE_NAME = "dailyImage";
+
     private final OpenAIService imageService;
     private final OpenAIImageRepository imageRepository;
-    private final MessageService messageService;
+    private final TelegramMessageService messageService;
     private final WeatherService weatherService;
     private final MastodonService mastodonService;
-    private final CacheManager cacheManager;
+
 
     private Disposable messageListener;
 
@@ -65,38 +56,28 @@ public class ImageCreatorServiceImpl implements ImageCreatorService {
         }
     }
 
-    @Override
+
     public void generateAndSendDailyImage() {
         var prompt = generatePrompt();
-        imageService.requestImage(prompt)
-                .subscribe(image -> {
-                    messageService.sendImageToMainChannel(image, prompt);
-                    imageRepository.save(new ImageOfOpenAI().setPrompt(prompt).setImage(image));
-                    ofNullable(cacheManager.getCache(CACHE_NAME)).ifPresent(Cache::clear);
+        var image = imageService.requestImage(prompt);
 
-                    mastodonService.publishImage(("Generated image for: \"%s\"\n#openai #dall·e")
-                            .formatted(prompt), image);
-                });
+        messageService.sendImageToMainChannel(image, prompt);
+        imageRepository.save(new ImageOfOpenAI().setPrompt(prompt).setImage(image));
+        mastodonService.publishImage(("Generated image for: \"%s\"\n#openai #dall·e").formatted(prompt), image);
     }
 
-    @Override
-    @Transactional
-    @Cacheable(CACHE_NAME)
     public ImageOfOpenAI getLastImage() {
         return imageRepository.findFirstByOrderByCreatedDesc()
                 .map(image -> Hibernate.unproxy(image, ImageOfOpenAI.class))
                 .orElseThrow(() -> new NoSuchElementException("There are no images right now."));
     }
 
-    @Override
+
     @SneakyThrows
     public void writeLastImageToStream(OutputStream outputStream) {
         outputStream.write(getLastImage().getImage());
     }
 
-    @Override
-    @Async
-    @Transactional
     public void increaseDownloadCounter(LocalDateTime imageThatWasCreatedAt) {
         imageRepository.increaseDownloadCounter(imageThatWasCreatedAt);
     }

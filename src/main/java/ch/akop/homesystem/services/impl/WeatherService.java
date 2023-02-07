@@ -3,19 +3,17 @@ package ch.akop.homesystem.services.impl;
 import ch.akop.homesystem.models.CompassDirection;
 import ch.akop.homesystem.persistence.model.config.BasicConfig;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
-import ch.akop.homesystem.services.MessageService;
-import ch.akop.homesystem.services.WeatherService;
 import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.scraper.weathercloud.Scraper;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
-import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.e175.klaus.solarpositioning.Grena3;
-import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -29,12 +27,13 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
 @RequiredArgsConstructor
-@Service
+@ApplicationScoped
 @Slf4j
-public class WeatherServiceImpl implements WeatherService {
+public class WeatherService {
 
     private final BasicConfigRepository basicConfigRepository;
-    private final MessageService messageService;
+    private final TelegramMessageService messageService;
+    private final RainDetectorService rainDetectorService;
 
     @Getter
     private final ReplaySubject<Weather> weather = ReplaySubject.createWithSize(1);
@@ -43,7 +42,7 @@ public class WeatherServiceImpl implements WeatherService {
     private boolean active;
 
     @PostConstruct
-    public void startFetchingData() {
+    void startFetchingData() {
         // TODO restart when config changes
         var nearestWeatherCloudStation = basicConfigRepository.findFirstByOrderByModifiedDesc()
                 .map(BasicConfig::getNearestWeatherCloudStation)
@@ -59,16 +58,18 @@ public class WeatherServiceImpl implements WeatherService {
                 .subscribe(weather::onNext);
 
         weather.subscribe(weatherUpdate -> {
+            rainDetectorService.updateDatabaseIfNecessary(weatherUpdate);
             if (weatherUpdate.getWind().getAs(KILOMETERS_PER_SECOND).compareTo(new BigDecimal(50)) > 0) {
                 messageService.sendMessageToMainChannel("Hui, ist das winding. Macht lieber die Stören hoch. Grade wehts mit %s."
                         .formatted(weatherUpdate.getWind()));
             }
         });
+
+
         log.info("WeatherService is up");
     }
 
 
-    @Override
     public Observable<CurrentAndPreviousWeather> getCurrentAndPreviousWeather() {
         var previousUpdate = new AtomicReference<Weather>();
 
@@ -82,7 +83,6 @@ public class WeatherServiceImpl implements WeatherService {
                 .doOnNext(weatherData -> previousUpdate.set(weatherData.current));
     }
 
-    @Override
     public CompassDirection getCurrentSunDirection() {
         var config = basicConfigRepository.findFirstByOrderByModifiedDesc()
                 .orElseThrow();
