@@ -1,0 +1,20 @@
+server:
+  port: 8080
+  error:
+    include-message: always
+  address: 0.0.0.0
+
+
+quarkus:
+  datasource:
+    db-kind: postgresql
+    jdbc:
+      url: ${JDBC_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+
+
+  hibernate-orm:
+    physical-naming-strategy: "org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy"
+
+
