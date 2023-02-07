@@ -6,6 +6,7 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -50,4 +51,6 @@ public class State {
     private Integer buttonevent;
     private Boolean presence;
     private Boolean dark;
+
+    private LocalDateTime lastupdated;
 }

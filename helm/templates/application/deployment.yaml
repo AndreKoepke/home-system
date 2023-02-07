@@ -26,21 +26,12 @@ spec:
         # set timestamp to trick k8s to roll out a new version (even when nothing else changed)
         timstamp: "{{ now | date "20060102150405" }}"
 
-
     spec:
       automountServiceAccountToken: false
-
-      volumes:
-        - name: spring-config
-          configMap:
-            name: {{ .Release.Name}}-config
-
       containers:
         - name: backend
           image: {{ .Values.image.base }}:{{ .Values.image.tag }}
           imagePullPolicy: Always
-          args:
-            - "-Dspring.config.location=./config/"
           env:
             - name: TZ
               value: {{ .Values.timezone }}
@@ -58,10 +49,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: db_pass
-                  name: -backend
-          volumeMounts:
-            - mountPath: /workspace/config
-              name: spring-config
+                  name: {{ .Release.Name }}-backend
           ports:
             - containerPort: 8080
               name: http

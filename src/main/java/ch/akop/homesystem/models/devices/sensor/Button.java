@@ -7,6 +7,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+import java.time.Duration;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class Button extends Sensor<Button> {
@@ -16,6 +20,9 @@ public class Button extends Sensor<Button> {
 
     @Override
     protected void consumeInternalUpdate(State update) {
-        events$.onNext(update.getButtonevent());
+        var updatedBefore = Duration.between(update.getLastupdated().atZone(ZoneOffset.UTC), ZonedDateTime.now()).abs();
+        if (updatedBefore.compareTo(Duration.ofSeconds(30)) < 0) {
+            events$.onNext(update.getButtonevent());
+        }
     }
 }

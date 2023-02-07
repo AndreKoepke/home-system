@@ -73,18 +73,18 @@ public class AutomationService {
 
         if (device instanceof Button button) {
             //noinspection ResultOfMethodCallIgnored
-            button.getEvents$()
-                    .subscribe(integer -> eventPublisher.send("home/button-internal", new ButtonPressInternalEvent(button.getName(), integer)));
-        }
-
-        if (device instanceof AqaraCube cube) {
+            button.getEvents$().subscribe(integer -> eventPublisher.publish("home/button-internal",
+                    new ButtonPressInternalEvent(button.getName(), integer)));
+        } else if (device instanceof AqaraCube cube) {
             //noinspection ResultOfMethodCallIgnored
             cube.getActiveSide$()
                     .skip(1)
-                    .subscribe(activeSide -> eventPublisher.send("home/cube", new CubeEvent(cube.getName(), determineFlippedSide(activeSide))));
+                    .subscribe(activeSide -> eventPublisher.publish("home/cube",
+                            new CubeEvent(cube.getName(), determineFlippedSide(activeSide))));
             //noinspection ResultOfMethodCallIgnored
             cube.getShacked$()
-                    .subscribe(empty -> eventPublisher.send("home/cube", new CubeEvent(cube.getName(), CubeEventType.SHAKED)));
+                    .subscribe(empty -> eventPublisher.publish("home/cube",
+                            new CubeEvent(cube.getName(), CubeEventType.SHAKED)));
         }
     }
 
@@ -103,11 +103,11 @@ public class AutomationService {
     @ConsumeEvent(value = "home/button-internal", blocking = true)
     public void buttonWasPressed(ButtonPressInternalEvent internalEvent) {
         if (wasCentralOffPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
-            eventPublisher.send("home/general", Event.CENTRAL_OFF_PRESSED);
+            eventPublisher.publish("home/general", Event.CENTRAL_OFF_PRESSED);
         } else if (wasGoodNightButtonPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
-            eventPublisher.send("home/general", Event.GOOD_NIGHT_PRESSED);
+            eventPublisher.publish("home/general", Event.GOOD_NIGHT_PRESSED);
         } else {
-            eventPublisher.send("home/button", new ButtonPressEvent(internalEvent.getButtonName(), internalEvent.getButtonEvent()));
+            eventPublisher.publish("home/button", new ButtonPressEvent(internalEvent.getButtonName(), internalEvent.getButtonEvent()));
         }
     }
 
@@ -130,9 +130,9 @@ public class AutomationService {
 
     private void mainDoorStateChanged(CloseContactState state) {
         if (state == CloseContactState.CLOSED) {
-            eventPublisher.send("home/general", Event.DOOR_CLOSED);
+            eventPublisher.publish("home/general", Event.DOOR_CLOSED);
         } else {
-            eventPublisher.send("home/general", Event.DOOR_OPENED);
+            eventPublisher.publish("home/general", Event.DOOR_OPENED);
         }
     }
 }

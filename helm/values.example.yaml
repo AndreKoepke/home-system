@@ -2,7 +2,7 @@ image:
   base: akop/home-system
   tag: latest
 
-host: telegram.akop.online
+host: host-which-will-be-used-for-telegram.webhook.com
 timezone: Europe/Berlin
 
 database:

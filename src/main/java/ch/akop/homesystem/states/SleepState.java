@@ -147,7 +147,7 @@ public class SleepState implements State {
         presenceAtBeginning = null;
     }
 
-    @ConsumeEvent("home/general")
+    @ConsumeEvent(value = "home/general", blocking = true)
     public void event(Event event) {
 
         if (!(stateService.getCurrentState() instanceof SleepState)) {
