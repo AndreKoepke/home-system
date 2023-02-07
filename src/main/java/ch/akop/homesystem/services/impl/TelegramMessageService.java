@@ -6,6 +6,7 @@ import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
 import com.pengrad.telegrambot.request.SetWebhook;
+import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import lombok.AccessLevel;
@@ -22,6 +23,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import java.util.List;
 
+@Startup
 @ApplicationScoped
 @RequiredArgsConstructor
 @Slf4j
@@ -37,7 +39,7 @@ public class TelegramMessageService {
 
     @PostConstruct
     @SneakyThrows
-    public void turnBotOn() {
+    void turnBotOn() {
         var configOpt = telegramConfigRepository.findFirstByOrderByModifiedDesc();
         if (configOpt.isEmpty()) {
             log.info("No telegrambot will be started.");
