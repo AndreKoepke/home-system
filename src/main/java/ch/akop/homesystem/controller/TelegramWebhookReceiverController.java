@@ -4,20 +4,21 @@ import ch.akop.homesystem.services.impl.TelegramMessageService;
 import com.pengrad.telegrambot.BotUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
 
-@RestController
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+
+
 @RequiredArgsConstructor
 @Slf4j
 public class TelegramWebhookReceiverController {
 
     private final TelegramMessageService telegramMessageService;
 
-    @PostMapping(path = "/telegram/{apikey}")
-    public void gotWebhookUpdate(@PathVariable String apikey, @RequestBody String json) {
+    @Path("/telegram/{apikey}")
+    @POST
+    public void gotWebhookUpdate(@PathParam("apikey") String apikey, String json) {
         try {
             telegramMessageService.process(BotUtils.parseUpdate(json), apikey);
         } catch (Exception e) {

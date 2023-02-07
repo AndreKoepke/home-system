@@ -2,18 +2,19 @@ package ch.akop.homesystem.states;
 
 
 import ch.akop.homesystem.models.events.Event;
-import ch.akop.homesystem.services.DeviceService;
-import ch.akop.homesystem.services.MessageService;
-import ch.akop.homesystem.services.UserService;
 import ch.akop.homesystem.services.activatable.Activatable;
 import ch.akop.homesystem.services.activatable.SunsetReactor;
-import ch.akop.homesystem.services.impl.StateServiceImpl;
+import ch.akop.homesystem.services.impl.DeviceService;
+import ch.akop.homesystem.services.impl.StateService;
+import ch.akop.homesystem.services.impl.TelegramMessageService;
+import ch.akop.homesystem.services.impl.UserService;
+import io.quarkus.runtime.Startup;
+import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.Observable;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -21,22 +22,23 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
 
-@Service
+@Startup
+@ApplicationScoped
 @RequiredArgsConstructor
 public class HolidayState extends Activatable implements State {
 
     public static final int ONE_DAY_AS_SECONDS = 60 * 60 * 24;
     private static final LocalTime LIGHT_OFF_TIME = LocalTime.of(22, 30);
 
-    private final MessageService messageService;
-    private final StateServiceImpl stateService;
+    private final TelegramMessageService messageService;
+    private final StateService stateService;
     private final SunsetReactor sunsetReactor;
     private final DeviceService deviceService;
     private final UserService userService;
 
 
     @PostConstruct
-    private void registerState() {
+    void registerState() {
         stateService.registerState(HolidayState.class, this);
     }
 
@@ -83,7 +85,7 @@ public class HolidayState extends Activatable implements State {
         super.dispose();
     }
 
-    @EventListener
+    @ConsumeEvent("home/general")
     public void event(Event event) {
         if (event == Event.DOOR_OPENED && stateService.getCurrentState() instanceof HolidayState) {
             messageService.sendMessageToMainChannel("Irgendwer ist grade in die Wohnung gegangen");

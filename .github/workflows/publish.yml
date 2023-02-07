@@ -1,7 +1,7 @@
 name: Publish to DockerHub
 on:
   push:
-    branches: [ master, "feature/#86" ]
+    branches: [ master, "feature/#86-quarkus" ]
     paths:
       - 'src/**'
       - 'build.gradle'
@@ -23,9 +23,12 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Build and publish
-        run: ./gradlew jib
+        run: ./gradlew build -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true
         env:
-          DOCKER_USER: '${{ secrets.DOCKER_USER }}'
-          DOCKER_PASS: '${{ secrets.DOCKER_PASS }}'
+          QUARKUS_CONTAINER_IMAGE_GROUP: akop
+          QUARKUS_CONTAINER_IMAGE_NAME: home-system
+          QUARKUS_CONTAINER_IMAGE_TAG: latest
+          QUARKUS_CONTAINER_IMAGE_USERNAME: '${{ secrets.DOCKER_USER }}'
+          QUARKUS_CONTAINER_IMAGE_PASSWORD: '${{ secrets.DOCKER_PASS }}'
           REPO_USERNAME: '${{ secrets.REPO_GITHUB_NAME }}'
           REPO_TOKEN: '${{ secrets.REPO_GITHUB_TOKEN }}'

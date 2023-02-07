@@ -1,6 +1,11 @@
 image:
   base: akop/home-system
-  tag: native
+  tag: latest
 
-host: telegram2.akop.online
+host: telegram.akop.online
 timezone: Europe/Berlin
+
+database:
+  jdbc_url: changeme
+  db_user: changeme
+  db_pass: changeme

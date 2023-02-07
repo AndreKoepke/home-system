@@ -1,22 +1,24 @@
 package ch.akop.homesystem.services.activatable;
 
-import ch.akop.homesystem.services.MessageService;
-import ch.akop.homesystem.services.WeatherService;
+import ch.akop.homesystem.services.impl.TelegramMessageService;
+import ch.akop.homesystem.services.impl.WeatherService;
 import ch.akop.weathercloud.Weather;
+import io.quarkus.runtime.Startup;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
+import javax.enterprise.context.ApplicationScoped;
 import java.math.BigDecimal;
 
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 
-@Service
+@Startup
+@ApplicationScoped
 @RequiredArgsConstructor
 public class WeatherPoster extends Activatable {
 
     private static final BigDecimal THRESHOLD_FOR_POST_NEW_TEMP = BigDecimal.valueOf(5);
 
-    private final MessageService messageService;
+    private final TelegramMessageService messageService;
     private final WeatherService weatherService;
 
     private Weather lastPosted;

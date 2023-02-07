@@ -4,28 +4,28 @@ import ch.akop.homesystem.models.events.CubeEvent;
 import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.persistence.repository.config.CubeConfigRepository;
-import ch.akop.homesystem.services.DeviceService;
-import ch.akop.homesystem.services.MessageService;
-import ch.akop.homesystem.services.UserService;
-import ch.akop.homesystem.services.WeatherService;
 import ch.akop.homesystem.services.activatable.Activatable;
 import ch.akop.homesystem.services.activatable.SunsetReactor;
 import ch.akop.homesystem.services.activatable.WeatherPoster;
+import ch.akop.homesystem.services.impl.DeviceService;
 import ch.akop.homesystem.services.impl.RainDetectorService;
-import ch.akop.homesystem.services.impl.StateServiceImpl;
+import ch.akop.homesystem.services.impl.StateService;
+import ch.akop.homesystem.services.impl.TelegramMessageService;
+import ch.akop.homesystem.services.impl.UserService;
+import ch.akop.homesystem.services.impl.WeatherService;
 import ch.akop.homesystem.util.TimedGateKeeper;
 import ch.akop.weathercloud.Weather;
+import io.quarkus.runtime.Startup;
+import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -38,15 +38,16 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 @SuppressWarnings("ResultOfMethodCallIgnored")
 @Slf4j
 @RequiredArgsConstructor
-@Component
+@ApplicationScoped
+@Startup
 public class NormalState extends Activatable implements State {
 
     public static final Duration DEFAULT_DURATION_ANIMATION_BLOCKER = Duration.of(1, MINUTES);
     public static final BigDecimal THRESHOLD_NOT_TURN_LIGHTS_ON = BigDecimal.valueOf(20);
     private final TimedGateKeeper canStartMainDoorAnimation = new TimedGateKeeper();
 
-    private final MessageService messageService;
-    private final StateServiceImpl stateService;
+    private final TelegramMessageService messageService;
+    private final StateService stateService;
     private final DeviceService deviceService;
     private final WeatherService weatherService;
     private final SunsetReactor sunsetReactor;
@@ -59,13 +60,13 @@ public class NormalState extends Activatable implements State {
 
 
     @PostConstruct
-    private void registerState() {
+    void registerState() {
         stateService.registerState(NormalState.class, this);
         stateService.switchState(NormalState.class);
     }
 
     @PostConstruct
-    public void reactOnHolidayMessage() {
+    void reactOnHolidayMessage() {
         //noinspection ResultOfMethodCallIgnored
         messageService.getMessages()
                 .filter(message -> message.equals("/holiday"))
@@ -73,7 +74,7 @@ public class NormalState extends Activatable implements State {
     }
 
     @PostConstruct
-    public void listenToTheWeather() {
+    void listenToTheWeather() {
         weatherService.getWeather()
                 .map(Weather::getLight)
                 .map(light -> light.isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX))
@@ -131,8 +132,7 @@ public class NormalState extends Activatable implements State {
         super.dispose();
     }
 
-    @EventListener
-    @Async
+    @ConsumeEvent(value = "home/general", blocking = true)
     @Transactional
     public void event(Event event) {
 
@@ -148,7 +148,7 @@ public class NormalState extends Activatable implements State {
         }
     }
 
-    @EventListener
+    @ConsumeEvent("home/cube")
     public void event(CubeEvent cubeEvent) {
         cubeConfigRepository.findById(cubeEvent.getCubeName())
                 .ifPresent(cubeConfig -> {

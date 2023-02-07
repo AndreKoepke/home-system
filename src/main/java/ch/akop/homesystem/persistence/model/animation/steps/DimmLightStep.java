@@ -2,13 +2,14 @@ package ch.akop.homesystem.persistence.model.animation.steps;
 
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.persistence.model.animation.Animation;
-import ch.akop.homesystem.services.DeviceService;
+import ch.akop.homesystem.services.impl.DeviceService;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
 import org.jetbrains.annotations.Nullable;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.GeneratedValue;
@@ -45,6 +46,7 @@ public class DimmLightStep implements Step {
     private BigDecimal dimmLightTo;
 
     @Nullable
+    @Column(name = "dimm_duration")
     private Duration dimmDuration;
 
 

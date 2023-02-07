@@ -1,16 +1,16 @@
 package ch.akop.homesystem.services.impl;
 
 import ch.akop.homesystem.states.State;
+import io.quarkus.runtime.Startup;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
+import javax.enterprise.context.ApplicationScoped;
 import java.util.HashMap;
 import java.util.Map;
 
-@Service
-@RequiredArgsConstructor
-public class StateServiceImpl {
+@Startup
+@ApplicationScoped
+public class StateService {
 
 
     private final Map<Class<?>, State> states = new HashMap<>();

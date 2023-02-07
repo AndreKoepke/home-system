@@ -2,7 +2,7 @@ package ch.akop.homesystem.persistence.model.animation.steps;
 
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.persistence.model.animation.Animation;
-import ch.akop.homesystem.services.DeviceService;
+import ch.akop.homesystem.services.impl.DeviceService;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

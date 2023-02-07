@@ -4,7 +4,7 @@ import ch.akop.homesystem.persistence.model.animation.steps.DimmLightStep;
 import ch.akop.homesystem.persistence.model.animation.steps.OnOffStep;
 import ch.akop.homesystem.persistence.model.animation.steps.PauseStep;
 import ch.akop.homesystem.persistence.model.animation.steps.Step;
-import ch.akop.homesystem.services.DeviceService;
+import ch.akop.homesystem.services.impl.DeviceService;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -34,15 +34,15 @@ public class Animation {
     private UUID id;
 
     @NonNull
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "animation")
     private List<PauseStep> pauseSteps = new ArrayList<>();
 
     @NonNull
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "animation")
     private List<OnOffStep> onOffSteps = new ArrayList<>();
 
     @NonNull
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "animation")
     private List<DimmLightStep> dimmLightSteps = new ArrayList<>();
 
     /**

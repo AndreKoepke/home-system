@@ -3,14 +3,15 @@ package ch.akop.homesystem.deconz;
 import ch.akop.homesystem.deconz.websocket.WebSocketUpdate;
 import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.enterprise.context.ApplicationScoped;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
@@ -23,8 +24,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 @Slf4j
-@Component
+@ApplicationScoped
 @RequiredArgsConstructor
+@Startup
 public class DeconzWebsocketListener implements WebSocket.Listener {
 
     public static final int TIMEOUT_HANDLER_INTERVAL = 30;

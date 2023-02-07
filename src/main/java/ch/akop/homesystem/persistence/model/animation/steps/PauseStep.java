@@ -1,6 +1,7 @@
 package ch.akop.homesystem.persistence.model.animation.steps;
 
-import ch.akop.homesystem.services.DeviceService;
+import ch.akop.homesystem.persistence.model.animation.Animation;
+import ch.akop.homesystem.services.impl.DeviceService;
 import ch.akop.homesystem.util.SleepUtil;
 import lombok.Getter;
 import lombok.NonNull;
@@ -10,6 +11,7 @@ import org.hibernate.annotations.GenericGenerator;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import java.time.Duration;
 import java.time.LocalTime;
@@ -28,6 +30,9 @@ public class PauseStep implements Step {
 
     @NonNull
     private Integer sortOrder;
+
+    @ManyToOne
+    private Animation animation;
 
     @NonNull
     private Duration waitFor;

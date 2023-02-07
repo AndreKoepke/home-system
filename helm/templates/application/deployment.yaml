@@ -10,7 +10,7 @@ spec:
   replicas: 1
   revisionHistoryLimit: 1
   strategy:
-    type: Recreate
+    type: RollingUpdate
   selector:
     matchLabels:
       product: home-system
@@ -44,6 +44,21 @@ spec:
           env:
             - name: TZ
               value: {{ .Values.timezone }}
+            - name: JDBC_URL
+              valueFrom:
+                secretKeyRef:
+                  key: jdbc_url
+                  name: {{ .Release.Name }}-backend
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: db_user
+                  name: {{ .Release.Name }}-backend
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  key: db_pass
+                  name: -backend
           volumeMounts:
             - mountPath: /workspace/config
               name: spring-config

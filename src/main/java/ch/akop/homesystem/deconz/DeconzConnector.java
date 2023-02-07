@@ -1,6 +1,6 @@
 package ch.akop.homesystem.deconz;
 
-import ch.akop.homesystem.deconz.rest.Specs;
+import ch.akop.homesystem.deconz.rest.DeconzService;
 import ch.akop.homesystem.deconz.rest.State;
 import ch.akop.homesystem.deconz.rest.models.Group;
 import ch.akop.homesystem.deconz.rest.models.Light;
@@ -21,44 +21,38 @@ import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.persistence.model.config.DeconzConfig;
 import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
-import ch.akop.homesystem.services.AutomationService;
-import ch.akop.homesystem.services.DeviceService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.handler.logging.LogLevel;
+import ch.akop.homesystem.services.impl.AutomationService;
+import ch.akop.homesystem.services.impl.DeviceService;
+import io.quarkus.runtime.Startup;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.http.codec.json.Jackson2JsonDecoder;
-import org.springframework.http.codec.json.Jackson2JsonEncoder;
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.ExchangeStrategies;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.netty.transport.logging.AdvancedByteBufFormat;
 
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
+import java.net.URL;
 import java.time.Duration;
 import java.util.Optional;
 
 
-@Service
+@ApplicationScoped
 @Slf4j
 @RequiredArgsConstructor
+@Startup
 public class DeconzConnector {
 
-
-    public static final String NO_RESPONSE_FROM_RASPBERRY = "No response from raspberry";
-    public static final String LIGHT_UPDATE_FAILED_LABEL = "Failed to update light ";
     private final DeviceService deviceService;
     private final AutomationService automationService;
-    private final ObjectMapper objectMapper;
     private final DeconzConfigRepository deconzConfigRepository;
-    private WebClient webClient;
+
+
+    DeconzService deconzService;
 
 
     @PostConstruct
-    private void tryToStart() {
+    void tryToStart() {
         // TODO restart when config changes
         var configOpt = deconzConfigRepository.findFirstByOrderByModifiedDesc();
 
@@ -74,25 +68,13 @@ public class DeconzConnector {
         }
     }
 
+    @SneakyThrows
     private void connectToDeconz(DeconzConfig config) {
-
-        var strategies = ExchangeStrategies
-                .builder()
-                .codecs(configurer -> {
-                    configurer.defaultCodecs().jackson2JsonEncoder(new Jackson2JsonEncoder(objectMapper, MediaType.APPLICATION_JSON));
-                    configurer.defaultCodecs().jackson2JsonDecoder(new Jackson2JsonDecoder(objectMapper, MediaType.APPLICATION_JSON));
-                }).build();
-
-        //noinspection HttpUrlsUsage
-        webClient = WebClient.builder()
-                .baseUrl("http://%s:%d/api/%s/".formatted(config.getHost(),
+        deconzService = RestClientBuilder.newBuilder()
+                .baseUrl(new URL("http://%s:%d/api/%s/".formatted(config.getHost(),
                         config.getPort(),
-                        config.getApiKey()))
-                .exchangeStrategies(strategies)
-                // full log available in DEBUG
-                .clientConnector(new ReactorClientHttpConnector(reactor.netty.http.client.HttpClient.create()
-                        .wiretap(getClass().getCanonicalName(), LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL)))
-                .build();
+                        config.getApiKey())))
+                .build(DeconzService.class);
 
         registerDevices();
         automationService.discoverNewDevices();
@@ -101,17 +83,9 @@ public class DeconzConnector {
     }
 
     private void registerDevices() {
-        Specs.getAllSensors(webClient).blockOptional()
-                .orElseThrow(() -> new IllegalStateException(NO_RESPONSE_FROM_RASPBERRY))
-                .forEach(this::registerSensor);
-
-        Specs.getAllLights(webClient).blockOptional()
-                .orElseThrow(() -> new IllegalStateException(NO_RESPONSE_FROM_RASPBERRY))
-                .forEach(this::registerActor);
-
-        Specs.getAllGroups(webClient).blockOptional()
-                .orElseThrow(() -> new IllegalStateException(NO_RESPONSE_FROM_RASPBERRY))
-                .forEach(this::registerGroup);
+        deconzService.getAllSensors().forEach(this::registerSensor);
+        deconzService.getAllLights().forEach(this::registerActor);
+        deconzService.getAllGroups().forEach(this::registerGroup);
     }
 
     private void registerGroup(String id, Group group) {
@@ -183,9 +157,9 @@ public class DeconzConnector {
         }
 
         var rollerShutter = new RollerShutter(
-                lift -> Specs.setState(id, new State().setLift(lift), webClient).subscribe(),
-                tilt -> Specs.setState(id, new State().setTilt(tilt), webClient).subscribe(),
-                () -> Specs.setState(id, new State().setStop(true), webClient).subscribe()
+                lift -> deconzService.updateLight(id, new State().setLift(lift)),
+                tilt -> deconzService.updateLight(id, new State().setTilt(tilt)),
+                () -> deconzService.updateLight(id, new State().setStop(true))
         );
 
         return Optional.of(rollerShutter);
@@ -223,14 +197,7 @@ public class DeconzConnector {
             newState.setTransitiontime((int) duration.toSeconds() * 10);
         }
 
-        Specs.setState(id, newState, webClient)
-                .subscribe(
-                        success -> log.debug("Set light %s to %d was status %s".formatted(id, percent, success.getStatusCode())),
-                        throwable -> {
-                            if (!throwable.getClass().equals(InterruptedException.class)) {
-                                log.error(LIGHT_UPDATE_FAILED_LABEL + id, throwable);
-                            }
-                        });
+        deconzService.updateLight(id, newState);
     }
 
     private void setColorOfLight(String id, Color color, Duration duration) {
@@ -242,34 +209,15 @@ public class DeconzConnector {
             newState.setTransitiontime((int) duration.toSeconds() * 10);
         }
 
-        Specs.setState(id, newState, webClient)
-                .subscribe(
-                        success -> log.debug("Set color of light %s was status %s".formatted(id, success.getStatusCode())),
-                        throwable -> {
-                            if (!throwable.getClass().equals(InterruptedException.class)) {
-                                log.error(LIGHT_UPDATE_FAILED_LABEL + id, throwable);
-                            }
-                        });
+        deconzService.updateLight(id, newState);
     }
 
     private void turnOnOrOff(String id, boolean on) {
-        Specs.setState(id, new State().setOn(on), webClient)
-                .subscribe(
-                        response -> log.debug("Set light {} to {} was status {}", id, on ? "on" : "off", response.getStatusCode()),
-                        throwable -> {
-                            if (!throwable.getClass().equals(InterruptedException.class)) {
-                                log.error(LIGHT_UPDATE_FAILED_LABEL + id, throwable);
-                            }
-                        }
-                );
+        deconzService.updateLight(id, new State().setOn(on));
     }
 
     private void activateScene(String sceneId, String groupId) {
-        Specs.activateScene(groupId, sceneId, webClient)
-                .subscribe(
-                        response -> log.debug("Scene {} in group {} activated", sceneId, groupId),
-                        throwable -> log.error("Failed to set scene {} in group {}", sceneId, groupId, throwable)
-                );
+        deconzService.activateScene(groupId, sceneId);
     }
 
 
