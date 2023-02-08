@@ -9,9 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-
-import static ch.akop.homesystem.states.NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON;
-import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
+import javax.enterprise.context.control.RequestContextController;
 
 @Startup
 @ApplicationScoped
@@ -22,6 +20,7 @@ public class SunriseReactor extends Activatable {
     private final DeviceService deviceService;
     private final TelegramMessageService messageService;
     private final BasicConfigRepository basicConfigRepository;
+    private final RequestContextController requestContextController;
 
 
     @PostConstruct
@@ -36,14 +35,15 @@ public class SunriseReactor extends Activatable {
     }
 
     private void turnLightsOffWhenItIsGettingLight(WeatherService.CurrentAndPreviousWeather weather) {
-        if (weather.previous().getLight().isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)
-                || weather.current().getLight().isSmallerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)) {
-            return;
-        }
-
+//        if (weather.previous().getLight().isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)
+//                || weather.current().getLight().isSmallerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)) {
+//            return;
+//        }
+        requestContextController.activate();
         if (basicConfigRepository.findFirstByOrderByModifiedDesc().orElseThrow().isSendMessageWhenTurnLightsOff()) {
             messageService.sendMessageToMainChannel("Es wird hell, ich mach mal die Lichter aus.");
         }
         deviceService.turnAllLightsOff();
+        requestContextController.deactivate();
     }
 }

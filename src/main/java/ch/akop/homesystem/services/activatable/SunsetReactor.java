@@ -14,6 +14,7 @@ import io.quarkus.runtime.Startup;
 import lombok.RequiredArgsConstructor;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.control.RequestContextController;
 import java.util.concurrent.TimeUnit;
 
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
@@ -28,6 +29,8 @@ public class SunsetReactor extends Activatable {
     private final DeviceService deviceService;
     private final BasicConfigRepository basicConfigRepository;
     private final UserService userService;
+    private final RequestContextController requestContextController;
+
 
     private Weather previousWeather;
 
@@ -62,6 +65,7 @@ public class SunsetReactor extends Activatable {
     }
 
     private void activeSunsetScenes(Throwable ignored) {
+        requestContextController.activate();
         deviceService.getDevicesOfType(Group.class)
                 .stream()
                 .filter(this::areAllLampsAreOff)
@@ -70,6 +74,7 @@ public class SunsetReactor extends Activatable {
                         .orElseThrow()
                         .getSunsetSceneName()))
                 .forEach(Scene::activate);
+        requestContextController.deactivate();
     }
 
     private boolean areAllLampsAreOff(Group group) {
