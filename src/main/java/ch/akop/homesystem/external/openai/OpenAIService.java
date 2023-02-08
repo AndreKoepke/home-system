@@ -17,10 +17,8 @@ public class OpenAIService {
     private final OpenAIConfigRepository openAIConfigRepository;
 
     private final OpenAIServiceSpec apiWebClient = RestClientBuilder.newBuilder()
-            .baseUri(URI.create("https://api.openai.com/v1/"))
+            .baseUri(URI.create("https://api.openai.com"))
             .build(OpenAIServiceSpec.class);
-    ;
-
 
     public byte[] requestImage(String text) {
         var config = openAIConfigRepository.findFirstByOrderByModifiedDesc()

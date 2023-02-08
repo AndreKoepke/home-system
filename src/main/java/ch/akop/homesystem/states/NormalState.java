@@ -132,8 +132,8 @@ public class NormalState extends Activatable implements State {
         super.dispose();
     }
 
-    @ConsumeEvent(value = "home/general", blocking = true)
     @Transactional
+    @ConsumeEvent(value = "home/general", blocking = true)
     public void event(Event event) {
 
         if (!(stateService.getCurrentState() instanceof NormalState)) {
@@ -148,7 +148,8 @@ public class NormalState extends Activatable implements State {
         }
     }
 
-    @ConsumeEvent("home/cube")
+    @Transactional
+    @ConsumeEvent(value = "home/cube", blocking = true)
     public void event(CubeEvent cubeEvent) {
         cubeConfigRepository.findById(cubeEvent.getCubeName())
                 .ifPresent(cubeConfig -> {

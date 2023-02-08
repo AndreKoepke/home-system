@@ -25,6 +25,8 @@ repositories {
 }
 
 dependencies {
+
+
     // lombok
     compileOnly 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
@@ -53,6 +55,8 @@ dependencies {
     implementation 'ch.akop:weathercloud:0.1.1'
     implementation 'net.e175.klaus:solarpositioning:0.1.7'
     implementation 'org.jetbrains:annotations:24.0.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
 
     // rxJava
     implementation 'io.reactivex.rxjava3:rxjava:3.1.6'

@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
@@ -42,7 +43,8 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
 
 
     @PostConstruct
-    public void setupWebSocketListener() {
+    @Transactional
+    void setupWebSocketListener() {
         deconzConfigRepository.findFirstByOrderByModifiedDesc()
                 .ifPresent(config -> {
                     var wsUrl = URI.create("ws://%s:%d/ws".formatted(config.getHost(), config.getWebsocketPort()));
@@ -134,6 +136,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
     }
 
     @Override
+    @Transactional
     public void onError(WebSocket webSocket, Throwable error) {
         log.error("Error on WS-Connection", error);
         timeoutHandler.dispose();
