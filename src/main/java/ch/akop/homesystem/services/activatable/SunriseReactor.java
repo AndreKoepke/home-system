@@ -11,6 +11,9 @@ import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.control.RequestContextController;
 
+import static ch.akop.homesystem.states.NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON;
+import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
+
 @Startup
 @ApplicationScoped
 @RequiredArgsConstructor
@@ -35,10 +38,11 @@ public class SunriseReactor extends Activatable {
     }
 
     private void turnLightsOffWhenItIsGettingLight(WeatherService.CurrentAndPreviousWeather weather) {
-//        if (weather.previous().getLight().isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)
-//                || weather.current().getLight().isSmallerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)) {
-//            return;
-//        }
+        if (weather.previous().getLight().isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)
+                || weather.current().getLight().isSmallerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)) {
+            return;
+        }
+
         requestContextController.activate();
         if (basicConfigRepository.findFirstByOrderByModifiedDesc().orElseThrow().isSendMessageWhenTurnLightsOff()) {
             messageService.sendMessageToMainChannel("Es wird hell, ich mach mal die Lichter aus.");
