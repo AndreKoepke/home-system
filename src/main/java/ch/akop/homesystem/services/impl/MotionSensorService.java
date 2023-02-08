@@ -6,7 +6,6 @@ import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.persistence.model.config.MotionSensorConfig;
 import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigRepository;
 import ch.akop.homesystem.states.SleepState;
-import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.core.Observable;
 import lombok.RequiredArgsConstructor;
 
@@ -20,7 +19,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-@Startup
 @ApplicationScoped
 @RequiredArgsConstructor
 public class MotionSensorService {
@@ -33,7 +31,7 @@ public class MotionSensorService {
     @SuppressWarnings({"ResultOfMethodCallIgnored"})
     @PostConstruct
     @Transactional
-    protected void setup() {
+    public void init() {
         // TODO restart when config changes
         motionSensorConfigRepository.findAll()
                 .forEach(motionSensorConfig -> deviceService.getDevicesOfType(MotionSensor.class)

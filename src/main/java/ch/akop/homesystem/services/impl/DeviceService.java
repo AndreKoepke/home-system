@@ -41,14 +41,12 @@ public class DeviceService {
                 .findFirst();
     }
 
-
     public <T extends Device<?>> Optional<T> findDeviceById(String name, Class<T> clazz) {
         return getDevicesOfType(clazz)
                 .stream()
                 .filter(device -> device.getId().equals(name))
                 .findFirst();
     }
-
 
     public <T extends Device<?>> void registerDevice(T device) {
         devices.add(device);

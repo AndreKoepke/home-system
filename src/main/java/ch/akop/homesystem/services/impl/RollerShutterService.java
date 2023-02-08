@@ -4,13 +4,11 @@ import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
 import ch.akop.homesystem.util.TimeUtil;
-import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
@@ -31,7 +29,6 @@ import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 
 @Slf4j
-@Startup
 @ApplicationScoped
 @RequiredArgsConstructor
 public class RollerShutterService {
@@ -43,9 +40,14 @@ public class RollerShutterService {
     private final List<Disposable> disposables = new ArrayList<>();
     private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
 
-    @PostConstruct
+
     @Transactional
-    void initWeatherBasedRollerShutters() {
+    public void init() {
+        initWeatherBasedRollerShutters();
+        initTimer();
+    }
+
+    private void initWeatherBasedRollerShutters() {
         rollerShutterConfigRepository.findAll()
                 .stream()
                 .filter(config -> config.getCompassDirection() != null)
@@ -61,9 +63,7 @@ public class RollerShutterService {
                 .forEach(disposables::add);
     }
 
-    @PostConstruct
-    @Transactional
-    void initTimer() {
+    private void initTimer() {
         rollerShutterConfigRepository.findAll().stream()
                 .filter(config -> config.getCloseAt() != null || config.getOpenAt() != null)
                 .forEach(config -> {
@@ -122,7 +122,7 @@ public class RollerShutterService {
     }
 
     @PreDestroy
-    private void tearDown() {
+    void tearDown() {
         disposables.forEach(Disposable::dispose);
     }
 

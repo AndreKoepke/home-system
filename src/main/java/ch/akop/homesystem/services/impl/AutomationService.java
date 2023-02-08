@@ -34,6 +34,9 @@ public class AutomationService {
     private final DeviceService deviceService;
     private final BasicConfigRepository basicConfigRepository;
     private final OffButtonConfigRepository offButtonConfigRepository;
+    private final PowerMeterService powerMeterService;
+    private final MotionSensorService motionSensorService;
+    private final RollerShutterService rollerShutterService;
     private final EventBus eventPublisher;
 
     @SuppressWarnings("rawtypes")
@@ -45,6 +48,10 @@ public class AutomationService {
         deviceService.getAllDevices().stream()
                 .filter(this::unknownDevice)
                 .forEach(this::addDevice);
+
+        powerMeterService.init();
+        motionSensorService.init();
+        rollerShutterService.init();
     }
 
     private boolean unknownDevice(Device<?> device) {

@@ -4,6 +4,7 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.events.ButtonPressEvent;
 import ch.akop.homesystem.persistence.model.config.FanConfig;
 import ch.akop.homesystem.persistence.repository.config.FanConfigRepository;
+import io.quarkus.runtime.Startup;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -17,6 +18,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+@Startup
 @ApplicationScoped
 @RequiredArgsConstructor
 public class FanService {
