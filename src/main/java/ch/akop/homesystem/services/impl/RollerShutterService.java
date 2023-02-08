@@ -4,6 +4,7 @@ import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
 import ch.akop.homesystem.util.TimeUtil;
+import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -29,6 +31,7 @@ import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 
 @Slf4j
+@Startup
 @ApplicationScoped
 @RequiredArgsConstructor
 public class RollerShutterService {
@@ -41,7 +44,8 @@ public class RollerShutterService {
     private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
 
     @PostConstruct
-    private void initWeatherBasedRollerShutters() {
+    @Transactional
+    void initWeatherBasedRollerShutters() {
         rollerShutterConfigRepository.findAll()
                 .stream()
                 .filter(config -> config.getCompassDirection() != null)
@@ -58,7 +62,8 @@ public class RollerShutterService {
     }
 
     @PostConstruct
-    private void initTimer() {
+    @Transactional
+    void initTimer() {
         rollerShutterConfigRepository.findAll().stream()
                 .filter(config -> config.getCloseAt() != null || config.getOpenAt() != null)
                 .forEach(config -> {

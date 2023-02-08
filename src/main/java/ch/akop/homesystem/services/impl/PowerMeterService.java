@@ -4,17 +4,20 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.persistence.model.config.PowerMeterConfig;
 import ch.akop.homesystem.persistence.repository.config.PowerMeterConfigRepository;
+import io.quarkus.runtime.Startup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
+@Startup
 @ApplicationScoped
 @RequiredArgsConstructor
 public class PowerMeterService {
@@ -29,7 +32,8 @@ public class PowerMeterService {
 
 
     @PostConstruct
-    public void setUpListener() {
+    @Transactional
+    void setUpListener() {
         // TODO restart when config changes
         powerMeterConfigRepository.findAll()
                 .forEach(this::setupForConfig);

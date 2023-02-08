@@ -4,6 +4,7 @@ import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.model.config.UserConfig;
 import ch.akop.homesystem.persistence.repository.config.UserConfigRepository;
 import ch.akop.homesystem.util.SleepUtil;
+import io.quarkus.runtime.Startup;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
@@ -26,6 +27,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 @Slf4j
+@Startup
 @ApplicationScoped
 @RequiredArgsConstructor
 public class UserService {

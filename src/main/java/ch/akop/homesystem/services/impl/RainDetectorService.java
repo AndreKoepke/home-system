@@ -3,6 +3,7 @@ package ch.akop.homesystem.services.impl;
 import ch.akop.homesystem.persistence.model.RainStats;
 import ch.akop.homesystem.persistence.repository.RainStatsRepository;
 import ch.akop.weathercloud.Weather;
+import io.quarkus.runtime.Startup;
 import lombok.RequiredArgsConstructor;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -15,6 +16,7 @@ import static java.math.BigDecimal.ZERO;
 
 @RequiredArgsConstructor
 @ApplicationScoped
+@Startup
 public class RainDetectorService {
 
     private final RainStatsRepository rainStatsRepository;
@@ -33,6 +35,7 @@ public class RainDetectorService {
     }
 
 
+    @Transactional
     public Duration noRainFor() {
         final var lastRainDate = this.rainStatsRepository.findFirstByOrderByMeasuredAtDesc()
                 .filter(rainStats -> !rainStats.isRaining())
