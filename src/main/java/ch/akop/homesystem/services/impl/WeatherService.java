@@ -55,10 +55,7 @@ public class WeatherService {
         active = true;
         new Scraper()
                 .scrape$(nearestWeatherCloudStation, Duration.of(5, MINUTES))
-                .subscribe(t -> {
-                    weather.onNext(t);
-                    weather.onNext(t);
-                });
+                .subscribe(weather::onNext);
 
         weather.subscribe(weatherUpdate -> {
             rainDetectorService.updateDatabaseIfNecessary(weatherUpdate);
