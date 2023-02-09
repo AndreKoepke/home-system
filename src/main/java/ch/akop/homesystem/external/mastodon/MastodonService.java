@@ -7,7 +7,6 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import java.io.ByteArrayInputStream;
 import java.net.URI;
 
 
@@ -24,7 +23,7 @@ public class MastodonService {
     public void initializeWebClients() {
         mastodonConfigRepository.findFirstByOrderByModifiedDesc()
                 .ifPresent(properties -> apiWebClient = RestClientBuilder.newBuilder()
-                        .baseUri(URI.create("https://%s/api/".formatted(properties.getServer())))
+                        .baseUri(URI.create("https://%s/".formatted(properties.getServer())))
                         .build(MastodonServiceSpec.class)
                 );
     }
@@ -36,7 +35,7 @@ public class MastodonService {
             return;
         }
 
-        var createdImage = apiWebClient.postImage(new MediaCreateRequest(new ByteArrayInputStream(image)));
+        var createdImage = apiWebClient.postImage(image, "test.jpg");
         apiWebClient.postStatus(text, createdImage.getId(), "en", "public");
     }
 
