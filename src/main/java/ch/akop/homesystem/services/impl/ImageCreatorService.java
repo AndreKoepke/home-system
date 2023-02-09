@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +58,7 @@ public class ImageCreatorService {
     }
 
 
+    @Transactional
     public void generateAndSendDailyImage() {
         var prompt = generatePrompt();
         var image = imageService.requestImage(prompt);

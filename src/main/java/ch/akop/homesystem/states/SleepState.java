@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -62,11 +63,20 @@ public class SleepState implements State {
     private Disposable timerDoorOpen;
     private Map<String, Boolean> presenceAtBeginning;
     private boolean sleepButtonState;
+    private String nightSceneName;
 
 
     @PostConstruct
     void registerState() {
         stateService.registerState(SleepState.class, this);
+    }
+
+    @PostConstruct
+    @Transactional
+    void loadNightSceneName() {
+        nightSceneName = basicConfigRepository.findFirstByOrderByModifiedDesc()
+                .orElseThrow(() -> new IllegalStateException("No basic-configuration found."))
+                .getNightSceneName();
     }
 
     @Override
@@ -76,7 +86,7 @@ public class SleepState implements State {
                 .formatted(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes()));
 
         disposeWhenLeaveState.add(Observable.timer(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes(), TimeUnit.MINUTES)
-                .doOnNext(t -> turnLightsOff())
+                .doOnNext(t -> deviceService.activeSceneForAllGroups(nightSceneName))
                 .doOnNext(duration -> messageService
                         .sendMessageToMainChannel("Schlaft gut. Die Lichter gehen jetzt aus. :)")
                         .sendMessageToMainChannel("Ich lege mich auch hin und stehe um %s wieder auf.".formatted(WAKEUP_TIME)))
@@ -105,12 +115,6 @@ public class SleepState implements State {
         return ZonedDateTime.of(LocalDate.now().plusDays(1), WAKEUP_TIME, ZoneId.systemDefault());
     }
 
-
-    public void turnLightsOff() {
-        deviceService.activeSceneForAllGroups(basicConfigRepository.findFirstByOrderByModifiedDesc()
-                .orElseThrow()
-                .getNightSceneName());
-    }
 
     @Override
     public void leave() {
@@ -147,6 +151,7 @@ public class SleepState implements State {
         presenceAtBeginning = null;
     }
 
+    @Transactional
     @ConsumeEvent(value = "home/general", blocking = true)
     public void event(Event event) {
 
@@ -173,7 +178,7 @@ public class SleepState implements State {
                             .getNightRunSceneName()))
                     .forEach(Scene::activate);
         } else {
-            turnLightsOff();
+            deviceService.activeSceneForAllGroups(nightSceneName);
         }
         sleepButtonState = !sleepButtonState;
     }
