@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -54,20 +55,20 @@ public class UserService {
     private void checkPresenceUntilChangedWithin() {
         var startedAt = LocalDateTime.now();
         var stopAt = startedAt.plus(Duration.of(5, ChronoUnit.MINUTES));
+        var users = userConfigRepository.findAll();
 
         do {
             SleepUtil.sleep(Duration.of(1, ChronoUnit.MINUTES));
-            updatePresence();
+            updatePresence(users);
         } while (LocalDateTime.now().isBefore(stopAt));
     }
 
 
-    private void updatePresence() {
-        var newPresenceMap = userConfigRepository.findAll().stream()
-                .collect(Collectors.toMap(
-                        UserConfig::getName,
-                        this::canPingIp
-                ));
+    private void updatePresence(List<UserConfig> users) {
+        var newPresenceMap = users.stream().collect(Collectors.toMap(
+                UserConfig::getName,
+                this::canPingIp
+        ));
 
         var hasChanges = !newPresenceMap.equals(presenceMap);
 
