@@ -59,7 +59,6 @@ public class ImageCreatorService {
 
 
     @Transactional
-    @PostConstruct
     public void generateAndSendDailyImage() {
         var prompt = generatePrompt();
         var image = imageService.requestImage(prompt);
