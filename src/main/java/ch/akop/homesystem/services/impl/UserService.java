@@ -11,7 +11,6 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -42,12 +41,16 @@ public class UserService {
     @ConsumeEvent(value = "home/general", blocking = true)
     public void gotEvent(Event event) {
         if (event == Event.DOOR_CLOSED && isBusy.compareAndSet(false, true)) {
-            checkPresenceUntilChangedWithin();
-            isBusy.set(false);
+            try {
+                checkPresenceUntilChangedWithin();
+            } catch (Exception e) {
+                log.error("There was a error while the presence-check", e);
+            } finally {
+                isBusy.set(false);
+            }
         }
     }
 
-    @SneakyThrows
     private void checkPresenceUntilChangedWithin() {
         var startedAt = LocalDateTime.now();
         var stopAt = startedAt.plus(Duration.of(5, ChronoUnit.MINUTES));
