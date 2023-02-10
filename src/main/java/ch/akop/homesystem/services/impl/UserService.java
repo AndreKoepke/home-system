@@ -15,6 +15,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.time.Duration;
@@ -22,8 +23,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,20 +32,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserService {
 
+    private final AtomicBoolean isBusy = new AtomicBoolean(false);
     private final UserConfigRepository userConfigRepository;
-    private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
     private Map<String, Boolean> presenceMap = new HashMap<>();
 
 
-    public void hintCheckPresence() {
-        executorService.submit(this::checkPresenceUntilChangedWithin);
-    }
-
-    @ConsumeEvent("home/general")
+    @Transactional
+    @ConsumeEvent(value = "home/general", blocking = true)
     public void gotEvent(Event event) {
-        if (event == Event.DOOR_CLOSED) {
-            hintCheckPresence();
+        if (event == Event.DOOR_CLOSED && isBusy.compareAndSet(false, true)) {
+            checkPresenceUntilChangedWithin();
+            isBusy.set(false);
         }
     }
 

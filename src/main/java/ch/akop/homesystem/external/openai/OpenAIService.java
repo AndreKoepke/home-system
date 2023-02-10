@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.Base64;
 
@@ -20,6 +21,7 @@ public class OpenAIService {
             .baseUri(URI.create("https://api.openai.com"))
             .build(OpenAIServiceSpec.class);
 
+    @Transactional
     public byte[] requestImage(String text) {
         var config = openAIConfigRepository.findFirstByOrderByModifiedDesc()
                 .orElse(null);

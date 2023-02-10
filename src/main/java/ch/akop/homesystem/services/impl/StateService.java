@@ -3,11 +3,13 @@ package ch.akop.homesystem.services.impl;
 import ch.akop.homesystem.states.State;
 import io.quarkus.runtime.Startup;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.enterprise.context.ApplicationScoped;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Startup
 @ApplicationScoped
 public class StateService {
@@ -32,13 +34,25 @@ public class StateService {
         }
 
         if (currentState != null) {
-            currentState.leave();
+            try {
+                currentState.leave();
+            } catch (Exception e) {
+                log.error("There was an exception in the 'leave'-method of {}",
+                        currentState.getClass().getSimpleName(),
+                        e);
+            }
         }
 
         currentState = states.get(toState);
 
         if (currentState != null) {
-            currentState.entered();
+            try {
+                currentState.entered();
+            } catch (Exception e) {
+                log.error("There was an exception in the 'entered'-method of {}",
+                        currentState.getClass().getSimpleName(),
+                        e);
+            }
         }
     }
 
