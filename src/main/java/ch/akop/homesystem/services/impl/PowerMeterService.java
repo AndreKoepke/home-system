@@ -39,6 +39,11 @@ public class PowerMeterService {
         var sensor = deviceService.findDeviceByName(powerMeterConfig.getName(), PowerMeter.class)
                 .orElseThrow(() -> new IllegalStateException("Sensor %s not found.".formatted(powerMeterConfig.getName())));
 
+        deviceService.findDeviceByName(powerMeterConfig.getName(), SimpleLight.class)
+                .ifPresent(actor -> actor.getState$()
+                        .filter(isOn -> !isOn)
+                        .subscribe(isOn -> pauses.replace(powerMeterConfig.getName(), 0)));
+
         //noinspection ResultOfMethodCallIgnored
         sensor.getCurrent$()
                 .map(current -> current > powerMeterConfig.getIsOnWhenMoreThan())
