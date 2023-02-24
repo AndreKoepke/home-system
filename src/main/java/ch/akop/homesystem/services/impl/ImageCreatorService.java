@@ -34,7 +34,7 @@ import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 public class ImageCreatorService {
 
 
-    private final OpenAIService imageService;
+    private final OpenAIService openAIService;
     private final OpenAIImageRepository imageRepository;
     private final TelegramMessageService messageService;
     private final WeatherService weatherService;
@@ -61,7 +61,7 @@ public class ImageCreatorService {
     @Transactional
     public void generateAndSendDailyImage() {
         var prompt = generatePrompt();
-        var image = imageService.requestImage(prompt);
+        var image = openAIService.requestImage(prompt);
 
         // TelegramBot is broken, because of different version of OkHttp3 from Quarkus
         //messageService.sendImageToMainChannel(image, prompt);

@@ -1,5 +1,6 @@
 package ch.akop.homesystem.states;
 
+import ch.akop.homesystem.external.openai.OpenAIService;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.models.events.Event;
@@ -58,7 +59,7 @@ public class SleepState implements State {
     private final UserService userService;
     private final BasicConfigRepository basicConfigRepository;
     private final ImageCreatorService imageCreatorService;
-
+    private final OpenAIService openAIService;
 
     private Disposable timerDoorOpen;
     private Map<String, Boolean> presenceAtBeginning;
@@ -119,7 +120,6 @@ public class SleepState implements State {
     @Override
     public void leave() {
         messageService.sendMessageToMainChannel(pickRandomElement(POSSIBLE_MORNING_TEXTS));
-        imageCreatorService.generateAndSendDailyImage();
 
         if (weatherService.isActive()) {
             var weather = weatherService.getWeather().blockingFirst();
@@ -134,6 +134,14 @@ public class SleepState implements State {
 
         stopDoorOpenTimer();
         checkPresenceMapWhenLeave();
+
+        tellJoke();
+        imageCreatorService.generateAndSendDailyImage();
+    }
+
+    private void tellJoke() {
+        var joke = openAIService.requestText("Erzähle einen lustigen Witz.");
+        messageService.sendMessageToMainChannel("Witz des Tages: \n" + joke);
     }
 
     public void checkPresenceMapWhenLeave() {

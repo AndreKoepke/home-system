@@ -13,6 +13,10 @@ public interface OpenAIServiceSpec {
 
     @POST
     @Path("images/generations")
-    Response requestImage(ImageRequest request);
+    ImageGenerationResponse requestImage(ImageRequest request);
+
+    @POST
+    @Path("completions")
+    TextGenerationResponse textCompletion(TextGenerationParameter request);
 
 }

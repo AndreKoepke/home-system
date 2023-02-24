@@ -42,4 +42,20 @@ public class OpenAIService {
         return Base64.getDecoder().decode(apiWebClient.requestImage(requestBody).getData().get(0).getB64_json());
     }
 
+    @Transactional
+    public String requestText(String prompt) {
+        var config = openAIConfigRepository.findFirstByOrderByModifiedDesc()
+                .orElse(null);
+
+        if (config == null) {
+            log.warn("Text requested, but openAI is not configured. Ignoring.");
+            return null;
+        }
+
+        var requestBody = new TextGenerationParameter()
+                .setPrompt(prompt);
+
+        return apiWebClient.textCompletion(requestBody).getChoices().get(0).getText();
+    }
+
 }

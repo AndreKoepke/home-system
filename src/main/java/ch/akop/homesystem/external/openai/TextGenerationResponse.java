@@ -5,14 +5,13 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class Response {
+public class TextGenerationResponse {
 
-    private List<ResponseData> data;
+    private List<ResponseData> choices;
 
     @Data
     public static class ResponseData {
-        private String url;
-        private String b64_json;
+        private String text;
     }
 
 }
