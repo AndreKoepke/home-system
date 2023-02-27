@@ -31,7 +31,7 @@ public class StateService {
 
     public void switchState(Class<?> toState) {
 
-        if (isState(currentState.getClass())) {
+        if (isState(toState)) {
             // NOP
             return;
         }
