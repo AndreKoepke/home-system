@@ -122,9 +122,9 @@ public class MotionSensorService {
 
     private void handleMotionEventAnimationTarget(MotionSensorConfig config, boolean isMoving) {
         if (isMoving) {
-            eventBus.publish("home/playAnimation", config.getAnimation());
+            eventBus.publish("home/animation/play", config.getAnimation());
         } else {
-            turnLightsOff(config.getAnimation().getLights());
+            eventBus.publish("home/animation/turn-off", config.getAnimation());
         }
     }
 

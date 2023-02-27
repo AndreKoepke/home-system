@@ -108,8 +108,8 @@ public class DeviceService {
     }
 
     @Transactional
-    @ConsumeEvent(value = "home/playAnimation", blocking = true)
-    public void event(Animation animation) {
+    @ConsumeEvent(value = "home/animation/play", blocking = true)
+    public void playAnimation(Animation animation) {
         if (runningAnimations.contains(animation)) {
             return;
         }
@@ -118,6 +118,16 @@ public class DeviceService {
         var freshAnimation = animationRepository.getOne(animation.getId());
         freshAnimation.play(this);
         runningAnimations.remove(animation);
+    }
+
+    @Transactional
+    @ConsumeEvent(value = "home/animation/turn-off", blocking = true)
+    public void turnAnimationOff(Animation animation) {
+        var lights = animationRepository.getOne(animation.getId()).getLights();
+        getDevicesOfType(SimpleLight.class)
+                .stream()
+                .filter(light -> lights.contains(light.getName()))
+                .forEach(light -> light.turnOn(false));
     }
 
     public void activeSceneForAllGroups(String sceneName) {

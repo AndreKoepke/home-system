@@ -201,7 +201,7 @@ public class NormalState extends Activatable implements State {
 
         canStartMainDoorAnimation.setForever(true);
         try {
-            eventBus.publish("home/playAnimation", basicConfigRepository.findFirstByOrderByModifiedDesc()
+            eventBus.publish("home/animation/play", basicConfigRepository.findFirstByOrderByModifiedDesc()
                     .orElseThrow()
                     .getWhenMainDoorOpened());
 
