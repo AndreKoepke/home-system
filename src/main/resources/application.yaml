@@ -23,6 +23,4 @@ quarkus:
     color: true
 
   http:
-    cors:
-      origins: "*"
-      exposed-headers: "prompt"
+    cors: true
