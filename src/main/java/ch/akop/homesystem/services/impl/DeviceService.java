@@ -94,7 +94,6 @@ public class DeviceService {
                 });
     }
 
-
     @Transactional
     public boolean isAnyLightOn() {
         var notLights = basicConfigRepository.findFirstByOrderByModifiedDesc()
@@ -109,7 +108,7 @@ public class DeviceService {
     }
 
     @Transactional
-    @ConsumeEvent(value = "home/startAnimation", blocking = true)
+    @ConsumeEvent(value = "home/playAnimation", blocking = true)
     public void event(Animation animation) {
         if (runningAnimations.contains(animation)) {
             return;
@@ -119,7 +118,6 @@ public class DeviceService {
         var freshAnimation = animationRepository.getOne(animation.getId());
         freshAnimation.play(this);
     }
-
 
     public void activeSceneForAllGroups(String sceneName) {
         getDevicesOfType(Group.class)
