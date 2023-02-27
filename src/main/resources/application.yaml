@@ -24,3 +24,6 @@ quarkus:
 
   http:
     cors: true
+    cors.origins: "*"
+    cors.methods: "GET,OPTIONS"
+    cors.exposed-headers: "prompt"
