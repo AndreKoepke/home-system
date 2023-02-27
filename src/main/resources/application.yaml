@@ -23,7 +23,8 @@ quarkus:
     color: true
 
   http:
-    cors: true
-    cors.origins: "*"
-    cors.methods: "GET,OPTIONS"
-    cors.exposed-headers: "prompt"
+    cors:
+      ~: true
+      origins: "*"
+      methods: "GET,OPTIONS"
+      exposed-headers: "prompt"

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 
+import javax.annotation.security.PermitAll;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.CacheControl;
@@ -21,6 +22,7 @@ public class ImageController {
 
     @Path("daily.jpg")
     @GET
+    @PermitAll
     public RestResponse<byte[]> getDailyImage() {
         var image = imageCreatorService.getLastImage();
         imageCreatorService.increaseDownloadCounter(image.getCreated());

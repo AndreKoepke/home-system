@@ -5,6 +5,7 @@ import com.pengrad.telegrambot.BotUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.security.PermitAll;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -19,6 +20,7 @@ public class TelegramWebhookReceiverController {
 
     @Path("{apikey}")
     @POST
+    @PermitAll
     public void gotWebhookUpdate(@PathParam("apikey") String apikey, String json) {
         try {
             telegramMessageService.process(BotUtils.parseUpdate(json), apikey);
