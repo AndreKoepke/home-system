@@ -117,6 +117,7 @@ public class DeviceService {
         runningAnimations.add(animation);
         var freshAnimation = animationRepository.getOne(animation.getId());
         freshAnimation.play(this);
+        runningAnimations.remove(animation);
     }
 
     public void activeSceneForAllGroups(String sceneName) {

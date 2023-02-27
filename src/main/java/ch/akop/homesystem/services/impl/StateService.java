@@ -25,10 +25,13 @@ public class StateService {
         states.put(clazz, state);
     }
 
+    public boolean isState(Class<?> state) {
+        return currentState != null && state.isAssignableFrom(currentState.getClass());
+    }
 
     public void switchState(Class<?> toState) {
 
-        if (currentState != null && toState.isAssignableFrom(currentState.getClass())) {
+        if (isState(currentState.getClass())) {
             // NOP
             return;
         }

@@ -154,6 +154,6 @@ public class MotionSensorService {
             return true;
         }
 
-        return stateService.getCurrentState().getClass().equals(NormalState.class);
+        return stateService.isState(NormalState.class);
     }
 }
