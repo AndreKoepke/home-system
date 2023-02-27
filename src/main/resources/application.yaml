@@ -6,6 +6,8 @@ server:
 
 
 quarkus:
+
+
   datasource:
     db-kind: postgresql
     jdbc:
@@ -19,3 +21,8 @@ quarkus:
 
   console:
     color: true
+
+  http:
+    cors:
+      origins: "*"
+      exposed-headers: "prompt"
