@@ -5,9 +5,13 @@ import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
+import ch.akop.homesystem.persistence.model.animation.Animation;
 import ch.akop.homesystem.persistence.model.config.BasicConfig;
+import ch.akop.homesystem.persistence.repository.config.AnimationRepository;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.util.SleepUtil;
+import io.quarkus.vertx.ConsumeEvent;
+import io.vertx.core.impl.ConcurrentHashSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,6 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
@@ -31,7 +36,9 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 public class DeviceService {
 
     private final List<Device<?>> devices = new ArrayList<>();
+    private final Set<Animation> runningAnimations = new ConcurrentHashSet<>();
     private final BasicConfigRepository basicConfigRepository;
+    private final AnimationRepository animationRepository;
 
 
     public <T extends Device<?>> Optional<T> findDeviceByName(String name, Class<T> clazz) {
@@ -99,6 +106,18 @@ public class DeviceService {
                 .filter(Device::isReachable)
                 .filter(light -> !notLights.contains(light.getName()))
                 .anyMatch(SimpleLight::isCurrentStateIsOn);
+    }
+
+    @Transactional
+    @ConsumeEvent(value = "home/startAnimation", blocking = true)
+    public void event(Animation animation) {
+        if (runningAnimations.contains(animation)) {
+            return;
+        }
+
+        runningAnimations.add(animation);
+        var freshAnimation = animationRepository.getOne(animation.getId());
+        freshAnimation.play(this);
     }
 
 
