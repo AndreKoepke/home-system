@@ -48,9 +48,7 @@ public class MotionSensorService {
                         .findFirst()
                         .orElseThrow()
                         .getIsMoving$()
-                        .filter(isMoving -> isMatchingWeather(motionSensorConfig))
-                        .filter(isMoving -> isMatchingState(motionSensorConfig))
-                        .filter(isMoving -> isMatchingTime(motionSensorConfig))
+                        .filter(isMoving -> blockMovingWhenNecessary(motionSensorConfig, isMoving))
                         .switchMap(isMoving -> delayWhenNoMovement(isMoving, motionSensorConfig))
                         .distinctUntilChanged()
                         .subscribe(isMoving -> handleMotionEvent(motionSensorConfig, isMoving)));
@@ -137,6 +135,18 @@ public class MotionSensorService {
             turnLightsOff(config.getLights());
             sensorsWithHigherTimeout.remove(config.getName().toLowerCase());
         }
+    }
+
+    private boolean blockMovingWhenNecessary(MotionSensorConfig config, boolean isMoving) {
+
+        if (!isMoving) {
+            // don't block when movement stops
+            return true;
+        }
+
+        return isMatchingTime(config)
+                && isMatchingState(config)
+                && isMatchingWeather(config);
     }
 
     private boolean isMatchingWeather(MotionSensorConfig config) {
