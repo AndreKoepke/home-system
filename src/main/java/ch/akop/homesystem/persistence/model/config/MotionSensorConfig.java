@@ -16,6 +16,7 @@ import javax.persistence.MapKeyColumn;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import java.time.Duration;
+import java.time.LocalTime;
 import java.util.List;
 
 @Entity
@@ -43,6 +44,8 @@ public class MotionSensorConfig {
 
     @Nullable
     private Boolean onlyAtNormalState;
+
+    private LocalTime notBefore;
 
     @OneToOne
     @Nullable

@@ -15,6 +15,7 @@ import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import java.time.Duration;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashSet;
@@ -49,6 +50,7 @@ public class MotionSensorService {
                         .getIsMoving$()
                         .filter(isMoving -> isMatchingWeather(motionSensorConfig))
                         .filter(isMoving -> isMatchingState(motionSensorConfig))
+                        .filter(isMoving -> isMatchingTime(motionSensorConfig))
                         .switchMap(isMoving -> delayWhenNoMovement(isMoving, motionSensorConfig))
                         .distinctUntilChanged()
                         .subscribe(isMoving -> handleMotionEvent(motionSensorConfig, isMoving)));
@@ -155,5 +157,14 @@ public class MotionSensorService {
         }
 
         return stateService.isState(NormalState.class);
+    }
+
+    private boolean isMatchingTime(MotionSensorConfig config) {
+
+        if (config.getNotBefore() == null) {
+            return true;
+        }
+
+        return config.getNotBefore().isBefore(LocalTime.now());
     }
 }
