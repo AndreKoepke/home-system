@@ -48,6 +48,11 @@ dependencies {
     testImplementation 'io.quarkus:quarkus-junit5'
     testImplementation 'io.rest-assured:rest-assured'
 
+    // flyway
+    implementation 'io.quarkus:quarkus-flyway'
+    implementation 'io.quarkus:quarkus-jdbc-postgresql'
+
+
     // misc
     runtimeOnly 'org.postgresql:postgresql'
     implementation 'javax.validation:validation-api:2.0.1.Final'
