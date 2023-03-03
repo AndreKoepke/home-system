@@ -1,7 +1,9 @@
 package ch.akop.homesystem.services.impl;
 
+import ch.akop.homesystem.persistence.model.config.TelegramConfig;
 import ch.akop.homesystem.persistence.repository.config.TelegramConfigRepository;
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
@@ -46,10 +48,24 @@ public class TelegramMessageService {
             log.info("No telegrambot will be started.");
             return;
         }
+        var config = configOpt.get();
 
-        bot = new TelegramBot(configOpt.get().getBotToken());
+        bot = new TelegramBot.Builder(config.getBotToken())
+                .updateListenerSleep(5000)
+                .build();
 
-        SetWebhook request = new SetWebhook().url(configOpt.get().getBotPath());
+        if (config.getBotPath() != null) {
+            setupWebhook(config);
+        } else {
+            bot.setUpdatesListener(updates -> {
+                updates.forEach(update -> consumeUpdate(update, config));
+                return UpdatesListener.CONFIRMED_UPDATES_ALL;
+            });
+        }
+    }
+
+    private void setupWebhook(TelegramConfig config) {
+        SetWebhook request = new SetWebhook().url(config.getBotPath());
         var response = bot.execute(request);
         if (!response.isOk()) {
             throw new IllegalStateException(response.description());
@@ -101,16 +117,19 @@ public class TelegramMessageService {
     @Transactional
     public void process(Update update, String transferredApiKey) {
         telegramConfigRepository.findFirstByOrderByModifiedDesc()
+                .filter(telegramConfig -> telegramConfig.getBotPath() != null)
                 .filter(telegramConfig -> telegramConfig.getBotToken().equals(transferredApiKey))
-                .ifPresent(config -> {
-                    log.info("Message from {}@{}: {}", update.message().from().firstName(),
-                            update.message().chat().id(),
-                            update.message().text());
+                .ifPresent(config -> consumeUpdate(update, config));
+    }
 
-                    if (config.getMainChannel().equals(update.message().chat().id().toString())
-                            && update.message().text() != null) {
-                        messages.onNext(update.message().text());
-                    }
-                });
+    private void consumeUpdate(Update update, TelegramConfig config) {
+        log.info("Message from {}@{}: {}", update.message().from().firstName(),
+                update.message().chat().id(),
+                update.message().text());
+
+        if (config.getMainChannel().equals(update.message().chat().id().toString())
+                && update.message().text() != null) {
+            messages.onNext(update.message().text());
+        }
     }
 }

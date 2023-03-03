@@ -55,10 +55,12 @@ create table public.animation_on_off_steps
 
 create table public.animation_step_pause
 (
-    id         uuid not null
+    id           uuid not null
         primary key,
-    sort_order integer,
-    wait_for   numeric(21)
+    sort_order   integer,
+    wait_for     numeric(21),
+    animation_id uuid not null
+        constraint fk_pause_step_animation references public.animation (id)
 );
 
 create table public.animation_pause_steps
