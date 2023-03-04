@@ -19,6 +19,7 @@ import io.quarkus.runtime.Startup;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import io.vertx.core.eventbus.EventBus;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +57,7 @@ public class NormalState extends Activatable implements State {
     private final UserService userService;
     private final BasicConfigRepository basicConfigRepository;
     private final CubeConfigRepository cubeConfigRepository;
+    private final EventBus eventBus;
     private Map<String, Boolean> lastPresenceMap;
 
 
@@ -199,10 +201,10 @@ public class NormalState extends Activatable implements State {
 
         canStartMainDoorAnimation.setForever(true);
         try {
-            basicConfigRepository.findFirstByOrderByModifiedDesc()
+            eventBus.publish("home/animation/play", basicConfigRepository.findFirstByOrderByModifiedDesc()
                     .orElseThrow()
-                    .getWhenMainDoorOpened()
-                    .play(deviceService);
+                    .getWhenMainDoorOpened());
+
         } finally {
             canStartMainDoorAnimation.reset();
         }

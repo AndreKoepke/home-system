@@ -19,7 +19,9 @@ import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Entity
@@ -55,4 +57,12 @@ public class Animation {
                 .forEachOrdered(step -> step.play(deviceService));
     }
 
+    public Set<String> getLights() {
+        return Stream.of(
+                        onOffSteps.stream().map(OnOffStep::getNameOfLight),
+                        dimmLightSteps.stream().map(DimmLightStep::getNameOfLight)
+                )
+                .flatMap(stream -> stream)
+                .collect(Collectors.toSet());
+    }
 }

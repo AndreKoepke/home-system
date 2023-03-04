@@ -5,19 +5,25 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.persistence.model.config.MotionSensorConfig;
 import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigRepository;
+import ch.akop.homesystem.states.NormalState;
 import ch.akop.homesystem.states.SleepState;
 import io.reactivex.rxjava3.core.Observable;
+import io.vertx.core.eventbus.EventBus;
 import lombok.RequiredArgsConstructor;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import java.time.Duration;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 
 @ApplicationScoped
 @RequiredArgsConstructor
@@ -26,6 +32,8 @@ public class MotionSensorService {
     private final MotionSensorConfigRepository motionSensorConfigRepository;
     private final DeviceService deviceService;
     private final StateService stateService;
+    private final WeatherService weatherService;
+    private final EventBus eventBus;
     private final Set<String> sensorsWithHigherTimeout = new HashSet<>();
 
     @SuppressWarnings({"ResultOfMethodCallIgnored"})
@@ -40,16 +48,10 @@ public class MotionSensorService {
                         .findFirst()
                         .orElseThrow()
                         .getIsMoving$()
+                        .filter(isMoving -> blockMovingWhenNecessary(motionSensorConfig, isMoving))
                         .switchMap(isMoving -> delayWhenNoMovement(isMoving, motionSensorConfig))
                         .distinctUntilChanged()
-                        .subscribe(isMoving -> {
-                            if (Boolean.TRUE.equals(isMoving)) {
-                                turnLightsOn(motionSensorConfig.getLights());
-                            } else {
-                                turnLightsOff(motionSensorConfig.getLights());
-                                sensorsWithHigherTimeout.remove(motionSensorConfig.getName().toLowerCase());
-                            }
-                        }));
+                        .subscribe(isMoving -> handleMotionEvent(motionSensorConfig, isMoving)));
     }
 
     public Observable<Boolean> delayWhenNoMovement(Boolean movementDetected, MotionSensorConfig motionSensorConfig) {
@@ -103,12 +105,76 @@ public class MotionSensorService {
                 });
     }
 
-    private void turnLightsOff(List<String> lights) {
+    private void turnLightsOff(Collection<String> lights) {
         deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
                 .filter(light -> lights.contains(light.getName()))
                 .forEach(light -> light.turnOn(false));
-
     }
 
+    private void handleMotionEvent(MotionSensorConfig config, boolean isMoving) {
+        if (config.getAnimation() == null) {
+            handleMotionEventLightsTarget(config, isMoving);
+        } else {
+            handleMotionEventAnimationTarget(config, isMoving);
+        }
+    }
+
+    private void handleMotionEventAnimationTarget(MotionSensorConfig config, boolean isMoving) {
+        if (isMoving) {
+            eventBus.publish("home/animation/play", config.getAnimation());
+        } else {
+            eventBus.publish("home/animation/turn-off", config.getAnimation());
+        }
+    }
+
+    private void handleMotionEventLightsTarget(MotionSensorConfig config, boolean isMoving) {
+        if (isMoving) {
+            turnLightsOn(config.getLights());
+        } else {
+            turnLightsOff(config.getLights());
+            sensorsWithHigherTimeout.remove(config.getName().toLowerCase());
+        }
+    }
+
+    private boolean blockMovingWhenNecessary(MotionSensorConfig config, boolean isMoving) {
+
+        if (!isMoving) {
+            // don't block when movement stops
+            return true;
+        }
+
+        return isMatchingTime(config)
+                && isMatchingState(config)
+                && isMatchingWeather(config);
+    }
+
+    private boolean isMatchingWeather(MotionSensorConfig config) {
+        if (config.getOnlyTurnOnWhenDarkerAs() == null) {
+            return true;
+        }
+
+        return weatherService.getWeather()
+                .take(1)
+                .blockingFirst()
+                .getLight()
+                .isSmallerThan(config.getOnlyTurnOnWhenDarkerAs(), KILO_LUX);
+    }
+
+    private boolean isMatchingState(MotionSensorConfig config) {
+        if (config.getOnlyAtNormalState() == null || !config.getOnlyAtNormalState()) {
+            return true;
+        }
+
+        return stateService.isState(NormalState.class);
+    }
+
+    private boolean isMatchingTime(MotionSensorConfig config) {
+
+        if (config.getNotBefore() == null) {
+            return true;
+        }
+
+        return config.getNotBefore().isBefore(LocalTime.now());
+    }
 }
