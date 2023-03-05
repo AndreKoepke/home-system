@@ -32,7 +32,7 @@ public class ColoredLight extends DimmableLight {
     }
 
     public void setColorAndBrightness(Color color, Duration transitionTime, BigDecimal brightness) {
-        functionForRgb.accept(color, Duration.ofMillis(100));
+        functionForRgb.accept(color, null);
         SleepUtil.sleep(Duration.ofMillis(101));
         super.setBrightness(brightness, transitionTime);
     }
