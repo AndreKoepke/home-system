@@ -19,18 +19,8 @@ services:
     volumes:
       - /var/lib/postgresql/data
 
-  deconz:
-    image: marthoc/deconz
-    restart: always
-    devices:
-      - /dev/ttyUSB0
-    network_mode: host
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /root/.local/share/dresden-elektronik/deCONZ
-
   home-system:
-    image: akop/home-system:unstable
+    image: akop/home-system:stable
     restart: always
     environment:
       - TZ=Europe/Berlin
@@ -39,4 +29,3 @@ services:
       - DB_PASS=super_long_and_very_secure_password_should_be_fine_okay?
     depends_on:
       - database
-      - deconz
