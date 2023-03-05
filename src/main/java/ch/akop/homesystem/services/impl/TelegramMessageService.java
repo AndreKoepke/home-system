@@ -5,6 +5,7 @@ import ch.akop.homesystem.persistence.repository.config.TelegramConfigRepository
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.request.DeleteWebhook;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
 import com.pengrad.telegrambot.request.SetWebhook;
@@ -57,6 +58,7 @@ public class TelegramMessageService {
         if (config.getBotPath() != null) {
             setupWebhook(config);
         } else {
+            deleteWebhook();
             bot.setUpdatesListener(updates -> {
                 updates.forEach(update -> consumeUpdate(update, config));
                 return UpdatesListener.CONFIRMED_UPDATES_ALL;
@@ -70,6 +72,11 @@ public class TelegramMessageService {
         if (!response.isOk()) {
             throw new IllegalStateException(response.description());
         }
+    }
+
+    private void deleteWebhook() {
+        DeleteWebhook request = new DeleteWebhook().dropPendingUpdates(true);
+        bot.execute(request);
     }
 
     @Transactional
@@ -122,7 +129,12 @@ public class TelegramMessageService {
                 .ifPresent(config -> consumeUpdate(update, config));
     }
 
-    private void consumeUpdate(Update update, TelegramConfig config) {
+    private void consumeUpdate(@Nullable Update update, @NonNull TelegramConfig config) {
+
+        if (update == null) {
+            return;
+        }
+
         log.info("Message from {}@{}: {}", update.message().from().firstName(),
                 update.message().chat().id(),
                 update.message().text());

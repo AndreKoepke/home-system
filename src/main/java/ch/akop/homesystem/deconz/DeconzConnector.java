@@ -145,7 +145,7 @@ public class DeconzConnector {
 
     private Optional<Device<?>> tryCreateLight(String id, Light light) {
         return switch (light.getType().toLowerCase()) {
-            case "color light", "extended color light" -> Optional.of(createColorLight(id));
+            case "color light", "extended color light", "color dimmable light" -> Optional.of(createColorLight(id));
             case "dimmable light", "color temperature light" -> Optional.of(createDimmableLight(id));
             case "on/off plug-in unit", "on/off light" -> Optional.of(registerSimpleLight(id));
             default -> Optional.empty();
