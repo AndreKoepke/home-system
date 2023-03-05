@@ -171,8 +171,7 @@ public class DeconzConnector {
         return new ColoredLight(
                 (percent, duration) -> setBrightnessOfLight(id, percent, duration),
                 turnOn -> turnOnOrOff(id, turnOn),
-                (color, duration) -> setColorOfLight(id, color, duration, null),
-                (color, transitionTime, brightness) -> setColorOfLight(id, color, transitionTime, brightness)
+                (color, duration) -> setColorOfLight(id, color, duration)
         );
     }
 
@@ -203,17 +202,13 @@ public class DeconzConnector {
         deconzService.updateLight(id, newState);
     }
 
-    private void setColorOfLight(String id, Color color, Duration duration, Integer brightness) {
+    private void setColorOfLight(String id, Color color, Duration duration) {
         var newState = new State()
                 .setXy(color.toXY())
                 .setColormode("ct");
 
         if (duration != null) {
             newState.setTransitiontime((int) duration.toSeconds() * 10);
-        }
-
-        if (brightness != null) {
-            newState.setBri((int) Math.round(brightness / 100d * 255));
         }
 
         deconzService.updateLight(id, newState);
