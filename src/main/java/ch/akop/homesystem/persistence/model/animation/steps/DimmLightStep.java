@@ -1,6 +1,9 @@
 package ch.akop.homesystem.persistence.model.animation.steps;
 
+import ch.akop.homesystem.models.color.Color;
+import ch.akop.homesystem.models.devices.actor.ColoredLight;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
+import ch.akop.homesystem.persistence.conveter.ColorConverter;
 import ch.akop.homesystem.persistence.model.animation.Animation;
 import ch.akop.homesystem.services.impl.DeviceService;
 import lombok.Getter;
@@ -10,6 +13,7 @@ import org.hibernate.annotations.GenericGenerator;
 import org.jetbrains.annotations.Nullable;
 
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.GeneratedValue;
@@ -49,11 +53,26 @@ public class DimmLightStep implements Step {
     @Column(name = "dimm_duration")
     private Duration dimmDuration;
 
+    @Nullable
+    @Convert(converter = ColorConverter.class)
+    private Color color;
+
 
     @Override
     public void play(DeviceService deviceService) {
-        deviceService.findDeviceByName(nameOfLight, DimmableLight.class)
-                .orElseThrow(() -> new EntityNotFoundException("Light with name " + nameOfLight + " was not found"))
-                .setBrightness(dimmLightTo, dimmDuration != null ? dimmDuration : DEFAULT_DURATION);
+        if (color != null) {
+            deviceService.findDeviceByName(nameOfLight, ColoredLight.class)
+                    .orElseThrow(() -> new EntityNotFoundException("Colored light with name " + nameOfLight + " was not found"))
+                    .setColorAndBrightness(color, dimmDuration, dimmLightTo);
+        } else {
+            deviceService.findDeviceByName(nameOfLight, DimmableLight.class)
+                    .orElseThrow(() -> new EntityNotFoundException("Light with name " + nameOfLight + " was not found"))
+                    .setBrightness(dimmLightTo, getDimmDuration());
+        }
+    }
+
+    @Nullable
+    private Duration getDimmDuration() {
+        return dimmDuration != null ? dimmDuration : DEFAULT_DURATION;
     }
 }
