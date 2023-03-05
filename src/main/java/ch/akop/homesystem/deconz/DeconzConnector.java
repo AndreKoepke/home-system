@@ -204,8 +204,7 @@ public class DeconzConnector {
 
     private void setColorOfLight(String id, Color color, Duration duration) {
         var newState = new State()
-                .setXy(color.toXY())
-                .setColormode("ct");
+                .setXy(color.toXY());
 
         if (duration != null) {
             newState.setTransitiontime((int) duration.toSeconds() * 10);
