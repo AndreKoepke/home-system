@@ -3,6 +3,7 @@ package ch.akop.homesystem.models.devices.actor;
 
 import ch.akop.homesystem.deconz.rest.State;
 import ch.akop.homesystem.models.color.Color;
+import ch.akop.homesystem.util.SleepUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -31,7 +32,8 @@ public class ColoredLight extends DimmableLight {
     }
 
     public void setColorAndBrightness(Color color, Duration transitionTime, BigDecimal brightness) {
-        functionForRgb.accept(color, Duration.ZERO);
+        functionForRgb.accept(color, Duration.ofMillis(100));
+        SleepUtil.sleep(Duration.ofMillis(101));
         super.setBrightness(brightness, transitionTime);
     }
 
