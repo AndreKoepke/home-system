@@ -33,18 +33,6 @@ jobs:
           REPO_USERNAME: '${{ secrets.REPO_GITHUB_NAME }}'
           REPO_TOKEN: '${{ secrets.REPO_GITHUB_TOKEN }}'
 
-      - name: Build and publish for macOS
-        run: ./gradlew build -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true
-        env:
-          QUARKUS_CONTAINER_IMAGE_GROUP: akop
-          QUARKUS_CONTAINER_IMAGE_NAME: home-system
-          QUARKUS_CONTAINER_IMAGE_TAG: latest
-          QUARKUS_CONTAINER_IMAGE_USERNAME: '${{ secrets.DOCKER_USER }}'
-          QUARKUS_CONTAINER_IMAGE_PASSWORD: '${{ secrets.DOCKER_PASS }}'
-          QUARKUS_DOCKER_BUILDX_PLATFORM: linux/arm64/v8
-          REPO_USERNAME: '${{ secrets.REPO_GITHUB_NAME }}'
-          REPO_TOKEN: '${{ secrets.REPO_GITHUB_TOKEN }}'
-
       - name: Build and publish for raspberry
         run: ./gradlew build -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true
         env:
