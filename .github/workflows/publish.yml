@@ -30,7 +30,6 @@ jobs:
           QUARKUS_CONTAINER_IMAGE_TAG: latest
           QUARKUS_CONTAINER_IMAGE_USERNAME: '${{ secrets.DOCKER_USER }}'
           QUARKUS_CONTAINER_IMAGE_PASSWORD: '${{ secrets.DOCKER_PASS }}'
-          QUARKUS_DOCKER_BUILDX_PLATFORM: linux/amd64
           REPO_USERNAME: '${{ secrets.REPO_GITHUB_NAME }}'
           REPO_TOKEN: '${{ secrets.REPO_GITHUB_TOKEN }}'
 
