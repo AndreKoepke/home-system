@@ -12,6 +12,7 @@ import ch.akop.homesystem.services.impl.TelegramMessageService;
 import ch.akop.homesystem.services.impl.UserService;
 import ch.akop.homesystem.services.impl.WeatherService;
 import io.quarkus.runtime.Startup;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -66,9 +68,7 @@ public class SleepState implements State {
     private boolean sleepButtonState;
     private String nightSceneName;
 
-
-    @PostConstruct
-    void registerState() {
+    void registerState(@Observes StartupEvent startupEvent) {
         stateService.registerState(SleepState.class, this);
     }
 

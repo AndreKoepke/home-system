@@ -9,12 +9,13 @@ import ch.akop.homesystem.services.impl.StateService;
 import ch.akop.homesystem.services.impl.TelegramMessageService;
 import ch.akop.homesystem.services.impl.UserService;
 import io.quarkus.runtime.Startup;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.Observable;
 import lombok.RequiredArgsConstructor;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -36,9 +37,7 @@ public class HolidayState extends Activatable implements State {
     private final DeviceService deviceService;
     private final UserService userService;
 
-
-    @PostConstruct
-    void registerState() {
+    void registerState(@Observes StartupEvent startupEvent) {
         stateService.registerState(HolidayState.class, this);
     }
 
