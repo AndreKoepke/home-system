@@ -44,14 +44,16 @@ public class HolidayState extends Activatable implements State {
 
     @Override
     protected void started() {
-        entered();
+        entered(true);
     }
 
     @Override
-    public void entered() {
+    public void entered(boolean quiet) {
 
-        messageService.sendMessageToMainChannel("Ich wünsche euch einen schönen Urlaub. Wenn ihr wieder da seid, " +
-                "dann schreibt /back .");
+        if (!quiet) {
+            messageService.sendMessageToMainChannel("Ich wünsche euch einen schönen Urlaub. Wenn ihr wieder da seid, " +
+                    "dann schreibt /back .");
+        }
 
         var durationToLightOffTime = Duration.between(ZonedDateTime.now(), getLightOffTime()).toSeconds();
         super.disposeWhenClosed(

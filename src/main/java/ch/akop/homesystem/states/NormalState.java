@@ -64,7 +64,6 @@ public class NormalState extends Activatable implements State {
     @PostConstruct
     void registerState() {
         stateService.registerState(NormalState.class, this);
-        stateService.switchState(NormalState.class);
     }
 
     @PostConstruct
@@ -104,11 +103,12 @@ public class NormalState extends Activatable implements State {
     }
 
     @Override
-    public void entered() {
+    public void entered(boolean quiet) {
         super.disposeWhenClosed(weatherPoster.start());
         super.disposeWhenClosed(sunsetReactor.start());
 
-        if (rainDetectorService.noRainFor().toDays() > 1) {
+
+        if (!quiet && rainDetectorService.noRainFor().toDays() > 1) {
             messageService.sendMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
                     .formatted(rainDetectorService.noRainFor().toDays()));
         }
@@ -212,6 +212,6 @@ public class NormalState extends Activatable implements State {
 
     @Override
     protected void started() {
-        entered();
+        entered(true);
     }
 }

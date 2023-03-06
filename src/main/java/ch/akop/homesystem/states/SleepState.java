@@ -81,17 +81,19 @@ public class SleepState implements State {
     }
 
     @Override
-    public void entered() {
-        messageService.sendMessageToMainChannel(("Gute Nacht. Ich mache die Lichter in %dmin aus. " +
-                "Falls ich sofort aufwachen soll, schreibt einfach /aufwachen.")
-                .formatted(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes()));
+    public void entered(boolean quiet) {
+        if (!quiet) {
+            messageService.sendMessageToMainChannel(("Gute Nacht. Ich mache die Lichter in %dmin aus. " +
+                    "Falls ich sofort aufwachen soll, schreibt einfach /aufwachen.")
+                    .formatted(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes()));
 
-        disposeWhenLeaveState.add(Observable.timer(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes(), TimeUnit.MINUTES)
-                .doOnNext(t -> deviceService.activeSceneForAllGroups(nightSceneName))
-                .doOnNext(duration -> messageService
-                        .sendMessageToMainChannel("Schlaft gut. Die Lichter gehen jetzt aus. :)")
-                        .sendMessageToMainChannel("Ich lege mich auch hin und stehe um %s wieder auf.".formatted(WAKEUP_TIME)))
-                .subscribe());
+            disposeWhenLeaveState.add(Observable.timer(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes(), TimeUnit.MINUTES)
+                    .doOnNext(t -> deviceService.activeSceneForAllGroups(nightSceneName))
+                    .doOnNext(duration -> messageService
+                            .sendMessageToMainChannel("Schlaft gut. Die Lichter gehen jetzt aus. :)")
+                            .sendMessageToMainChannel("Ich lege mich auch hin und stehe um %s wieder auf.".formatted(WAKEUP_TIME)))
+                    .subscribe());
+        }
 
         disposeWhenLeaveState.add(Observable.timer(getDurationToWakeupAsSeconds(), TimeUnit.SECONDS)
                 .subscribe(a -> stateService.switchState(NormalState.class)));
