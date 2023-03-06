@@ -38,7 +38,7 @@ public class StateService {
                 .map(ch.akop.homesystem.persistence.model.State::getClassName)
                 .orElse(DEFAULT_STATE)
                 .equals(clazz.getSimpleName())) {
-            activateStateQuietly(clazz.getName());
+            activateStateQuietly(clazz);
         }
     }
 
@@ -46,11 +46,12 @@ public class StateService {
         return currentState != null && state.isAssignableFrom(currentState.getClass());
     }
 
-    public void activateStateQuietly(String className) {
-        var newState = states.get(className);
+    public void activateStateQuietly(Class<?> clazz) {
+        var newState = states.get(clazz.getSimpleName());
         currentState = newState;
         newState.entered(true);
-        stateRepository.save(new ch.akop.homesystem.persistence.model.State().setClassName(className));
+        stateRepository.save(new ch.akop.homesystem.persistence.model.State()
+                .setClassName(clazz.getSimpleName()));
     }
 
     @Transactional
