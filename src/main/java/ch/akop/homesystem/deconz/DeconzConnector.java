@@ -24,20 +24,19 @@ import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import ch.akop.homesystem.services.impl.AutomationService;
 import ch.akop.homesystem.services.impl.DeviceService;
 import io.quarkus.runtime.Startup;
+import io.quarkus.runtime.StartupEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.springframework.lang.Nullable;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Optional;
-
-import static java.util.Optional.ofNullable;
 
 
 @ApplicationScoped
@@ -50,23 +49,21 @@ public class DeconzConnector {
     private final AutomationService automationService;
     private final DeconzConfigRepository deconzConfigRepository;
 
-
     DeconzService deconzService;
 
 
-    @PostConstruct
     @Transactional
-    void tryToStart() {
+    void tryToStart(@Observes StartupEvent event) {
         // TODO restart when config changes
-        var configOpt = ofNullable(deconzConfigRepository.getFirstByOrderByModifiedDesc());
+        var config = deconzConfigRepository.getFirstByOrderByModifiedDesc();
 
-        if (configOpt.isEmpty()) {
+        if (config == null) {
             log.warn("No deCONZ found. DeCONZ-Service will not be started.");
             return;
         }
 
         try {
-            connectToDeconz(configOpt.get());
+            connectToDeconz(config);
         } catch (Exception e) {
             log.error("Cannot connect to deconz", e);
         }
