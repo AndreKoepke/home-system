@@ -37,6 +37,8 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.Optional;
 
+import static java.util.Optional.ofNullable;
+
 
 @ApplicationScoped
 @Slf4j
@@ -56,7 +58,7 @@ public class DeconzConnector {
     @Transactional
     void tryToStart() {
         // TODO restart when config changes
-        var configOpt = deconzConfigRepository.findFirstByOrderByModifiedDesc();
+        var configOpt = ofNullable(deconzConfigRepository.getFirstByOrderByModifiedDesc());
 
         if (configOpt.isEmpty()) {
             log.warn("No deCONZ found. DeCONZ-Service will not be started.");

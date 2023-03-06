@@ -26,6 +26,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import java.util.List;
 
+import static java.util.Optional.ofNullable;
+
 @Startup
 @ApplicationScoped
 @RequiredArgsConstructor
@@ -44,7 +46,7 @@ public class TelegramMessageService {
     @Transactional
     @SneakyThrows
     void turnBotOn() {
-        var configOpt = telegramConfigRepository.findFirstByOrderByModifiedDesc();
+        var configOpt = ofNullable(telegramConfigRepository.getFirstByOrderByModifiedDesc());
         if (configOpt.isEmpty()) {
             log.info("No telegrambot will be started.");
             return;
@@ -86,7 +88,7 @@ public class TelegramMessageService {
             return this;
         }
 
-        telegramConfigRepository.findFirstByOrderByModifiedDesc()
+        ofNullable(telegramConfigRepository.getFirstByOrderByModifiedDesc())
                 .ifPresent(config -> sendMessageToUser(message, config.getMainChannel()));
 
         return this;
@@ -94,7 +96,7 @@ public class TelegramMessageService {
 
 
     public TelegramMessageService sendImageToMainChannel(byte @NonNull [] image, @NonNull String caption) {
-        telegramConfigRepository.findFirstByOrderByModifiedDesc()
+        ofNullable(telegramConfigRepository.getFirstByOrderByModifiedDesc())
                 .ifPresent(config -> sendImageToUser(image, config.getMainChannel(), caption));
         return this;
     }
@@ -123,7 +125,7 @@ public class TelegramMessageService {
 
     @Transactional
     public void process(Update update, String transferredApiKey) {
-        telegramConfigRepository.findFirstByOrderByModifiedDesc()
+        ofNullable(telegramConfigRepository.getFirstByOrderByModifiedDesc())
                 .filter(telegramConfig -> telegramConfig.getBotPath() != null)
                 .filter(telegramConfig -> telegramConfig.getBotToken().equals(transferredApiKey))
                 .ifPresent(config -> consumeUpdate(update, config));

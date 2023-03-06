@@ -12,7 +12,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+
+import static java.util.Optional.ofNullable;
 
 @Slf4j
 @Startup
@@ -34,7 +35,7 @@ public class StateService {
     public void registerState(Class<?> clazz, State state) {
         states.put(clazz.getSimpleName(), state);
         if (currentState == null
-                && Optional.ofNullable(stateRepository.getFirstByOrderByActivatedAtDesc())
+                && ofNullable(stateRepository.getFirstByOrderByActivatedAtDesc())
                 .map(ch.akop.homesystem.persistence.model.State::getClassName)
                 .orElse(DEFAULT_STATE)
                 .equals(clazz.getSimpleName())) {
