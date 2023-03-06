@@ -12,6 +12,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Startup
@@ -33,7 +34,7 @@ public class StateService {
     public void registerState(Class<?> clazz, State state) {
         states.put(clazz.getSimpleName(), state);
         if (currentState == null
-                && stateRepository.findFirstByOrderByActivatedAtDesc()
+                && Optional.ofNullable(stateRepository.getFirstByOrderByActivatedAtDesc())
                 .map(ch.akop.homesystem.persistence.model.State::getClassName)
                 .orElse(DEFAULT_STATE)
                 .equals(clazz.getSimpleName())) {
