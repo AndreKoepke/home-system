@@ -14,6 +14,7 @@ import org.springframework.lang.Nullable;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -37,8 +38,9 @@ public class FanService {
                 .stream()
                 .filter(fanConfig -> !subscribeMap.containsKey(fanConfig))
                 .filter(fanConfig -> isButtonEventMatchingFanConfig(event.getButtonName(), event.getButtonEvent(), fanConfig))
-                .forEach(triggeredFan -> deviceService.findDeviceByName(triggeredFan.getName(), SimpleLight.class)
-                        .ifPresent(fan -> activateFanConfig(triggeredFan, fan)));
+                .forEach(triggeredFan -> activateFanConfig(triggeredFan,
+                        deviceService.findDeviceByName(triggeredFan.getName(), SimpleLight.class)
+                                .orElseThrow(() -> new NoSuchElementException("Fan %s can not be found".formatted(triggeredFan.getName())))));
     }
 
     public void startFan(@Nullable FanConfig fanConfig) {
@@ -82,7 +84,8 @@ public class FanService {
                 .ifPresent(motionSensorService::requestHigherTimeout);
 
         Optional.ofNullable(triggeredFan.getTurnOffWhenLightTurnedOff())
-                .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class))
+                .map(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class)
+                        .orElseThrow(() -> new NoSuchElementException("Light %s could not be found".formatted(lightName))))
                 .map(light -> waitUntilLightTurnedOff(light)
                         .subscribe(ignore -> {
                             if (!waitingToTurnOff.containsKey(triggeredFan)) {
