@@ -62,7 +62,7 @@ public class PowerMeterService {
 
                     if (wasLastTimeRunning && !isNowRunning && powerMeterConfig.getTurnOffWhenReady()) {
                         deviceService.findDeviceByName(powerMeterConfig.getName(), SimpleLight.class)
-                                .ifPresent(powerMeterSwitch -> powerMeterSwitch.turnOn(false));
+                                .ifPresent(SimpleLight::turnOff);
                     }
 
                     configToIsRunningMap.put(powerMeterConfig.getName(), isNowRunning);

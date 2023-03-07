@@ -99,7 +99,7 @@ public class MotionSensorService {
                             dimmable.setBrightness(100, Duration.of(10, ChronoUnit.SECONDS));
                         }
                     } else {
-                        light.turnOn(true);
+                        light.turnOn();
                     }
 
                 });
@@ -109,7 +109,7 @@ public class MotionSensorService {
         deviceService.getDevicesOfType(SimpleLight.class)
                 .stream()
                 .filter(light -> lights.contains(light.getName()))
-                .forEach(light -> light.turnOn(false));
+                .forEach(SimpleLight::turnOff);
     }
 
     private void handleMotionEvent(MotionSensorConfig config, boolean isMoving) {

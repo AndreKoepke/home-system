@@ -32,8 +32,16 @@ public class SimpleLight extends Actor<SimpleLight> {
         this.functionToTurnOnOrOff = functionToTurnOnOrOff;
     }
 
-    public void turnOn(boolean on) {
-        this.getFunctionToTurnOnOrOff().accept(on);
+    public void turnOn() {
+        this.getFunctionToTurnOnOrOff().accept(true);
+    }
+
+    public void turnOff() {
+        this.getFunctionToTurnOnOrOff().accept(false);
+    }
+
+    public void turnTo(boolean nextState) {
+        this.getFunctionToTurnOnOrOff().accept(nextState);
     }
 
     public boolean isCurrentlyOff() {

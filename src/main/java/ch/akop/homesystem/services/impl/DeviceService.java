@@ -89,7 +89,7 @@ public class DeviceService {
                     if (light instanceof DimmableLight dimmable) {
                         dimmable.setBrightness(0, Duration.of(10, SECONDS));
                     } else {
-                        light.turnOn(false);
+                        light.turnOff();
                     }
                 });
     }
@@ -127,7 +127,7 @@ public class DeviceService {
         getDevicesOfType(SimpleLight.class)
                 .stream()
                 .filter(light -> lights.contains(light.getName()))
-                .forEach(light -> light.turnOn(false));
+                .forEach(SimpleLight::turnOff);
     }
 
     public void activeSceneForAllGroups(String sceneName) {

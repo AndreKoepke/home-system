@@ -44,6 +44,6 @@ public class OnOffStep implements Step {
     public void play(DeviceService deviceService) {
         deviceService.findDeviceByName(nameOfLight, SimpleLight.class)
                 .orElseThrow(() -> new EntityNotFoundException("Light with name " + nameOfLight + " was not found"))
-                .turnOn(turnItOn);
+                .turnTo(turnItOn);
     }
 }
