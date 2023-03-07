@@ -16,6 +16,7 @@ import ch.akop.homesystem.services.impl.WeatherService;
 import ch.akop.homesystem.util.TimedGateKeeper;
 import ch.akop.weathercloud.Weather;
 import io.quarkus.runtime.Startup;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
@@ -27,6 +28,7 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -61,10 +63,8 @@ public class NormalState extends Activatable implements State {
     private Map<String, Boolean> lastPresenceMap;
 
 
-    @PostConstruct
-    void registerState() {
+    void registerState(@Observes StartupEvent startupEvent) {
         stateService.registerState(NormalState.class, this);
-        stateService.switchState(NormalState.class);
     }
 
     @PostConstruct
@@ -104,11 +104,12 @@ public class NormalState extends Activatable implements State {
     }
 
     @Override
-    public void entered() {
+    public void entered(boolean quiet) {
         super.disposeWhenClosed(weatherPoster.start());
         super.disposeWhenClosed(sunsetReactor.start());
 
-        if (rainDetectorService.noRainFor().toDays() > 1) {
+
+        if (!quiet && rainDetectorService.noRainFor().toDays() > 1) {
             messageService.sendMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
                     .formatted(rainDetectorService.noRainFor().toDays()));
         }
@@ -212,6 +213,6 @@ public class NormalState extends Activatable implements State {
 
     @Override
     protected void started() {
-        entered();
+        entered(true);
     }
 }

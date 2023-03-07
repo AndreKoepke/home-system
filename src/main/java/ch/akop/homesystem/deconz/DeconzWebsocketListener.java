@@ -24,6 +24,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static java.util.Optional.ofNullable;
+
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor
@@ -45,7 +47,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
     @PostConstruct
     @Transactional
     void setupWebSocketListener() {
-        deconzConfigRepository.findFirstByOrderByModifiedDesc()
+        ofNullable(deconzConfigRepository.getFirstByOrderByModifiedDesc())
                 .ifPresent(config -> {
                     var wsUrl = URI.create("ws://%s:%d/ws".formatted(config.getHost(), config.getWebsocketPort()));
 
