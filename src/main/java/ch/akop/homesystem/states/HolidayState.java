@@ -16,11 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.concurrent.TimeUnit;
 
 @Startup
@@ -88,7 +84,7 @@ public class HolidayState extends Activatable implements State {
 
     @ConsumeEvent("home/general")
     public void event(Event event) {
-        if (event == Event.DOOR_OPENED && stateService.getCurrentState() instanceof HolidayState) {
+        if (event == Event.DOOR_OPENED && stateService.isState(HolidayState.class)) {
             messageService.sendMessageToMainChannel("Irgendwer ist grade in die Wohnung gegangen");
         }
     }
