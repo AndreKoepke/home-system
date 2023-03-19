@@ -24,6 +24,9 @@ jobs:
 
       - name: Java build
         run: ./gradlew build
+        env:
+          REPO_USERNAME: '${{ secrets.REPO_GITHUB_NAME }}'
+          REPO_TOKEN: '${{ secrets.REPO_GITHUB_TOKEN }}'
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
