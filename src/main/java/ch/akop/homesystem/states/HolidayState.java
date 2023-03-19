@@ -82,7 +82,7 @@ public class HolidayState extends Activatable implements State {
         super.dispose();
     }
 
-    @ConsumeEvent("home/general")
+    @ConsumeEvent(value = "home/general", blocking = true)
     public void event(Event event) {
         if (event == Event.DOOR_OPENED && stateService.isState(HolidayState.class)) {
             messageService.sendMessageToMainChannel("Irgendwer ist grade in die Wohnung gegangen");
