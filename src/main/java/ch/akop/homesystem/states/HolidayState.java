@@ -16,7 +16,11 @@ import lombok.RequiredArgsConstructor;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
-import java.time.*;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
 
 @Startup
@@ -51,17 +55,18 @@ public class HolidayState extends Activatable implements State {
         }
 
         var durationToLightOffTime = Duration.between(ZonedDateTime.now(), getLightOffTime()).toSeconds();
-        super.disposeWhenClosed(
+        disposeWhenClosed(
                 Observable.interval(durationToLightOffTime, ONE_DAY_AS_SECONDS, TimeUnit.SECONDS)
                         .subscribe(ignore -> deviceService.turnAllLightsOff()));
 
-        super.disposeWhenClosed(sunsetReactor.start());
-        super.disposeWhenClosed(userService.getPresenceMap$()
+        disposeWhenClosed(sunsetReactor.start());
+        disposeWhenClosed(userService.getPresenceMap$()
                 .skip(10, TimeUnit.MINUTES)
                 .map(ignored -> userService.isAnyoneAtHome())
                 .filter(anyOneAtHome -> anyOneAtHome)
                 .subscribe(ignore -> stateService.switchState(NormalState.class)));
-        super.disposeWhenClosed(messageService.getMessages()
+
+        disposeWhenClosed(messageService.getMessages()
                 .filter(message -> message.equals("/back"))
                 .subscribe(ignore -> stateService.switchState(NormalState.class)));
     }
