@@ -77,7 +77,12 @@ public class AutomationService {
             .subscribe(this::mainDoorStateChanged);
       }
 
-      eventPublisher.publish("home/close-contact", new CloseContactEvent(closeContact.getName(), closeContact.getState()));
+      //noinspection ResultOfMethodCallIgnored
+      closeContact.getState$()
+          .skip(0)
+          .distinctUntilChanged()
+          .subscribe(newState -> eventPublisher.publish("home/close-contact",
+              new CloseContactEvent(closeContact.getName(), newState)));
     }
 
     if (device instanceof Button button) {
