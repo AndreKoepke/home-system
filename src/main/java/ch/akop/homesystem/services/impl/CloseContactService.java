@@ -3,6 +3,7 @@ package ch.akop.homesystem.services.impl;
 import ch.akop.homesystem.models.devices.sensor.CloseContactState;
 import ch.akop.homesystem.models.events.CloseContactEvent;
 import ch.akop.homesystem.persistence.repository.config.CloseContactConfigRepository;
+import ch.akop.homesystem.states.SleepState;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;
 import javax.transaction.Transactional;
@@ -17,12 +18,14 @@ public class CloseContactService {
   private final CloseContactConfigRepository closeContactConfigRepository;
   private final TelegramMessageService telegramMessageService;
   private final EventBus eventBus;
+  private final StateService stateService;
 
   @ConsumeEvent(value = "home/close-contact", blocking = true)
   @Transactional
   public void receiveCloseContactOpen(CloseContactEvent closeContactEvent) {
 
-    if (!closeContactEvent.getNewState().equals(CloseContactState.OPENED)) {
+    if (!closeContactEvent.getNewState().equals(CloseContactState.OPENED)
+        || !stateService.isState(SleepState.class)) {
       return;
     }
 
