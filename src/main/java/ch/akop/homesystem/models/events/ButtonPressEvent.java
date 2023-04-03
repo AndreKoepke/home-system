@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class ButtonPressEvent {
-    private final String buttonName;
-    private final int buttonEvent;
+
+  private final String buttonName;
+  private final int buttonEvent;
 }

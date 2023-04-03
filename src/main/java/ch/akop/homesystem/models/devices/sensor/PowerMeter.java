@@ -11,14 +11,14 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class PowerMeter extends Sensor<PowerMeter> {
 
-    private final Subject<Integer> power$ = ReplaySubject.createWithSize(1);
-    private final Subject<Integer> current$ = ReplaySubject.createWithSize(1);
-    private final Subject<Integer> voltage$ = ReplaySubject.createWithSize(1);
+  private final Subject<Integer> power$ = ReplaySubject.createWithSize(1);
+  private final Subject<Integer> current$ = ReplaySubject.createWithSize(1);
+  private final Subject<Integer> voltage$ = ReplaySubject.createWithSize(1);
 
-    @Override
-    protected void consumeInternalUpdate(State update) {
-        getPower$().onNext(update.getPower());
-        getCurrent$().onNext(update.getCurrent());
-        getVoltage$().onNext(update.getVoltage());
-    }
+  @Override
+  protected void consumeInternalUpdate(State update) {
+    getPower$().onNext(update.getPower());
+    getCurrent$().onNext(update.getCurrent());
+    getVoltage$().onNext(update.getVoltage());
+  }
 }

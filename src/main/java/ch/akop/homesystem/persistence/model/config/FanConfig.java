@@ -1,14 +1,13 @@
 package ch.akop.homesystem.persistence.model.config;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import org.springframework.lang.Nullable;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import org.springframework.lang.Nullable;
 
 @Entity
 @Table(name = "config_fan")

@@ -1,14 +1,13 @@
 package ch.akop.homesystem.persistence.model;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-
+import java.time.LocalDateTime;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 
 @Entity
 @Table(name = "openai_images")
@@ -16,15 +15,15 @@ import java.time.LocalDateTime;
 @Setter
 public class ImageOfOpenAI {
 
-    @Id
-    private LocalDateTime created = LocalDateTime.now();
+  @Id
+  private LocalDateTime created = LocalDateTime.now();
 
-    @Column(nullable = false)
-    private int downloaded = 0;
+  @Column(nullable = false)
+  private int downloaded = 0;
 
-    @Column(nullable = false)
-    @NonNull
-    private String prompt;
+  @Column(nullable = false)
+  @NonNull
+  private String prompt;
 
-    private byte[] image;
+  private byte[] image;
 }

@@ -3,7 +3,6 @@ package ch.akop.homesystem.persistence.model.config;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,15 +12,15 @@ import lombok.Setter;
 @Setter
 public class CubeConfig {
 
-    @Id
-    private String name;
+  @Id
+  private String name;
 
-    private String sceneNameOnSide_1;
-    private String sceneNameOnSide_2;
-    private String sceneNameOnSide_3;
-    private String sceneNameOnSide_4;
-    private String sceneNameOnSide_5;
-    private String sceneNameOnSide_6;
-    private String sceneNameOnShake;
+  private String sceneNameOnSide_1;
+  private String sceneNameOnSide_2;
+  private String sceneNameOnSide_3;
+  private String sceneNameOnSide_4;
+  private String sceneNameOnSide_5;
+  private String sceneNameOnSide_6;
+  private String sceneNameOnShake;
 
 }

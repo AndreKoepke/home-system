@@ -14,23 +14,23 @@ import lombok.extern.slf4j.Slf4j;
 @EqualsAndHashCode(callSuper = true)
 public class AqaraCube extends Sensor<AqaraCube> {
 
-    @Getter
-    private final Subject<Integer> activeSide$ = ReplaySubject.createWithSize(1);
+  @Getter
+  private final Subject<Integer> activeSide$ = ReplaySubject.createWithSize(1);
 
-    private final Subject<EMPTY> shacked$ = PublishSubject.create();
+  private final Subject<EMPTY> shacked$ = PublishSubject.create();
 
-    public enum EMPTY {INSTANCE}
+  public enum EMPTY {INSTANCE}
 
-    @Override
-    protected void consumeInternalUpdate(State update) {
-        if (update.getButtonevent() != null) {
-            if (update.getButtonevent() < 7000) {
-                var firstNumber = update.getButtonevent() / 1000;
-                activeSide$.onNext(firstNumber);
-            } else if (update.getButtonevent() == 7007) {
-                shacked$.onNext(EMPTY.INSTANCE);
-            }
-        }
+  @Override
+  protected void consumeInternalUpdate(State update) {
+    if (update.getButtonevent() != null) {
+      if (update.getButtonevent() < 7000) {
+        var firstNumber = update.getButtonevent() / 1000;
+        activeSide$.onNext(firstNumber);
+      } else if (update.getButtonevent() == 7007) {
+        shacked$.onNext(EMPTY.INSTANCE);
+      }
     }
+  }
 
 }

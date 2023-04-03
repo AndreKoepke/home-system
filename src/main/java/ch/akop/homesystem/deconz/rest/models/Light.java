@@ -7,9 +7,9 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class Light extends BaseDevice {
 
-    private Integer colorcapabilities;
-    private Integer ctmax;
-    private Integer ctmin;
+  private Integer colorcapabilities;
+  private Integer ctmax;
+  private Integer ctmin;
 
 
 }

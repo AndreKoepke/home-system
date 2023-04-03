@@ -10,17 +10,17 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = true)
 public class Scene extends Device<Scene> {
 
-    @ToString.Exclude
-    private final Group parent;
-    private final Runnable activateSceneRunnable;
+  @ToString.Exclude
+  private final Group parent;
+  private final Runnable activateSceneRunnable;
 
 
-    public void activate() {
-        this.activateSceneRunnable.run();
-    }
+  public void activate() {
+    this.activateSceneRunnable.run();
+  }
 
-    @Override
-    protected void consumeInternalUpdate(State update) {
-        // NOP
-    }
+  @Override
+  protected void consumeInternalUpdate(State update) {
+    // NOP
+  }
 }

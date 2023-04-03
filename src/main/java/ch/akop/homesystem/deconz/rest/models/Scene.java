@@ -5,9 +5,9 @@ import lombok.Data;
 @Data
 public class Scene {
 
-    private String id;
-    private String name;
-    private int transitionTime;
-    private int lightCount;
+  private String id;
+  private String name;
+  private int transitionTime;
+  private int lightCount;
 
 }

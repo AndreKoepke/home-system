@@ -1,5 +1,7 @@
 package ch.akop.homesystem.services.activatable;
 
+import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
+
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
@@ -13,81 +15,78 @@ import ch.akop.homesystem.states.HolidayState;
 import ch.akop.homesystem.states.NormalState;
 import ch.akop.weathercloud.Weather;
 import io.quarkus.runtime.Startup;
-import lombok.RequiredArgsConstructor;
-
+import java.util.concurrent.TimeUnit;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.control.RequestContextController;
-import java.util.concurrent.TimeUnit;
-
-import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
+import lombok.RequiredArgsConstructor;
 
 @Startup
 @ApplicationScoped
 @RequiredArgsConstructor
 public class SunsetReactor extends Activatable {
 
-    private final WeatherService weatherService;
-    private final TelegramMessageService messageService;
-    private final DeviceService deviceService;
-    private final BasicConfigRepository basicConfigRepository;
-    private final UserService userService;
-    private final RequestContextController requestContextController;
-    private final StateService stateService;
+  private final WeatherService weatherService;
+  private final TelegramMessageService messageService;
+  private final DeviceService deviceService;
+  private final BasicConfigRepository basicConfigRepository;
+  private final UserService userService;
+  private final RequestContextController requestContextController;
+  private final StateService stateService;
 
 
-    private Weather previousWeather;
+  private Weather previousWeather;
 
-    @Override
-    protected void started() {
-        super.disposeWhenClosed(weatherService.getWeather()
-                .doOnNext(this::turnLightsOnWhenItIsGettingDark)
-                .doOnNext(weather -> previousWeather = weather)
-                .subscribe());
+  @Override
+  protected void started() {
+    super.disposeWhenClosed(weatherService.getWeather()
+        .doOnNext(this::turnLightsOnWhenItIsGettingDark)
+        .doOnNext(weather -> previousWeather = weather)
+        .subscribe());
+  }
+
+  private void turnLightsOnWhenItIsGettingDark(Weather weather) {
+
+    if (previousWeather == null
+        || previousWeather.getLight().isSmallerThan(NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)
+        || weather.getLight().isBiggerThan(NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)) {
+      return;
     }
 
-    private void turnLightsOnWhenItIsGettingDark(Weather weather) {
-
-        if (previousWeather == null
-                || previousWeather.getLight().isSmallerThan(NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)
-                || weather.getLight().isBiggerThan(NormalState.THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX)) {
-            return;
-        }
-
-        if (!userService.isAnyoneAtHome()) {
-            messageService.sendMessageToMainChannel("Es wird dunkel ... aber weil keiner Zuhause ist, mache ich mal nichts.");
-            return;
-        }
-
-        if (stateService.isState(HolidayState.class)) {
-            activeSunsetScenes();
-        } else if (stateService.isState(NormalState.class)) {
-            messageService.sendMessageToMainChannel("Es wird dunkel ... ich mach mal etwas Licht. Es sei denn ... /keinlicht");
-            super.disposeWhenClosed(messageService.getMessages()
-                    .filter("/keinlicht"::equalsIgnoreCase)
-                    .take(1)
-                    .timeout(5, TimeUnit.MINUTES)
-                    .subscribe(s -> {
-                    }, ignored -> activeSunsetScenes()));
-        }
+    if (!userService.isAnyoneAtHome()) {
+      messageService.sendMessageToMainChannel("Es wird dunkel ... aber weil keiner Zuhause ist, mache ich mal nichts.");
+      return;
     }
 
-    private void activeSunsetScenes() {
-        requestContextController.activate();
-        deviceService.getDevicesOfType(Group.class)
-                .stream()
-                .filter(this::areAllLampsAreOff)
-                .flatMap(group -> group.getScenes().stream())
-                .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc()
-                        .orElseThrow()
-                        .getSunsetSceneName()))
-                .forEach(Scene::activate);
-        requestContextController.deactivate();
+    if (stateService.isState(HolidayState.class)) {
+      activeSunsetScenes();
+    } else if (stateService.isState(NormalState.class)) {
+      messageService.sendMessageToMainChannel("Es wird dunkel ... ich mach mal etwas Licht. Es sei denn ... /keinlicht");
+      super.disposeWhenClosed(messageService.getMessages()
+          .filter("/keinlicht"::equalsIgnoreCase)
+          .take(1)
+          .timeout(5, TimeUnit.MINUTES)
+          .subscribe(s -> {
+          }, ignored -> activeSunsetScenes()));
     }
+  }
 
-    private boolean areAllLampsAreOff(Group group) {
-        return deviceService.getDevicesOfType(SimpleLight.class)
-                .stream()
-                .filter(light -> group.getLights().contains(light.getId()))
-                .noneMatch(SimpleLight::isCurrentStateIsOn);
-    }
+  private void activeSunsetScenes() {
+    requestContextController.activate();
+    deviceService.getDevicesOfType(Group.class)
+        .stream()
+        .filter(this::areAllLampsAreOff)
+        .flatMap(group -> group.getScenes().stream())
+        .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc()
+            .orElseThrow()
+            .getSunsetSceneName()))
+        .forEach(Scene::activate);
+    requestContextController.deactivate();
+  }
+
+  private boolean areAllLampsAreOff(Group group) {
+    return deviceService.getDevicesOfType(SimpleLight.class)
+        .stream()
+        .filter(light -> group.getLights().contains(light.getId()))
+        .noneMatch(SimpleLight::isCurrentStateIsOn);
+  }
 }

@@ -1,17 +1,17 @@
 package ch.akop.homesystem.external.openai;
 
-import lombok.Data;
-
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class TextGenerationResponse {
 
-    private List<ResponseData> choices;
+  private List<ResponseData> choices;
 
-    @Data
-    public static class ResponseData {
-        private String text;
-    }
+  @Data
+  public static class ResponseData {
+
+    private String text;
+  }
 
 }

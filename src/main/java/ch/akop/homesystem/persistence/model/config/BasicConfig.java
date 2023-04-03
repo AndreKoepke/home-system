@@ -1,7 +1,8 @@
 package ch.akop.homesystem.persistence.model.config;
 
 import ch.akop.homesystem.persistence.model.animation.Animation;
-
+import java.time.LocalDateTime;
+import java.util.Set;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
@@ -10,14 +11,10 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.Table;
-
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.jetbrains.annotations.Nullable;
-
-import java.time.LocalDateTime;
-import java.util.Set;
 
 @Entity
 @Table(name = "config_basic")

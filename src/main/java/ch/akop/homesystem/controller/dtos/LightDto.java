@@ -10,31 +10,31 @@ import lombok.Data;
 @Data
 public class LightDto {
 
-    private String id;
-    private String name;
-    private int brightness;
-    private Color color;
-    private boolean on;
+  private String id;
+  private String name;
+  private int brightness;
+  private Color color;
+  private boolean on;
 
 
-    public static LightDto from(Device<?> light) {
-        return new LightDto()
-                .setId(light.getId())
-                .setName(light.getName());
-    }
+  public static LightDto from(Device<?> light) {
+    return new LightDto()
+        .setId(light.getId())
+        .setName(light.getName());
+  }
 
-    public static LightDto from(SimpleLight light) {
-        return from((Device<?>) light)
-                .setOn(light.isCurrentStateIsOn());
-    }
+  public static LightDto from(SimpleLight light) {
+    return from((Device<?>) light)
+        .setOn(light.isCurrentStateIsOn());
+  }
 
-    public static LightDto from(DimmableLight light) {
-        return from((SimpleLight) light)
-                .setBrightness((int) (light.getCurrentBrightness() / 255f * 100));
-    }
+  public static LightDto from(DimmableLight light) {
+    return from((SimpleLight) light)
+        .setBrightness((int) (light.getCurrentBrightness() / 255f * 100));
+  }
 
-    public static LightDto from(ColoredLight light) {
-        return from((DimmableLight) light)
-                .setColor(light.getCurrentColor());
-    }
+  public static LightDto from(ColoredLight light) {
+    return from((DimmableLight) light)
+        .setColor(light.getCurrentColor());
+  }
 }

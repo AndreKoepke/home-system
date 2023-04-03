@@ -11,15 +11,15 @@ import lombok.Getter;
 @EqualsAndHashCode(callSuper = true)
 public class MotionSensor extends Sensor<MotionSensor> {
 
-    @Getter
-    private final Subject<Boolean> isMoving$ = ReplaySubject.createWithSize(1);
+  @Getter
+  private final Subject<Boolean> isMoving$ = ReplaySubject.createWithSize(1);
 
-    @Getter
-    private final Subject<Boolean> isDark$ = ReplaySubject.createWithSize(1);
+  @Getter
+  private final Subject<Boolean> isDark$ = ReplaySubject.createWithSize(1);
 
-    @Override
-    protected void consumeInternalUpdate(State update) {
-        isMoving$.onNext(update.getPresence());
-        isDark$.onNext(update.getDark() != null && update.getDark());
-    }
+  @Override
+  protected void consumeInternalUpdate(State update) {
+    isMoving$.onNext(update.getPresence());
+    isDark$.onNext(update.getDark() != null && update.getDark());
+  }
 }

@@ -8,32 +8,33 @@ import lombok.RequiredArgsConstructor;
 
 @Data
 public class ImageRequest {
-    private String prompt;
-    private int n;
-    private Size size;
 
-    @JsonProperty("response_format")
-    private ResponseFormat responseFormat;
+  private String prompt;
+  private int n;
+  private Size size;
 
-    @RequiredArgsConstructor
-    public enum Size {
-        SMALL("256x256"),
-        MEDIUM("512x512"),
-        BIG("1024x1024");
+  @JsonProperty("response_format")
+  private ResponseFormat responseFormat;
 
-        @Getter
-        @JsonValue
-        private final String text;
-    }
+  @RequiredArgsConstructor
+  public enum Size {
+    SMALL("256x256"),
+    MEDIUM("512x512"),
+    BIG("1024x1024");
 
-    @RequiredArgsConstructor
-    public enum ResponseFormat {
-        URL("url"),
-        B64_JSON("b64_json");
+    @Getter
+    @JsonValue
+    private final String text;
+  }
 
-        @Getter
-        @JsonValue
-        private final String text;
+  @RequiredArgsConstructor
+  public enum ResponseFormat {
+    URL("url"),
+    B64_JSON("b64_json");
 
-    }
+    @Getter
+    @JsonValue
+    private final String text;
+
+  }
 }

@@ -1,5 +1,8 @@
 package ch.akop.homesystem.states;
 
+import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
+import static java.time.temporal.ChronoUnit.MINUTES;
+
 import ch.akop.homesystem.models.events.CubeEvent;
 import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
@@ -21,22 +24,18 @@ import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.vertx.core.eventbus.EventBus;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.StringUtils;
-
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
-import static java.time.temporal.ChronoUnit.MINUTES;
+import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+import javax.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
 @Slf4j
@@ -45,174 +44,173 @@ import static java.time.temporal.ChronoUnit.MINUTES;
 @Startup
 public class NormalState extends Activatable implements State {
 
-    public static final Duration DEFAULT_DURATION_ANIMATION_BLOCKER = Duration.of(1, MINUTES);
-    public static final BigDecimal THRESHOLD_NOT_TURN_LIGHTS_ON = BigDecimal.valueOf(20);
-    private final TimedGateKeeper canStartMainDoorAnimation = new TimedGateKeeper();
+  public static final Duration DEFAULT_DURATION_ANIMATION_BLOCKER = Duration.of(1, MINUTES);
+  public static final BigDecimal THRESHOLD_NOT_TURN_LIGHTS_ON = BigDecimal.valueOf(20);
+  private final TimedGateKeeper canStartMainDoorAnimation = new TimedGateKeeper();
 
-    private final TelegramMessageService messageService;
-    private final StateService stateService;
-    private final DeviceService deviceService;
-    private final WeatherService weatherService;
-    private final SunsetReactor sunsetReactor;
-    private final WeatherPoster weatherPoster;
-    private final RainDetectorService rainDetectorService;
-    private final UserService userService;
-    private final BasicConfigRepository basicConfigRepository;
-    private final CubeConfigRepository cubeConfigRepository;
-    private final EventBus eventBus;
-    private Map<String, Boolean> lastPresenceMap;
+  private final TelegramMessageService messageService;
+  private final StateService stateService;
+  private final DeviceService deviceService;
+  private final WeatherService weatherService;
+  private final SunsetReactor sunsetReactor;
+  private final WeatherPoster weatherPoster;
+  private final RainDetectorService rainDetectorService;
+  private final UserService userService;
+  private final BasicConfigRepository basicConfigRepository;
+  private final CubeConfigRepository cubeConfigRepository;
+  private final EventBus eventBus;
+  private Map<String, Boolean> lastPresenceMap;
 
 
-    void registerState(@Observes StartupEvent startupEvent) {
-        stateService.registerState(NormalState.class, this);
+  void registerState(@Observes StartupEvent startupEvent) {
+    stateService.registerState(NormalState.class, this);
+  }
+
+  @PostConstruct
+  void reactOnHolidayMessage() {
+    //noinspection ResultOfMethodCallIgnored
+    messageService.getMessages()
+        .filter(message -> message.equals("/holiday"))
+        .subscribe(ignored -> stateService.switchState(HolidayState.class));
+  }
+
+  @PostConstruct
+  void listenToTheWeather() {
+    weatherService.getWeather()
+        .map(Weather::getLight)
+        .map(light -> light.isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX))
+        .subscribe(canStartMainDoorAnimation::setForever);
+  }
+
+  private void gotNewPresenceMap(Map<String, Boolean> presenceMap) {
+    presenceMap.forEach((user, isAtHome) -> {
+      if (!lastPresenceMap.get(user).equals(isAtHome)) {
+        messageService.sendMessageToMainChannel("%s ist %s".formatted(user,
+            Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen"));
+      }
+    });
+
+    lastPresenceMap = presenceMap;
+  }
+
+  private boolean compareWithLastAndSkipFirst(Map<String, Boolean> presenceMap) {
+    if (lastPresenceMap == null) {
+      lastPresenceMap = presenceMap;
+      return false;
     }
 
-    @PostConstruct
-    void reactOnHolidayMessage() {
-        //noinspection ResultOfMethodCallIgnored
-        messageService.getMessages()
-                .filter(message -> message.equals("/holiday"))
-                .subscribe(ignored -> stateService.switchState(HolidayState.class));
+    return true;
+  }
+
+  @Override
+  public void entered(boolean quiet) {
+    super.disposeWhenClosed(weatherPoster.start());
+    super.disposeWhenClosed(sunsetReactor.start());
+
+    if (!quiet && rainDetectorService.noRainFor().toDays() > 1) {
+      messageService.sendMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
+          .formatted(rainDetectorService.noRainFor().toDays()));
     }
 
-    @PostConstruct
-    void listenToTheWeather() {
-        weatherService.getWeather()
-                .map(Weather::getLight)
-                .map(light -> light.isBiggerThan(THRESHOLD_NOT_TURN_LIGHTS_ON, KILO_LUX))
-                .subscribe(canStartMainDoorAnimation::setForever);
+    lastPresenceMap = null;
+    super.disposeWhenClosed(userService.getPresenceMap$()
+        .filter(this::compareWithLastAndSkipFirst)
+        .subscribe(this::gotNewPresenceMap));
+
+    super.disposeWhenClosed(userService.isAnyoneAtHome$()
+        .skip(1)
+        .filter(anyOneAtHome -> !anyOneAtHome)
+        .distinctUntilChanged()
+        .filter(anyOneAtHome -> deviceService.isAnyLightOn())
+        .delay(10, TimeUnit.MINUTES)
+        .switchMap(isAnyOneAtHome -> shouldLightsTurnedOff())
+        .filter(canTurnOff -> canTurnOff)
+        .subscribe(canTurnOff -> deviceService.turnAllLightsOff()));
+  }
+
+  @Override
+  public void leave() {
+    super.dispose();
+  }
+
+  @Transactional
+  @ConsumeEvent(value = "home/general", blocking = true)
+  public void event(Event event) {
+
+    if (!(stateService.getCurrentState() instanceof NormalState)) {
+      return;
     }
 
-    private void gotNewPresenceMap(Map<String, Boolean> presenceMap) {
-        presenceMap.forEach((user, isAtHome) -> {
-            if (!lastPresenceMap.get(user).equals(isAtHome)) {
-                messageService.sendMessageToMainChannel("%s ist %s".formatted(user,
-                        Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen"));
-            }
+    switch (event) {
+      case DOOR_OPENED -> startMainDoorOpenAnimation();
+      case DOOR_CLOSED -> log.info("MAIN-DOOR IS CLOSED!");
+      case GOOD_NIGHT_PRESSED -> stateService.switchState(SleepState.class);
+      case CENTRAL_OFF_PRESSED -> doCentralOff();
+    }
+  }
+
+  @Transactional
+  @ConsumeEvent(value = "home/cube", blocking = true)
+  public void event(CubeEvent cubeEvent) {
+    cubeConfigRepository.findById(cubeEvent.getCubeName())
+        .ifPresent(cubeConfig -> {
+          var sceneName = switch (cubeEvent.getEventType()) {
+            case FLIPPED_TO_SIDE_1 -> cubeConfig.getSceneNameOnSide_1();
+            case FLIPPED_TO_SIDE_2 -> cubeConfig.getSceneNameOnSide_2();
+            case FLIPPED_TO_SIDE_3 -> cubeConfig.getSceneNameOnSide_3();
+            case FLIPPED_TO_SIDE_4 -> cubeConfig.getSceneNameOnSide_4();
+            case FLIPPED_TO_SIDE_5 -> cubeConfig.getSceneNameOnSide_5();
+            case FLIPPED_TO_SIDE_6 -> cubeConfig.getSceneNameOnSide_6();
+            case SHAKED -> cubeConfig.getSceneNameOnShake();
+          };
+
+          if (StringUtils.hasText(sceneName)) {
+            deviceService.activeSceneForAllGroups(sceneName);
+          }
         });
+  }
 
-        lastPresenceMap = presenceMap;
+  @SneakyThrows
+  private void doCentralOff() {
+    canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
+    deviceService.turnAllLightsOff();
+  }
+
+  private Flowable<Boolean> shouldLightsTurnedOff() {
+    messageService.sendMessageToMainChannel("Es niemand zu Hause, deswegen mache ich gleich die Lichter aus." +
+        "Es sei denn, /lassAn");
+
+    return messageService.getMessages()
+        .map(String::trim)
+        .filter("/lassAn"::equalsIgnoreCase)
+        .take(1)
+        .map(s -> false)
+        .timeout(5, TimeUnit.MINUTES)
+        .onErrorReturn(throwable -> true)
+        .toFlowable(BackpressureStrategy.LATEST);
+  }
+
+  private void startMainDoorOpenAnimation() {
+    log.info("MAIN-DOOR IS OPENED!");
+    messageService.sendMessageToMainChannel("Wohnungstür wurde geöffnet.");
+
+    if (!canStartMainDoorAnimation.isGateOpen() || deviceService.isAnyLightOn()) {
+      return;
     }
 
-    private boolean compareWithLastAndSkipFirst(Map<String, Boolean> presenceMap) {
-        if (lastPresenceMap == null) {
-            lastPresenceMap = presenceMap;
-            return false;
-        }
+    canStartMainDoorAnimation.setForever(true);
+    try {
+      eventBus.publish("home/animation/play", basicConfigRepository.findFirstByOrderByModifiedDesc()
+          .orElseThrow()
+          .getWhenMainDoorOpened());
 
-        return true;
+    } finally {
+      canStartMainDoorAnimation.reset();
     }
+  }
 
-    @Override
-    public void entered(boolean quiet) {
-        super.disposeWhenClosed(weatherPoster.start());
-        super.disposeWhenClosed(sunsetReactor.start());
-
-
-        if (!quiet && rainDetectorService.noRainFor().toDays() > 1) {
-            messageService.sendMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
-                    .formatted(rainDetectorService.noRainFor().toDays()));
-        }
-
-        lastPresenceMap = null;
-        super.disposeWhenClosed(userService.getPresenceMap$()
-                .filter(this::compareWithLastAndSkipFirst)
-                .subscribe(this::gotNewPresenceMap));
-
-        super.disposeWhenClosed(userService.isAnyoneAtHome$()
-                .skip(1)
-                .filter(anyOneAtHome -> !anyOneAtHome)
-                .distinctUntilChanged()
-                .filter(anyOneAtHome -> deviceService.isAnyLightOn())
-                .delay(10, TimeUnit.MINUTES)
-                .switchMap(isAnyOneAtHome -> shouldLightsTurnedOff())
-                .filter(canTurnOff -> canTurnOff)
-                .subscribe(canTurnOff -> deviceService.turnAllLightsOff()));
-    }
-
-    @Override
-    public void leave() {
-        super.dispose();
-    }
-
-    @Transactional
-    @ConsumeEvent(value = "home/general", blocking = true)
-    public void event(Event event) {
-
-        if (!(stateService.getCurrentState() instanceof NormalState)) {
-            return;
-        }
-
-        switch (event) {
-            case DOOR_OPENED -> startMainDoorOpenAnimation();
-            case DOOR_CLOSED -> log.info("MAIN-DOOR IS CLOSED!");
-            case GOOD_NIGHT_PRESSED -> stateService.switchState(SleepState.class);
-            case CENTRAL_OFF_PRESSED -> doCentralOff();
-        }
-    }
-
-    @Transactional
-    @ConsumeEvent(value = "home/cube", blocking = true)
-    public void event(CubeEvent cubeEvent) {
-        cubeConfigRepository.findById(cubeEvent.getCubeName())
-                .ifPresent(cubeConfig -> {
-                    var sceneName = switch (cubeEvent.getEventType()) {
-                        case FLIPPED_TO_SIDE_1 -> cubeConfig.getSceneNameOnSide_1();
-                        case FLIPPED_TO_SIDE_2 -> cubeConfig.getSceneNameOnSide_2();
-                        case FLIPPED_TO_SIDE_3 -> cubeConfig.getSceneNameOnSide_3();
-                        case FLIPPED_TO_SIDE_4 -> cubeConfig.getSceneNameOnSide_4();
-                        case FLIPPED_TO_SIDE_5 -> cubeConfig.getSceneNameOnSide_5();
-                        case FLIPPED_TO_SIDE_6 -> cubeConfig.getSceneNameOnSide_6();
-                        case SHAKED -> cubeConfig.getSceneNameOnShake();
-                    };
-
-                    if (StringUtils.hasText(sceneName)) {
-                        deviceService.activeSceneForAllGroups(sceneName);
-                    }
-                });
-    }
-
-    @SneakyThrows
-    private void doCentralOff() {
-        canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
-        deviceService.turnAllLightsOff();
-    }
-
-    private Flowable<Boolean> shouldLightsTurnedOff() {
-        messageService.sendMessageToMainChannel("Es niemand zu Hause, deswegen mache ich gleich die Lichter aus." +
-                "Es sei denn, /lassAn");
-
-        return messageService.getMessages()
-                .map(String::trim)
-                .filter("/lassAn"::equalsIgnoreCase)
-                .take(1)
-                .map(s -> false)
-                .timeout(5, TimeUnit.MINUTES)
-                .onErrorReturn(throwable -> true)
-                .toFlowable(BackpressureStrategy.LATEST);
-    }
-
-    private void startMainDoorOpenAnimation() {
-        log.info("MAIN-DOOR IS OPENED!");
-        messageService.sendMessageToMainChannel("Wohnungstür wurde geöffnet.");
-
-        if (!canStartMainDoorAnimation.isGateOpen() || deviceService.isAnyLightOn()) {
-            return;
-        }
-
-        canStartMainDoorAnimation.setForever(true);
-        try {
-            eventBus.publish("home/animation/play", basicConfigRepository.findFirstByOrderByModifiedDesc()
-                    .orElseThrow()
-                    .getWhenMainDoorOpened());
-
-        } finally {
-            canStartMainDoorAnimation.reset();
-        }
-    }
-
-    @Override
-    protected void started() {
-        entered(true);
-    }
+  @Override
+  protected void started() {
+    entered(true);
+  }
 }

@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class CubeEvent {
-    private final String cubeName;
-    private final CubeEventType eventType;
+
+  private final String cubeName;
+  private final CubeEventType eventType;
 }

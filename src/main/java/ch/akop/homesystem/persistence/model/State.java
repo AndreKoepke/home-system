@@ -1,14 +1,13 @@
 package ch.akop.homesystem.persistence.model;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-
+import java.time.LocalDateTime;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.time.LocalDateTime;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 
 @Entity
 @Table(name = "state")
@@ -16,11 +15,11 @@ import java.time.LocalDateTime;
 @Setter
 public class State {
 
-    @Id
-    @Column(name = "activated_at", nullable = false)
-    private LocalDateTime activatedAt = LocalDateTime.now();
+  @Id
+  @Column(name = "activated_at", nullable = false)
+  private LocalDateTime activatedAt = LocalDateTime.now();
 
-    @NonNull
-    @Column(name = "class_name", nullable = false)
-    private String className;
+  @NonNull
+  @Column(name = "class_name", nullable = false)
+  private String className;
 }

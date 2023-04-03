@@ -1,56 +1,56 @@
 package ch.akop.homesystem.deconz.rest;
 
-import lombok.Data;
-
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.Size;
+import lombok.Data;
 
 @Data
 public class State {
-    private Boolean reachable;
-    private String alert;
 
-    @Max(255)
-    @Min(0)
-    private Integer bri;
-    private String colormode;
-    private Integer ct;
-    private Boolean on;
-    private String effect;
+  private Boolean reachable;
+  private String alert;
 
-    @Max(65535)
-    @Min(0)
-    private Integer hue;
+  @Max(255)
+  @Min(0)
+  private Integer bri;
+  private String colormode;
+  private Integer ct;
+  private Boolean on;
+  private String effect;
 
-    @Max(255)
-    @Min(0)
-    private Integer sat;
+  @Max(65535)
+  @Min(0)
+  private Integer hue;
 
-    @Size(min = 2, max = 2)
-    private List<BigDecimal> xy;
+  @Max(255)
+  @Min(0)
+  private Integer sat;
 
-    private Integer lift;
-    private Integer tilt;
-    private Boolean open;
-    private Integer transitiontime;
+  @Size(min = 2, max = 2)
+  private List<BigDecimal> xy;
 
-    @Max(255)
-    @Min(1)
-    private Integer colorspeed;
+  private Integer lift;
+  private Integer tilt;
+  private Boolean open;
+  private Integer transitiontime;
 
-    private Boolean stop;
+  @Max(255)
+  @Min(1)
+  private Integer colorspeed;
 
-    private Integer current;
-    private Integer power;
-    private Integer voltage;
+  private Boolean stop;
 
-    private Integer buttonevent;
-    private Boolean presence;
-    private Boolean dark;
+  private Integer current;
+  private Integer power;
+  private Integer voltage;
 
-    private LocalDateTime lastupdated;
+  private Integer buttonevent;
+  private Boolean presence;
+  private Boolean dark;
+
+  private LocalDateTime lastupdated;
 }

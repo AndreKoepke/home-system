@@ -1,22 +1,21 @@
 package ch.akop.homesystem.external.openai;
 
-import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @Path("/v1")
 @RegisterRestClient
 @RegisterClientHeaders(OpenAIHeader.class)
 public interface OpenAIServiceSpec {
 
-    @POST
-    @Path("images/generations")
-    ImageGenerationResponse requestImage(ImageRequest request);
+  @POST
+  @Path("images/generations")
+  ImageGenerationResponse requestImage(ImageRequest request);
 
-    @POST
-    @Path("completions")
-    TextGenerationResponse textCompletion(TextGenerationParameter request);
+  @POST
+  @Path("completions")
+  TextGenerationResponse textCompletion(TextGenerationParameter request);
 
 }
