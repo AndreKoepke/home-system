@@ -60,7 +60,7 @@ dependencies {
   implementation 'javax.validation:validation-api:2.0.1.Final'
   implementation 'com.github.pengrad:java-telegram-bot-api:6.5.0'
   implementation 'ch.akop:weathercloud:0.1.1'
-  implementation 'net.e175.klaus:solarpositioning:0.1.9'
+  implementation 'net.e175.klaus:solarpositioning:0.1.10'
   implementation 'org.jetbrains:annotations:24.0.1'
   implementation 'com.squareup.okhttp3:okhttp:4.10.0'
   implementation 'com.google.code.findbugs:jsr305:3.0.2'
