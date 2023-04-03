@@ -6,6 +6,7 @@ import ch.akop.homesystem.persistence.repository.config.CloseContactConfigReposi
 import ch.akop.homesystem.states.SleepState;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;
+import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
+@ApplicationScoped
 public class CloseContactService {
 
   private final CloseContactConfigRepository closeContactConfigRepository;
@@ -24,7 +26,7 @@ public class CloseContactService {
   @Transactional
   public void receiveCloseContactOpen(CloseContactEvent closeContactEvent) {
 
-    if (!closeContactEvent.getNewState().equals(CloseContactState.OPENED)
+    if (closeContactEvent.getNewState().equals(CloseContactState.OPENED)
         || !stateService.isState(SleepState.class)) {
       return;
     }
