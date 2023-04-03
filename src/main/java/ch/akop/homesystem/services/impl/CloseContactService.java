@@ -26,7 +26,7 @@ public class CloseContactService {
   @Transactional
   public void receiveCloseContactOpen(CloseContactEvent closeContactEvent) {
 
-    if (closeContactEvent.getNewState().equals(CloseContactState.OPENED)
+    if (closeContactEvent.getNewState().equals(CloseContactState.CLOSED)
         || !stateService.isState(SleepState.class)) {
       return;
     }
