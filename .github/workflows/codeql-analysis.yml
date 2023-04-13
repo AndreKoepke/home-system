@@ -15,8 +15,8 @@ on:
   push:
     branches: [ "master" ]
     paths:
-      - 'src/**'
-      - 'build.gradle'
+      - 'backend/src/**'
+      - 'backend/build.gradle'
       - '.github/workflows/codeql-analysis.yml'
   schedule:
     - cron: '31 12 * * 6'
@@ -41,6 +41,7 @@ jobs:
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
+        working-directory: ./backend
         with:
           languages: ${{ matrix.language }}
 
@@ -52,9 +53,11 @@ jobs:
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v2
+        working-directory: ./backend
         env:
           REPO_USERNAME: '${{ secrets.REPO_GITHUB_NAME }}'
           REPO_TOKEN: '${{ secrets.REPO_GITHUB_TOKEN }}'
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
+        working-directory: ./backend

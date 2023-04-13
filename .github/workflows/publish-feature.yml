@@ -1,10 +1,10 @@
-name: Publish to DockerHub
+aname: Publish backend to DockerHub
 on:
   push:
     branches: [ feature/* ]
     paths:
-      - 'src/**'
-      - 'build.gradle'
+      - 'backend/src/**'
+      - 'backend/build.gradle'
       - '.github/workflows/publish.yml'
 jobs:
   publish:
@@ -23,6 +23,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Java build
+        working-directory: ./backend
         run: ./gradlew build
         env:
           REPO_USERNAME: '${{ secrets.REPO_GITHUB_NAME }}'
@@ -42,6 +43,7 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v4
+        working-directory: ./backend
         with:
           context: .
           file: src/main/docker/Dockerfile.jvm

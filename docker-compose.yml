@@ -20,7 +20,7 @@ services:
       - /var/lib/postgresql/data
 
   home-system:
-    image: akop/home-system:stable
+    image: akop/home-system:latest
     restart: always
     environment:
       - TZ=Europe/Berlin
