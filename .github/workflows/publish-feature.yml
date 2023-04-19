@@ -1,4 +1,4 @@
-aname: Publish backend to DockerHub
+name: Publish backend to DockerHub
 on:
   push:
     branches: [ feature/* ]
