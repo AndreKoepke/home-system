@@ -16,6 +16,5 @@ public enum CompassDirection {
   SOUTH_WEST(225),
   WEST(270),
   NORTH_WEST(315);
-
   private final int direction;
 }
