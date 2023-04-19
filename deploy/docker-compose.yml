@@ -1,0 +1,31 @@
+version: "3"
+
+
+#
+#    This is an example file.
+#    Change as you like for deployment (epically the database password).
+#    The database is not exposed to host, so it should not be dramatic to use an unsecure password.
+#
+
+services:
+
+  database:
+    image: postgres:15
+    restart: always
+    ports:
+      - "5555:5432"
+    environment:
+      - POSTGRES_PASSWORD=super_long_and_very_secure_password_should_be_fine_okay?
+    volumes:
+      - /var/lib/postgresql/data
+
+  home-system:
+    image: akop/home-system:latest
+    restart: always
+    environment:
+      - TZ=Europe/Berlin
+      - JDBC_URL=jdbc:postgresql://database:5432/postgres
+      - DB_USER=postgres
+      - DB_PASS=super_long_and_very_secure_password_should_be_fine_okay?
+    depends_on:
+      - database

@@ -1,0 +1,11 @@
+image:
+  base: akop/home-system
+  tag: latest
+
+host: host-which-will-be-used-for-telegram.webhook.com
+timezone: Europe/Berlin
+
+database:
+  jdbc_url: changeme
+  db_user: changeme
+  db_pass: changeme
