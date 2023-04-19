@@ -5,7 +5,7 @@ on:
     paths:
       - 'backend/src/**'
       - 'backend/build.gradle'
-      - '.github/workflows/publish.yml'
+      - '.github/workflows/publish-feature.yml'
 jobs:
   publish:
     runs-on: ubuntu-latest
