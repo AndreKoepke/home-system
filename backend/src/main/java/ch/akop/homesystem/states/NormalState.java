@@ -3,8 +3,10 @@ package ch.akop.homesystem.states;
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
+import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.events.CubeEvent;
 import ch.akop.homesystem.models.events.Event;
+import ch.akop.homesystem.persistence.model.config.CubeConfig;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.persistence.repository.config.CubeConfigRepository;
 import ch.akop.homesystem.services.activatable.Activatable;
@@ -27,6 +29,7 @@ import io.vertx.core.eventbus.EventBus;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -154,20 +157,35 @@ public class NormalState extends Activatable implements State {
   public void event(CubeEvent cubeEvent) {
     cubeConfigRepository.findById(cubeEvent.getCubeName())
         .ifPresent(cubeConfig -> {
-          var sceneName = switch (cubeEvent.getEventType()) {
-            case FLIPPED_TO_SIDE_1 -> cubeConfig.getSceneNameOnSide_1();
-            case FLIPPED_TO_SIDE_2 -> cubeConfig.getSceneNameOnSide_2();
-            case FLIPPED_TO_SIDE_3 -> cubeConfig.getSceneNameOnSide_3();
-            case FLIPPED_TO_SIDE_4 -> cubeConfig.getSceneNameOnSide_4();
-            case FLIPPED_TO_SIDE_5 -> cubeConfig.getSceneNameOnSide_5();
-            case FLIPPED_TO_SIDE_6 -> cubeConfig.getSceneNameOnSide_6();
-            case SHAKED -> cubeConfig.getSceneNameOnShake();
-          };
-
-          if (StringUtils.hasText(sceneName)) {
-            deviceService.activeSceneForAllGroups(sceneName);
+          switch (cubeEvent.getEventType()) {
+            case FLIPPED_TO_SIDE_1 -> activeDeviceOrScene(cubeConfig.getSceneNameOnSide_1(), cubeConfig.getDeviceNameOnSide_1());
+            case FLIPPED_TO_SIDE_2 -> activeDeviceOrScene(cubeConfig.getSceneNameOnSide_2(), cubeConfig.getDeviceNameOnSide_2());
+            case FLIPPED_TO_SIDE_3 -> activeDeviceOrScene(cubeConfig.getSceneNameOnSide_3(), cubeConfig.getDeviceNameOnSide_3());
+            case FLIPPED_TO_SIDE_4 -> activeDeviceOrScene(cubeConfig.getSceneNameOnSide_4(), cubeConfig.getDeviceNameOnSide_4());
+            case FLIPPED_TO_SIDE_5 -> activeDeviceOrScene(cubeConfig.getSceneNameOnSide_5(), cubeConfig.getDeviceNameOnSide_5());
+            case FLIPPED_TO_SIDE_6 -> activeDeviceOrScene(cubeConfig.getSceneNameOnSide_6(), cubeConfig.getDeviceNameOnSide_5());
+            case SHAKED -> shakeHandle(cubeConfig);
           }
         });
+  }
+
+  private void shakeHandle(CubeConfig config) {
+    if (StringUtils.hasText(config.getSceneNameOnShake())) {
+      deviceService.activeSceneForAllGroups(config.getSceneNameOnShake());
+    }
+  }
+
+  private void activeDeviceOrScene(String sceneName, String deviceName) {
+    if (StringUtils.hasText(sceneName)) {
+      deviceService.activeSceneForAllGroups(sceneName);
+    }
+
+    if (StringUtils.hasText(deviceName)) {
+      var light = deviceService.findDeviceById(deviceName, SimpleLight.class)
+          .orElseThrow(() -> new NoSuchElementException("No light named " + deviceName + " found"));
+
+      light.turnOff();
+    }
   }
 
   @SneakyThrows

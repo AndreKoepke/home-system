@@ -24,6 +24,12 @@ public class CubeConfig {
   private String sceneNameOnSide_4;
   private String sceneNameOnSide_5;
   private String sceneNameOnSide_6;
+  private String deviceNameOnSide_1;
+  private String deviceNameOnSide_2;
+  private String deviceNameOnSide_3;
+  private String deviceNameOnSide_4;
+  private String deviceNameOnSide_5;
+  private String deviceNameOnSide_6;
   private String sceneNameOnShake;
 
 }
