@@ -181,7 +181,7 @@ public class NormalState extends Activatable implements State {
     }
 
     if (StringUtils.hasText(deviceName)) {
-      var light = deviceService.findDeviceById(deviceName, SimpleLight.class)
+      var light = deviceService.findDeviceByName(deviceName, SimpleLight.class)
           .orElseThrow(() -> new NoSuchElementException("No light named " + deviceName + " found"));
 
       light.turnOff();
