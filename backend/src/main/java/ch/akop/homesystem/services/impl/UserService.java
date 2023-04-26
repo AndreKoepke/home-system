@@ -67,7 +67,7 @@ public class UserService {
   }
 
   private void updatePresence(List<UserConfig> users) {
-    var newPresenceMap = users.stream()
+    var newPresenceMap = users.parallelStream()
         .filter(user -> !StringUtil.isNullOrEmpty(user.getDeviceIp()))
         .collect(Collectors.toConcurrentMap(
             UserConfig::getName,
@@ -84,7 +84,7 @@ public class UserService {
 
   private boolean canPingIp(UserConfig userConfig) {
     try {
-      return InetAddress.getByName(userConfig.getDeviceIp()).isReachable(500);
+      return InetAddress.getByName(userConfig.getDeviceIp()).isReachable(1500);
     } catch (IOException ignored) {
       return false;
     }
