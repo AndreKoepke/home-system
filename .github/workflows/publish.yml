@@ -43,7 +43,6 @@ jobs:
 
       - name: Build and push
         uses: docker/build-push-action@v4
-        working-directory: ./backend
         with:
           context: backend/
           file: backend/src/main/docker/Dockerfile.jvm
