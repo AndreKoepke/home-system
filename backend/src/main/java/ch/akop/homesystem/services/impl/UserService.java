@@ -25,6 +25,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.microprofile.context.ManagedExecutor;
 
 @Slf4j
 @Startup
@@ -35,6 +36,7 @@ public class UserService {
   private static final Duration DELAY = Duration.of(15, ChronoUnit.SECONDS);
 
   private final Vertx vertx;
+  private final ManagedExecutor executor;
   private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
 
   private final UserConfigRepository userConfigRepository;
@@ -65,9 +67,8 @@ public class UserService {
   }
 
   private void updatePresence(List<UserConfig> users) {
-    var newPresenceMap = users.parallelStream()
+    var newPresenceMap = users.stream()
         .filter(user -> !StringUtil.isNullOrEmpty(user.getDeviceIp()))
-        .peek(userConfig -> log.info("Check presence for " + userConfig.getName()))
         .collect(Collectors.toConcurrentMap(
             UserConfig::getName,
             this::canPingIp
@@ -77,7 +78,7 @@ public class UserService {
 
     if (hasChanges) {
       presenceMap = newPresenceMap;
-      presenceMap$.onNext(newPresenceMap);
+      executor.runAsync(() -> presenceMap$.onNext(newPresenceMap));
     }
   }
 
