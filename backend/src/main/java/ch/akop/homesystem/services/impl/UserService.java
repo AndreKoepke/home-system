@@ -66,6 +66,7 @@ public class UserService {
   private void updatePresence(List<UserConfig> users) {
     var newPresenceMap = users.parallelStream()
         .filter(user -> !StringUtil.isNullOrEmpty(user.getDeviceIp()))
+        .peek(userConfig -> log.info("Check presence for " + userConfig.getName()))
         .collect(Collectors.toConcurrentMap(
             UserConfig::getName,
             this::canPingIp
