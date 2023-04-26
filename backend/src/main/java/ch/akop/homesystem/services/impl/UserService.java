@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
@@ -34,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UserService {
 
-  private final ScheduledExecutorService scheduledExecutorService = new ScheduledThreadPoolExecutor(1);
+  private final ScheduledExecutorService scheduledExecutorService;
   private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
 
   private final UserConfigRepository userConfigRepository;
