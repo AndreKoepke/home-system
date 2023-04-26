@@ -49,7 +49,8 @@ public class UserService {
     if (event == Event.DOOR_CLOSED) {
       log.info("Start discovering users ...");
       discoverUntil = LocalDateTime.now().plus(Duration.of(15, ChronoUnit.MINUTES));
-      vertx.setTimer(DELAY.toMillis(), timerId -> checkPresence(userConfigRepository.findAll()));
+      var users = userConfigRepository.findAll();
+      vertx.setTimer(DELAY.toMillis(), timerId -> checkPresence(users));
     }
   }
 
