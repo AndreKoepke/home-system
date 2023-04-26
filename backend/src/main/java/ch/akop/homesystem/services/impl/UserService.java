@@ -10,6 +10,7 @@ import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import io.vertx.mutiny.core.Vertx;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.time.Duration;
@@ -19,8 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
@@ -33,7 +32,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UserService {
 
-  private final ScheduledExecutorService userServiceScheduler;
+  private static final Duration DELAY = Duration.of(15, ChronoUnit.SECONDS);
+
+  private final Vertx vertx;
   private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
 
   private final UserConfigRepository userConfigRepository;
@@ -48,7 +49,7 @@ public class UserService {
     if (event == Event.DOOR_CLOSED) {
       log.info("Start discovering users ...");
       discoverUntil = LocalDateTime.now().plus(Duration.of(15, ChronoUnit.MINUTES));
-      userServiceScheduler.schedule(() -> checkPresence(userConfigRepository.findAll()), 10, TimeUnit.SECONDS);
+      vertx.setTimer(DELAY.toMillis(), timerId -> checkPresence(userConfigRepository.findAll()));
     }
   }
 
@@ -56,7 +57,7 @@ public class UserService {
     updatePresence(users);
 
     if (LocalDateTime.now().isBefore(discoverUntil)) {
-      userServiceScheduler.schedule(() -> checkPresence(users), 15, TimeUnit.SECONDS);
+      vertx.setTimer(DELAY.toMillis(), timerId -> checkPresence(users));
     } else {
       log.info("Stop user-discovery");
     }
