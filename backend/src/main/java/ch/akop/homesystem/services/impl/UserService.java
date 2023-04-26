@@ -84,7 +84,7 @@ public class UserService {
 
   private boolean canPingIp(UserConfig userConfig) {
     try {
-      return InetAddress.getByName(userConfig.getDeviceIp()).isReachable(1500);
+      return InetAddress.getByName(userConfig.getDeviceIp()).isReachable(500);
     } catch (IOException ignored) {
       return false;
     }
