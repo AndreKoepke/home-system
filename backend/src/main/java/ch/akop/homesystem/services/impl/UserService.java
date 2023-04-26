@@ -3,8 +3,8 @@ package ch.akop.homesystem.services.impl;
 import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.model.config.UserConfig;
 import ch.akop.homesystem.persistence.repository.config.UserConfigRepository;
-import ch.akop.homesystem.util.SleepUtil;
 import io.quarkus.runtime.Startup;
+import io.quarkus.runtime.util.StringUtil;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
@@ -18,7 +18,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
@@ -31,43 +33,40 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UserService {
 
-  private final AtomicBoolean isBusy = new AtomicBoolean(false);
-  private final UserConfigRepository userConfigRepository;
+  private final ScheduledExecutorService scheduledExecutorService = new ScheduledThreadPoolExecutor(1);
   private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
+
+  private final UserConfigRepository userConfigRepository;
+
   private Map<String, Boolean> presenceMap = new HashMap<>();
+  private LocalDateTime lastTrigger;
 
 
   @Transactional
   @ConsumeEvent(value = "home/general", blocking = true)
   public void gotEvent(Event event) {
-    if (event == Event.DOOR_CLOSED && isBusy.compareAndSet(false, true)) {
-      try {
-        checkPresenceUntilChangedWithin();
-      } catch (Exception e) {
-        log.error("There was a error while the presence-check", e);
-      } finally {
-        isBusy.set(false);
-      }
+    if (event == Event.DOOR_CLOSED) {
+      lastTrigger = LocalDateTime.now();
+      scheduledExecutorService.schedule(() -> checkPresenceUntilChangedWithin(userConfigRepository.findAll()), 10, TimeUnit.SECONDS);
     }
   }
 
-  private void checkPresenceUntilChangedWithin() {
-    var startedAt = LocalDateTime.now();
-    var stopAt = startedAt.plus(Duration.of(5, ChronoUnit.MINUTES));
-    var users = userConfigRepository.findAll();
+  private void checkPresenceUntilChangedWithin(List<UserConfig> users) {
+    var stopAt = lastTrigger.plus(Duration.of(15, ChronoUnit.MINUTES));
+    updatePresence(users);
 
-    do {
-      SleepUtil.sleep(Duration.of(1, ChronoUnit.MINUTES));
-      updatePresence(users);
-    } while (LocalDateTime.now().isBefore(stopAt));
+    if (lastTrigger.isBefore(stopAt)) {
+      scheduledExecutorService.schedule(() -> checkPresenceUntilChangedWithin(users), 15, TimeUnit.SECONDS);
+    }
   }
 
-
   private void updatePresence(List<UserConfig> users) {
-    var newPresenceMap = users.stream().collect(Collectors.toMap(
-        UserConfig::getName,
-        this::canPingIp
-    ));
+    var newPresenceMap = users.parallelStream()
+        .filter(user -> !StringUtil.isNullOrEmpty(user.getDeviceIp()))
+        .collect(Collectors.toConcurrentMap(
+            UserConfig::getName,
+            this::canPingIp
+        ));
 
     var hasChanges = !newPresenceMap.equals(presenceMap);
 
@@ -79,7 +78,7 @@ public class UserService {
 
   private boolean canPingIp(UserConfig userConfig) {
     try {
-      return InetAddress.getByName(userConfig.getDeviceIp()).isReachable(5000);
+      return InetAddress.getByName(userConfig.getDeviceIp()).isReachable(1500);
     } catch (IOException ignored) {
       return false;
     }
