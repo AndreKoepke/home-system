@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UserService {
 
-  private final ScheduledExecutorService scheduledExecutorService;
+  private final ScheduledExecutorService userServiceScheduler;
   private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
 
   private final UserConfigRepository userConfigRepository;
@@ -48,7 +48,7 @@ public class UserService {
     if (event == Event.DOOR_CLOSED) {
       log.info("Start discovering users ...");
       discoverUntil = LocalDateTime.now().plus(Duration.of(15, ChronoUnit.MINUTES));
-      scheduledExecutorService.schedule(() -> checkPresence(userConfigRepository.findAll()), 10, TimeUnit.SECONDS);
+      userServiceScheduler.schedule(() -> checkPresence(userConfigRepository.findAll()), 10, TimeUnit.SECONDS);
     }
   }
 
@@ -56,7 +56,7 @@ public class UserService {
     updatePresence(users);
 
     if (LocalDateTime.now().isBefore(discoverUntil)) {
-      scheduledExecutorService.schedule(() -> checkPresence(users), 15, TimeUnit.SECONDS);
+      userServiceScheduler.schedule(() -> checkPresence(users), 15, TimeUnit.SECONDS);
     } else {
       log.info("Stop user-discovery");
     }
