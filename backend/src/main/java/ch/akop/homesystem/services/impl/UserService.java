@@ -15,9 +15,10 @@ import java.net.InetAddress;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -38,25 +39,27 @@ public class UserService {
 
   private final UserConfigRepository userConfigRepository;
 
-  private Map<String, Boolean> presenceMap = new HashMap<>();
-  private LocalDateTime lastTrigger;
+  private ConcurrentMap<String, Boolean> presenceMap = new ConcurrentHashMap<>();
+  private LocalDateTime discoverUntil;
 
 
   @Transactional
   @ConsumeEvent(value = "home/general", blocking = true)
   public void gotEvent(Event event) {
     if (event == Event.DOOR_CLOSED) {
-      lastTrigger = LocalDateTime.now();
-      scheduledExecutorService.schedule(() -> checkPresenceUntilChangedWithin(userConfigRepository.findAll()), 10, TimeUnit.SECONDS);
+      log.info("Start discovering users ...");
+      discoverUntil = LocalDateTime.now().plus(Duration.of(15, ChronoUnit.MINUTES));
+      scheduledExecutorService.schedule(() -> checkPresence(userConfigRepository.findAll()), 10, TimeUnit.SECONDS);
     }
   }
 
-  private void checkPresenceUntilChangedWithin(List<UserConfig> users) {
-    var stopAt = lastTrigger.plus(Duration.of(15, ChronoUnit.MINUTES));
+  private void checkPresence(List<UserConfig> users) {
     updatePresence(users);
 
-    if (lastTrigger.isBefore(stopAt)) {
-      scheduledExecutorService.schedule(() -> checkPresenceUntilChangedWithin(users), 15, TimeUnit.SECONDS);
+    if (LocalDateTime.now().isBefore(discoverUntil)) {
+      scheduledExecutorService.schedule(() -> checkPresence(users), 15, TimeUnit.SECONDS);
+    } else {
+      log.info("Stop user-discovery");
     }
   }
 
