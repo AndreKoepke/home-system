@@ -7,6 +7,9 @@ server:
 
 quarkus:
 
+  scheduler:
+    enabled: true
+
   flyway:
     migrate-at-start: true
     validate-on-migrate: false
