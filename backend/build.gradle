@@ -67,6 +67,7 @@ dependencies {
   // rxJava
   implementation 'io.reactivex.rxjava3:rxjava:3.1.6'
   implementation 'com.jakewharton.rx3:replaying-share:3.0.0'
+  implementation 'io.vertx:vertx-rx-java3:4.4.1'
 }
 
 test {

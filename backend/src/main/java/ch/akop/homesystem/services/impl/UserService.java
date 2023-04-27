@@ -9,10 +9,11 @@ import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import io.vertx.mutiny.core.Vertx;
+import io.vertx.core.Vertx;
+import io.vertx.rxjava3.RxHelper;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.time.Duration;
@@ -39,6 +40,7 @@ public class UserService {
 
   private final Vertx vertx;
   private final ManagedExecutor executor;
+  private final Scheduler rxScheduler = RxHelper.blockingScheduler(vertx);
   private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
 
   private final UserConfigRepository userConfigRepository;
@@ -61,9 +63,9 @@ public class UserService {
   private void checkPresence(List<UserConfig> users) {
     //noinspection ResultOfMethodCallIgnored
     Observable.fromRunnable(() -> updatePresence(users))
-        .observeOn(Schedulers.io())
-        .subscribeOn(Schedulers.computation())
+        .subscribeOn(rxScheduler)
         .map(ignored -> LocalDateTime.now().isBefore(discoverUntil))
+        .singleOrError()
         .subscribe(finished -> {
           if (finished) {
             log.info("Stop user discovery");
