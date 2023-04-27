@@ -4,6 +4,7 @@ import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.model.config.UserConfig;
 import ch.akop.homesystem.persistence.repository.config.UserConfigRepository;
 import io.quarkus.runtime.Startup;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.util.StringUtil;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
@@ -25,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,14 +42,17 @@ public class UserService {
 
   private final Vertx vertx;
   private final ManagedExecutor executor;
-  private final Scheduler rxScheduler = RxHelper.blockingScheduler(vertx);
   private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
 
   private final UserConfigRepository userConfigRepository;
 
   private ConcurrentMap<String, Boolean> presenceMap = new ConcurrentHashMap<>();
   private LocalDateTime discoverUntil;
+  private Scheduler rxScheduler;
 
+  void onStart(@Observes StartupEvent ev) {
+    rxScheduler = RxHelper.blockingScheduler(vertx);
+  }
 
   @Transactional
   @ConsumeEvent(value = "home/general", blocking = true)
