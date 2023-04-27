@@ -8,6 +8,8 @@ import io.quarkus.runtime.util.StringUtil;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import io.vertx.mutiny.core.Vertx;
@@ -48,7 +50,7 @@ public class UserService {
   @Transactional
   @ConsumeEvent(value = "home/general", blocking = true)
   public void gotEvent(Event event) {
-    if (event == Event.DOOR_CLOSED) {
+    if (event == Event.DOOR_CLOSED && discoverUntil == null) {
       log.info("Start discovering users ...");
       discoverUntil = LocalDateTime.now().plus(Duration.of(15, ChronoUnit.MINUTES));
       var users = userConfigRepository.findAll();
@@ -57,13 +59,19 @@ public class UserService {
   }
 
   private void checkPresence(List<UserConfig> users) {
-    updatePresence(users);
-
-    if (LocalDateTime.now().isBefore(discoverUntil)) {
-      vertx.setTimer(DELAY.toMillis(), timerId -> checkPresence(users));
-    } else {
-      log.info("Stop user-discovery");
-    }
+    //noinspection ResultOfMethodCallIgnored
+    Observable.fromRunnable(() -> updatePresence(users))
+        .observeOn(Schedulers.io())
+        .subscribeOn(Schedulers.computation())
+        .map(ignored -> LocalDateTime.now().isBefore(discoverUntil))
+        .subscribe(finished -> {
+          if (finished) {
+            log.info("Stop user discovery");
+            discoverUntil = null;
+          } else {
+            vertx.setTimer(DELAY.toMillis(), timerId -> checkPresence(users));
+          }
+        });
   }
 
   private void updatePresence(List<UserConfig> users) {
