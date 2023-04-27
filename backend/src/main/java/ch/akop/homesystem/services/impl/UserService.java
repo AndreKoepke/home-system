@@ -67,9 +67,11 @@ public class UserService {
 
   private void checkPresence(List<UserConfig> users) {
     //noinspection ResultOfMethodCallIgnored
-    Observable.fromRunnable(() -> updatePresence(users))
+    Observable.fromCallable(() -> {
+          updatePresence(users);
+          return LocalDateTime.now().isBefore(discoverUntil);
+        })
         .subscribeOn(rxScheduler)
-        .map(ignored -> LocalDateTime.now().isBefore(discoverUntil))
         .singleOrError()
         .subscribe(finished -> {
           if (finished) {
@@ -93,6 +95,7 @@ public class UserService {
 
     if (hasChanges) {
       presenceMap = newPresenceMap;
+      // wrapped with executor to get a thread with good context
       executor.runAsync(() -> presenceMap$.onNext(newPresenceMap));
     }
   }
