@@ -69,7 +69,7 @@ public class UserService {
     //noinspection ResultOfMethodCallIgnored
     Observable.fromCallable(() -> {
           updatePresence(users);
-          return LocalDateTime.now().isBefore(discoverUntil);
+          return LocalDateTime.now().isAfter(discoverUntil);
         })
         .subscribeOn(rxScheduler)
         .singleOrError()
