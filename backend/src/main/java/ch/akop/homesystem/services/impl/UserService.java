@@ -11,6 +11,7 @@ import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import io.vertx.core.Vertx;
@@ -39,15 +40,16 @@ import org.eclipse.microprofile.context.ManagedExecutor;
 public class UserService {
 
   private static final Duration DELAY = Duration.of(15, ChronoUnit.SECONDS);
+  private static final Duration KEEP_CHECKING_FOR = Duration.of(15, ChronoUnit.MINUTES);
 
   private final Vertx vertx;
   private final ManagedExecutor executor;
-  private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
-
   private final UserConfigRepository userConfigRepository;
 
+  private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
   private ConcurrentMap<String, Boolean> presenceMap = new ConcurrentHashMap<>();
-  private LocalDateTime discoverUntil;
+
+  private Disposable checkPresenceSubscription;
   private Scheduler rxScheduler;
 
   void onStart(@Observes StartupEvent ev) {
@@ -57,28 +59,23 @@ public class UserService {
   @Transactional
   @ConsumeEvent(value = "home/general", blocking = true)
   public void gotEvent(Event event) {
-    if (event == Event.DOOR_CLOSED && discoverUntil == null) {
+    if (event == Event.DOOR_CLOSED && (checkPresenceSubscription == null || checkPresenceSubscription.isDisposed())) {
       log.info("Start discovering users ...");
-      discoverUntil = LocalDateTime.now().plus(Duration.of(15, ChronoUnit.MINUTES));
       var users = userConfigRepository.findAll();
-      vertx.setTimer(DELAY.toMillis(), timerId -> checkPresence(users));
+      vertx.setTimer(DELAY.toMillis(), timerId -> checkPresence(users, LocalDateTime.now().plus(KEEP_CHECKING_FOR)));
     }
   }
 
-  private void checkPresence(List<UserConfig> users) {
-    //noinspection ResultOfMethodCallIgnored
-    Observable.fromCallable(() -> {
+  private void checkPresence(List<UserConfig> users, LocalDateTime discoverUntil) {
+    checkPresenceSubscription = Observable.fromCallable(() -> {
           updatePresence(users);
           return LocalDateTime.now().isAfter(discoverUntil);
         })
         .subscribeOn(rxScheduler)
         .singleOrError()
         .subscribe(finished -> {
-          if (finished) {
-            log.info("Stop user discovery");
-            discoverUntil = null;
-          } else {
-            vertx.setTimer(DELAY.toMillis(), timerId -> checkPresence(users));
+          if (!finished) {
+            vertx.setTimer(DELAY.toMillis(), timerId -> checkPresence(users, discoverUntil));
           }
         });
   }
@@ -92,7 +89,6 @@ public class UserService {
         ));
 
     var hasChanges = !newPresenceMap.equals(presenceMap);
-
     if (hasChanges) {
       presenceMap = newPresenceMap;
       // wrapped with executor to get a thread with good context
