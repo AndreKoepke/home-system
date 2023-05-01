@@ -6,8 +6,9 @@ import ch.akop.homesystem.deconz.websocket.WebSocketUpdate;
 import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.Startup;
+import io.quarkus.runtime.StartupEvent;
 import io.reactivex.rxjava3.core.Observable;
-import io.vertx.mutiny.core.Vertx;
+import io.reactivex.rxjava3.core.Scheduler;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
@@ -20,7 +21,10 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
+import io.vertx.core.Vertx;
+import io.vertx.rxjava3.RxHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +46,11 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   private Long timeoutHandler;
   private WebSocket webSocket;
 
+  private Scheduler blockingScheduler;
+
+  public void initializeScheduler(@Observes StartupEvent startupEvent) {
+    blockingScheduler = RxHelper.blockingScheduler(vertx);
+  }
 
   @PostConstruct
   @Transactional
@@ -52,6 +61,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
 
           //noinspection ResultOfMethodCallIgnored
           Observable.defer(() -> Observable.fromFuture(getWebSocketCompletableFuture(wsUrl, this)))
+              .subscribeOn(blockingScheduler)
               .retry()
               .subscribe(webSocket -> this.webSocket = webSocket);
         });
@@ -149,9 +159,11 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
       vertx.cancelTimer(timeoutHandler);
       log.error("WS-Connection has no longer contact", new TimeoutException("No websocket-contact since 60s. Timeout."));
       webSocket.abort();
-      setupWebSocketListener();
-    } else if (lastContact.compareTo(TIMEOUT_HANDLER_INTERVAL) > 0) {
-      log.warn("No websocket-contact since " + TIMEOUT_HANDLER_INTERVAL.toSeconds() + "s");
+      Observable.fromRunnable(this::setupWebSocketListener)
+          .subscribeOn(blockingScheduler)
+          .subscribe();
+    } else if (lastContact.plus(TIMEOUT_HANDLER_INTERVAL).compareTo(TIMEOUT_HANDLER_INTERVAL) > 0) {
+      log.warn("No websocket-contact at least " + TIMEOUT_HANDLER_INTERVAL.toSeconds() * 2 + "s");
       webSocket.sendPing(ByteBuffer.wrap(new byte[]{1, 2, 3}));
     }
   }
