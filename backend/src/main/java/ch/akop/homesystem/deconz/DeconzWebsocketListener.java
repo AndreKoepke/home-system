@@ -7,7 +7,6 @@ import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Scheduler;
 import io.vertx.core.Vertx;
 import io.vertx.rxjava3.RxHelper;
 import java.net.URI;
@@ -25,7 +24,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.microprofile.context.ManagedExecutor;
 
 @Slf4j
 @ApplicationScoped
@@ -38,7 +36,6 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   private final ObjectMapper objectMapper;
   private final DeconzConfigRepository deconzConfigRepository;
   private final Vertx vertx;
-  private final ManagedExecutor executor;
 
   private LocalDateTime lastContact = LocalDateTime.MIN;
   private StringBuilder messageBuilder = new StringBuilder();
@@ -46,15 +43,11 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   private Long timeoutHandler;
   private WebSocket webSocket;
 
-  private Scheduler blockingScheduler;
-
   @PostConstruct
   @Transactional
   void setupWebSocketListener() {
 
-    if (blockingScheduler == null) {
-      blockingScheduler = RxHelper.blockingScheduler(vertx);
-    }
+    var blockingScheduler = RxHelper.blockingScheduler(vertx);
 
     ofNullable(deconzConfigRepository.getFirstByOrderByModifiedDesc())
         .ifPresent(config -> {
@@ -64,6 +57,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
           Observable.defer(() -> Observable.fromFuture(getWebSocketCompletableFuture(wsUrl, this)))
               .subscribeOn(blockingScheduler)
               .retry()
+              .repeat()
               .subscribe(webSocket -> this.webSocket = webSocket);
         });
   }
@@ -150,7 +144,6 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   public void onError(WebSocket webSocket, Throwable error) {
     log.error("Error on WS-Connection", error);
     vertx.cancelTimer(timeoutHandler);
-    setupWebSocketListener();
   }
 
   private void checkTimeout(WebSocket webSocket) {
@@ -160,9 +153,8 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
       vertx.cancelTimer(timeoutHandler);
       log.error("WS-Connection has no longer contact", new TimeoutException("No websocket-contact since 60s. Timeout."));
       webSocket.abort();
-      executor.runAsync(this::setupWebSocketListener);
     } else if (lastContact.compareTo(TIMEOUT_HANDLER_INTERVAL.multipliedBy(2)) > 0) {
-      log.warn("No websocket-contact at least " + TIMEOUT_HANDLER_INTERVAL.toSeconds() * 2 + "s");
+      log.warn("No websocket-contact since " + lastContact.toSeconds() + "s");
       webSocket.sendPing(ByteBuffer.wrap(new byte[]{1, 2, 3}));
     }
   }
