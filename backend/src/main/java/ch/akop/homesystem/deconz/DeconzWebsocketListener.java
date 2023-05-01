@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -62,7 +63,9 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
           //noinspection ResultOfMethodCallIgnored
           Observable.defer(() -> Observable.fromFuture(getWebSocketCompletableFuture(wsUrl, this)))
               .subscribeOn(blockingScheduler)
-              .retry()
+              .retryWhen(origin -> origin
+                  .doOnNext(throwable -> log.warn("Connection attempt failed, retrying in 5s."))
+                  .delay(5000, TimeUnit.SECONDS))
               .subscribe(webSocket -> this.webSocket = webSocket);
         });
   }
