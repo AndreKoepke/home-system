@@ -6,9 +6,10 @@ import ch.akop.homesystem.deconz.websocket.WebSocketUpdate;
 import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.Startup;
-import io.quarkus.runtime.StartupEvent;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
+import io.vertx.core.Vertx;
+import io.vertx.rxjava3.RxHelper;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
@@ -21,10 +22,7 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
-import io.vertx.core.Vertx;
-import io.vertx.rxjava3.RxHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -48,13 +46,14 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
 
   private Scheduler blockingScheduler;
 
-  public void initializeScheduler(@Observes StartupEvent startupEvent) {
-    blockingScheduler = RxHelper.blockingScheduler(vertx);
-  }
-
   @PostConstruct
   @Transactional
   void setupWebSocketListener() {
+
+    if (blockingScheduler == null) {
+      blockingScheduler = RxHelper.blockingScheduler(vertx);
+    }
+
     ofNullable(deconzConfigRepository.getFirstByOrderByModifiedDesc())
         .ifPresent(config -> {
           var wsUrl = URI.create("ws://%s:%d/ws".formatted(config.getHost(), config.getWebsocketPort()));
