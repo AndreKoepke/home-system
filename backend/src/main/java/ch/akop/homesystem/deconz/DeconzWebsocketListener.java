@@ -7,7 +7,7 @@ import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.Disposable;
+import io.vertx.mutiny.core.Vertx;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
@@ -16,7 +16,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -31,15 +30,16 @@ import lombok.extern.slf4j.Slf4j;
 @Startup
 public class DeconzWebsocketListener implements WebSocket.Listener {
 
-  public static final int TIMEOUT_HANDLER_INTERVAL = 30;
+  public static final Duration TIMEOUT_HANDLER_INTERVAL = Duration.ofSeconds(15);
   private final DeconzConnector deconzConnector;
   private final ObjectMapper objectMapper;
   private final DeconzConfigRepository deconzConfigRepository;
+  private final Vertx vertx;
 
   private LocalDateTime lastContact = LocalDateTime.MIN;
   private StringBuilder messageBuilder = new StringBuilder();
   private CompletableFuture<?> messageCompleteFuture = new CompletableFuture<>();
-  private Disposable timeoutHandler = Disposable.empty();
+  private Long timeoutHandler;
   private WebSocket webSocket;
 
 
@@ -64,7 +64,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
     }
 
     if (timeoutHandler != null) {
-      timeoutHandler.dispose();
+      vertx.cancelTimer(timeoutHandler);
     }
   }
 
@@ -81,10 +81,8 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
     lastContact = LocalDateTime.now();
     webSocket.request(1);
 
-    timeoutHandler = Observable.interval(TIMEOUT_HANDLER_INTERVAL, TIMEOUT_HANDLER_INTERVAL, TimeUnit.SECONDS)
-        .map(aLong -> webSocket)
-        .doOnNext(this::checkTimeout)
-        .subscribe();
+    timeoutHandler = vertx.setPeriodic(TIMEOUT_HANDLER_INTERVAL.toMillis(), ignore -> checkTimeout(webSocket));
+
   }
 
   @Override
@@ -108,7 +106,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   @Override
   public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
     log.error("WS-Connection closed, because of '{}'", reason);
-    timeoutHandler.dispose();
+    vertx.cancelTimer(timeoutHandler);
     return CompletableFuture.completedFuture(null);
   }
 
@@ -140,20 +138,20 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   @Transactional
   public void onError(WebSocket webSocket, Throwable error) {
     log.error("Error on WS-Connection", error);
-    timeoutHandler.dispose();
+    vertx.cancelTimer(timeoutHandler);
     setupWebSocketListener();
   }
 
   private void checkTimeout(WebSocket webSocket) {
-    var lastContactSinceSeconds = Duration.between(lastContact, LocalDateTime.now()).toSeconds();
+    var lastContact = Duration.between(this.lastContact, LocalDateTime.now());
 
-    if (lastContactSinceSeconds > 60) {
-      timeoutHandler.dispose();
+    if (lastContact.toSeconds() > 60) {
+      vertx.cancelTimer(timeoutHandler);
       log.error("WS-Connection has no longer contact", new TimeoutException("No websocket-contact since 60s. Timeout."));
       webSocket.abort();
       setupWebSocketListener();
-    } else if (lastContactSinceSeconds > TIMEOUT_HANDLER_INTERVAL) {
-      log.warn("No websocket-contact since 30s");
+    } else if (lastContact.compareTo(TIMEOUT_HANDLER_INTERVAL) > 0) {
+      log.warn("No websocket-contact since " + TIMEOUT_HANDLER_INTERVAL.toSeconds() + "s");
       webSocket.sendPing(ByteBuffer.wrap(new byte[]{1, 2, 3}));
     }
   }
