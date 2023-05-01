@@ -25,6 +25,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.microprofile.context.ManagedExecutor;
 
 @Slf4j
 @ApplicationScoped
@@ -37,6 +38,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   private final ObjectMapper objectMapper;
   private final DeconzConfigRepository deconzConfigRepository;
   private final Vertx vertx;
+  private final ManagedExecutor executor;
 
   private LocalDateTime lastContact = LocalDateTime.MIN;
   private StringBuilder messageBuilder = new StringBuilder();
@@ -158,10 +160,8 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
       vertx.cancelTimer(timeoutHandler);
       log.error("WS-Connection has no longer contact", new TimeoutException("No websocket-contact since 60s. Timeout."));
       webSocket.abort();
-      Observable.fromRunnable(this::setupWebSocketListener)
-          .subscribeOn(blockingScheduler)
-          .subscribe();
-    } else if (lastContact.plus(TIMEOUT_HANDLER_INTERVAL).compareTo(TIMEOUT_HANDLER_INTERVAL) > 0) {
+      executor.runAsync(this::setupWebSocketListener);
+    } else if (lastContact.compareTo(TIMEOUT_HANDLER_INTERVAL.multipliedBy(2)) > 0) {
       log.warn("No websocket-contact at least " + TIMEOUT_HANDLER_INTERVAL.toSeconds() * 2 + "s");
       webSocket.sendPing(ByteBuffer.wrap(new byte[]{1, 2, 3}));
     }
