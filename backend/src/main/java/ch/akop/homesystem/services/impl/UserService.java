@@ -40,7 +40,7 @@ import org.eclipse.microprofile.context.ManagedExecutor;
 public class UserService {
 
   private static final Duration DELAY = Duration.of(15, ChronoUnit.SECONDS);
-  private static final Duration KEEP_CHECKING_FOR = Duration.of(15, ChronoUnit.MINUTES);
+  public static final Duration KEEP_CHECKING_FOR = Duration.of(15, ChronoUnit.MINUTES);
 
   private final Vertx vertx;
   private final ManagedExecutor executor;

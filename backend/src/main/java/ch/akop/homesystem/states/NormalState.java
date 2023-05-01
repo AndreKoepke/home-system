@@ -1,5 +1,6 @@
 package ch.akop.homesystem.states;
 
+import static ch.akop.homesystem.services.impl.UserService.KEEP_CHECKING_FOR;
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
@@ -118,6 +119,7 @@ public class NormalState extends Activatable implements State {
     lastPresenceMap = null;
     super.disposeWhenClosed(userService.getPresenceMap$()
         .filter(this::compareWithLastAndSkipFirst)
+        .skip(quiet ? KEEP_CHECKING_FOR.toSeconds() : 0, TimeUnit.SECONDS)
         .subscribe(this::gotNewPresenceMap));
 
     super.disposeWhenClosed(userService.isAnyoneAtHome$()
