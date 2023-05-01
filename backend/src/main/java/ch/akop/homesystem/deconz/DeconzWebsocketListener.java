@@ -7,6 +7,7 @@ import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Scheduler;
 import io.vertx.core.Vertx;
 import io.vertx.rxjava3.RxHelper;
 import java.net.URI;
@@ -24,6 +25,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.microprofile.context.ManagedExecutor;
 
 @Slf4j
 @ApplicationScoped
@@ -36,18 +38,22 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   private final ObjectMapper objectMapper;
   private final DeconzConfigRepository deconzConfigRepository;
   private final Vertx vertx;
+  private final ManagedExecutor executor;
 
   private LocalDateTime lastContact = LocalDateTime.MIN;
   private StringBuilder messageBuilder = new StringBuilder();
   private CompletableFuture<?> messageCompleteFuture = new CompletableFuture<>();
   private Long timeoutHandler;
   private WebSocket webSocket;
+  private Scheduler blockingScheduler;
 
   @PostConstruct
   @Transactional
   void setupWebSocketListener() {
 
-    var blockingScheduler = RxHelper.blockingScheduler(vertx);
+    if (blockingScheduler == null) {
+      blockingScheduler = RxHelper.blockingScheduler(vertx);
+    }
 
     ofNullable(deconzConfigRepository.getFirstByOrderByModifiedDesc())
         .ifPresent(config -> {
@@ -57,7 +63,6 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
           Observable.defer(() -> Observable.fromFuture(getWebSocketCompletableFuture(wsUrl, this)))
               .subscribeOn(blockingScheduler)
               .retry()
-              .repeat()
               .subscribe(webSocket -> this.webSocket = webSocket);
         });
   }
@@ -112,6 +117,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
     log.error("WS-Connection closed, because of '{}'", reason);
     vertx.cancelTimer(timeoutHandler);
+    executor.runAsync(this::setupWebSocketListener);
     return CompletableFuture.completedFuture(null);
   }
 
