@@ -162,6 +162,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
       vertx.cancelTimer(timeoutHandler);
       log.error("WS-Connection has no longer contact", new TimeoutException("No websocket-contact since 60s. Timeout."));
       webSocket.abort();
+      executor.runAsync(this::setupWebSocketListener);
     } else if (lastContact.compareTo(TIMEOUT_HANDLER_INTERVAL.multipliedBy(2)) > 0) {
       log.warn("No websocket-contact since " + lastContact.toSeconds() + "s");
       webSocket.sendPing(ByteBuffer.wrap(new byte[]{1, 2, 3}));
