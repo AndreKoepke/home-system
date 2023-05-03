@@ -71,7 +71,7 @@ public class AutomationService {
           .equals(mainDoorName)) {
         //noinspection ResultOfMethodCallIgnored
         closeContact.getState$()
-            .skip(0)
+            .skip(1)
             .distinctUntilChanged()
             .throttleLatest(MARCEL_CONSTANT_SECONDS, TimeUnit.SECONDS)
             .subscribe(this::mainDoorStateChanged);
@@ -79,7 +79,7 @@ public class AutomationService {
 
       //noinspection ResultOfMethodCallIgnored
       closeContact.getState$()
-          .skip(0)
+          .skip(1)
           .distinctUntilChanged()
           .subscribe(newState -> eventPublisher.publish("home/close-contact",
               new CloseContactEvent(closeContact.getName(), newState)));
