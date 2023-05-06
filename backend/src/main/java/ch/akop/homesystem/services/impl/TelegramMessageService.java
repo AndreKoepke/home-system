@@ -1,7 +1,5 @@
 package ch.akop.homesystem.services.impl;
 
-import static java.util.Optional.ofNullable;
-
 import ch.akop.homesystem.persistence.model.config.TelegramConfig;
 import ch.akop.homesystem.persistence.repository.config.TelegramConfigRepository;
 import com.pengrad.telegrambot.TelegramBot;
@@ -9,23 +7,20 @@ import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.DeleteWebhook;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.request.SendPhoto;
 import com.pengrad.telegrambot.request.SetWebhook;
 import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import java.util.List;
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
+
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.Nullable;
+import java.util.List;
+
+import static java.util.Optional.ofNullable;
 
 @Startup
 @ApplicationScoped
@@ -93,30 +88,13 @@ public class TelegramMessageService {
     return this;
   }
 
-
-  public TelegramMessageService sendImageToMainChannel(byte @NonNull [] image, @NonNull String caption) {
-    ofNullable(telegramConfigRepository.getFirstByOrderByModifiedDesc())
-        .ifPresent(config -> sendImageToUser(image, config.getMainChannel(), caption));
-    return this;
-  }
-
-
   public TelegramMessageService sendMessageToUser(@Nullable String message, @NonNull String chatId) {
     return sendMessageToUser(message, List.of(chatId));
   }
 
-
   public TelegramMessageService sendMessageToUser(@Nullable String message, @NonNull List<String> chatIds) {
     if (bot != null) {
       chatIds.forEach(chatId -> bot.execute(new SendMessage(chatId, message)));
-    }
-
-    return this;
-  }
-
-  public TelegramMessageService sendImageToUser(byte @NonNull [] image, @NonNull String chatId, @NonNull String text) {
-    if (bot != null) {
-      bot.execute(new SendPhoto(chatId, image).caption(text));
     }
 
     return this;

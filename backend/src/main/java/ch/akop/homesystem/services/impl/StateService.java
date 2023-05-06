@@ -47,6 +47,8 @@ public class StateService {
   }
 
   public void activateStateQuietly(Class<?> clazz) {
+    leaveCurrentState();
+
     var newState = states.get(clazz.getSimpleName());
     currentState = newState;
     newState.entered(true);
@@ -63,14 +65,7 @@ public class StateService {
     }
 
     var className = toState.getSimpleName();
-
-    if (currentState != null) {
-      try {
-        currentState.leave();
-      } catch (Exception e) {
-        log.error("There was an exception in the 'leave'-method of {}", className, e);
-      }
-    }
+    leaveCurrentState();
 
     currentState = states.get(toState.getSimpleName());
     stateRepository.save(new ch.akop.homesystem.persistence.model.State().setClassName(className));
@@ -80,6 +75,16 @@ public class StateService {
         currentState.entered(false);
       } catch (Exception e) {
         log.error("There was an exception in the 'entered'-method of {}", className, e);
+      }
+    }
+  }
+
+  private void leaveCurrentState() {
+    if (currentState != null) {
+      try {
+        currentState.leave();
+      } catch (Exception e) {
+        log.error("There was an exception in the 'leave'-method of {}", currentState.getClass().getSimpleName(), e);
       }
     }
   }
