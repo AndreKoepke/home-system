@@ -101,7 +101,9 @@ public class SleepState implements State {
         .filter(message -> message.startsWith("/aufwachen"))
         .subscribe(ignored -> stateService.switchState(NormalState.class)));
 
-    presenceAtBeginning = userService.getPresenceMap$().blockingFirst();
+    userService.getPresenceMap$()
+        .take(1)
+        .subscribe(newPresenceMap -> presenceAtBeginning = newPresenceMap);
   }
 
   private long getDurationToWakeupAsSeconds() {
