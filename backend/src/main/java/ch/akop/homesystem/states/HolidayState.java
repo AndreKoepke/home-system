@@ -66,7 +66,7 @@ public class HolidayState extends Activatable implements State {
         .subscribe(ignore -> stateService.switchState(NormalState.class)));
 
     disposeWhenClosed(messageService.getMessages()
-        .filter(message -> message.equals("/back"))
+        .filter(message -> message.startsWith("/back"))
         .subscribe(ignore -> stateService.switchState(NormalState.class)));
   }
 

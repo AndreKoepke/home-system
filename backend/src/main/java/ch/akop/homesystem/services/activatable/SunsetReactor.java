@@ -62,7 +62,7 @@ public class SunsetReactor extends Activatable {
     } else if (stateService.isState(NormalState.class)) {
       messageService.sendMessageToMainChannel("Es wird dunkel ... ich mach mal etwas Licht. Es sei denn ... /keinlicht");
       super.disposeWhenClosed(messageService.getMessages()
-          .filter("/keinlicht"::equalsIgnoreCase)
+          .filter(message -> message.startsWith("/keinlicht"))
           .take(1)
           .timeout(5, TimeUnit.MINUTES)
           .subscribe(s -> {

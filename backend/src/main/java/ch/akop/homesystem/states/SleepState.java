@@ -98,7 +98,7 @@ public class SleepState implements State {
         .subscribe(a -> stateService.switchState(NormalState.class)));
 
     disposeWhenLeaveState.add(messageService.getMessages()
-        .filter(message -> message.equalsIgnoreCase("/aufwachen"))
+        .filter(message -> message.startsWith("/aufwachen"))
         .subscribe(ignored -> stateService.switchState(NormalState.class)));
 
     presenceAtBeginning = userService.getPresenceMap$().blockingFirst();

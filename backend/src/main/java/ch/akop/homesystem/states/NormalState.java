@@ -70,13 +70,6 @@ public class NormalState extends Activatable implements State {
     stateService.registerState(NormalState.class, this);
   }
 
-  @PostConstruct
-  void reactOnHolidayMessage() {
-    //noinspection ResultOfMethodCallIgnored
-    messageService.getMessages()
-        .filter(message -> message.equals("/holiday"))
-        .subscribe(ignored -> stateService.switchState(HolidayState.class));
-  }
 
   @PostConstruct
   void listenToTheWeather() {
@@ -131,6 +124,17 @@ public class NormalState extends Activatable implements State {
         .switchMap(isAnyOneAtHome -> shouldLightsTurnedOff())
         .filter(canTurnOff -> canTurnOff)
         .subscribe(canTurnOff -> deviceService.turnAllLightsOff()));
+
+    super.disposeWhenClosed(messageService.getMessages()
+        .filter(message -> message.startsWith("/sleep"))
+        .subscribe(message -> {
+          messageService.sendMessageToMainChannel("Ok, gute Nacht.");
+          stateService.activateStateQuietly(SleepState.class);
+        }));
+
+    super.disposeWhenClosed(messageService.getMessages()
+        .filter(message -> message.startsWith("/holiday"))
+        .subscribe(ignored -> stateService.switchState(HolidayState.class)));
   }
 
   @Override
@@ -202,7 +206,7 @@ public class NormalState extends Activatable implements State {
 
     return messageService.getMessages()
         .map(String::trim)
-        .filter("/lassAn"::equalsIgnoreCase)
+        .filter(message -> message.startsWith("/lassAn"))
         .take(1)
         .map(s -> false)
         .timeout(5, TimeUnit.MINUTES)

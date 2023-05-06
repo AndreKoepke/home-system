@@ -45,7 +45,7 @@ public class ImageCreatorService {
   @PostConstruct
   void listenForRenewCommands() {
     messageListener = messageService.getMessages()
-        .filter(message -> message.equals("/neuesBild"))
+        .filter(message -> message.startsWith("/neuesBild"))
         .subscribe(message -> generateAndSendDailyImage());
   }
 
