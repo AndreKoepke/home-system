@@ -127,6 +127,7 @@ public class NormalState extends Activatable implements State {
 
     super.disposeWhenClosed(messageService.getMessages()
         .filter(message -> message.startsWith("/sleep"))
+        .take(1)
         .subscribe(message -> {
           messageService.sendMessageToMainChannel("Ok, gute Nacht.");
           stateService.activateStateQuietly(SleepState.class);
@@ -134,6 +135,7 @@ public class NormalState extends Activatable implements State {
 
     super.disposeWhenClosed(messageService.getMessages()
         .filter(message -> message.startsWith("/holiday"))
+        .take(1)
         .subscribe(ignored -> stateService.switchState(HolidayState.class)));
   }
 
