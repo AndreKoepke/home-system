@@ -21,11 +21,11 @@ import java.net.InetAddress;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
@@ -41,10 +41,12 @@ public class UserService {
 
   private static final Duration DELAY = Duration.of(15, ChronoUnit.SECONDS);
   public static final Duration KEEP_CHECKING_FOR = Duration.of(15, ChronoUnit.MINUTES);
+  public static final int ALLOWED_FAILS = 3;
 
   private final Vertx vertx;
   private final ManagedExecutor executor;
   private final UserConfigRepository userConfigRepository;
+  private final TelegramMessageService telegramMessageService;
 
   private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
   private ConcurrentMap<String, Boolean> presenceMap = new ConcurrentHashMap<>();
@@ -56,43 +58,53 @@ public class UserService {
     rxScheduler = RxHelper.blockingScheduler(vertx);
   }
 
+  @PostConstruct
+  void listenForRecheckMessage() {
+    // runs forever, no need for returning anything
+    //noinspection ResultOfMethodCallIgnored
+    telegramMessageService.getMessages()
+        .filter(message -> message.startsWith("/anyoneHome"))
+        .subscribe(message -> gotEvent(Event.DOOR_CLOSED));
+  }
+
   @Transactional
   @ConsumeEvent(value = "home/general", blocking = true)
   public void gotEvent(Event event) {
     if (event == Event.DOOR_CLOSED && (checkPresenceSubscription == null || checkPresenceSubscription.isDisposed())) {
       log.info("Start discovering users ...");
-      var users = userConfigRepository.findAll();
-      vertx.setTimer(DELAY.toMillis(), timerId -> checkPresence(users, LocalDateTime.now().plus(KEEP_CHECKING_FOR)));
+      vertx.setTimer(DELAY.toMillis(), timerId -> executor.runAsync(() -> checkPresence(LocalDateTime.now().plus(KEEP_CHECKING_FOR))));
     }
   }
 
-  private void checkPresence(List<UserConfig> users, LocalDateTime discoverUntil) {
+  private void checkPresence(LocalDateTime discoverUntil) {
     checkPresenceSubscription = Observable.fromCallable(() -> {
-          updatePresence(users);
+          updatePresence();
           return LocalDateTime.now().isAfter(discoverUntil);
         })
         .subscribeOn(rxScheduler)
         .singleOrError()
         .subscribe(finished -> {
           if (!finished) {
-            vertx.setTimer(DELAY.toMillis(), timerId -> checkPresence(users, discoverUntil));
+            vertx.setTimer(DELAY.toMillis(), timerId -> executor.runAsync(() -> checkPresence(discoverUntil)));
           }
         });
   }
 
-  private void updatePresence(List<UserConfig> users) {
-    var newPresenceMap = users.parallelStream()
+  private void updatePresence() {
+    var newPresenceMap = userConfigRepository.findAll()
+        .parallelStream()
         .filter(user -> !StringUtil.isNullOrEmpty(user.getDeviceIp()))
+        .map(user -> user.setFailedPings(canPingIp(user) ? 0 : user.getFailedPings() + 1))
         .collect(Collectors.toConcurrentMap(
             UserConfig::getName,
-            this::canPingIp
+            user -> user.getFailedPings() < ALLOWED_FAILS
         ));
 
     var hasChanges = !newPresenceMap.equals(presenceMap);
     if (hasChanges) {
       presenceMap = newPresenceMap;
       // wrapped with executor to get a thread with good context
-      executor.runAsync(() -> presenceMap$.onNext(newPresenceMap));
+      presenceMap$.onNext(newPresenceMap);
     }
   }
 
@@ -110,7 +122,7 @@ public class UserService {
 
   public Flowable<Boolean> isAnyoneAtHome$() {
     return presenceMap$
-        .map(presenceMap -> presenceMap.values().stream().anyMatch(isAtHome -> isAtHome))
+        .map(presenceMapUpdate -> presenceMapUpdate.values().stream().anyMatch(isAtHome -> isAtHome))
         .toFlowable(BackpressureStrategy.DROP);
   }
 
