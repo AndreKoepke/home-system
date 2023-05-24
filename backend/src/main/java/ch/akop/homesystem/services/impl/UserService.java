@@ -95,6 +95,7 @@ public class UserService {
         .parallelStream()
         .filter(user -> !StringUtil.isNullOrEmpty(user.getDeviceIp()))
         .map(user -> user.setFailedPings(canPingIp(user) ? 0 : user.getFailedPings() + 1))
+        .peek(user -> executor.runAsync(() -> userConfigRepository.save(user)))
         .collect(Collectors.toConcurrentMap(
             UserConfig::getName,
             user -> user.getFailedPings() < ALLOWED_FAILS
