@@ -27,6 +27,9 @@ public class UserConfig {
   @Column(columnDefinition = "TEXT")
   private String deviceIp;
 
+  @NonNull
+  private Integer failedPings;
+
   private boolean dev = false;
 
 }
