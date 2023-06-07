@@ -44,6 +44,8 @@ public class MotionSensorConfig {
   @Nullable
   private Boolean onlyAtNormalState;
 
+  private boolean turnLightOnWhenMovement;
+
   private LocalTime notBefore;
 
   @OneToOne
