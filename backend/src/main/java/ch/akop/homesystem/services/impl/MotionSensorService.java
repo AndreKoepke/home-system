@@ -47,7 +47,7 @@ public class MotionSensorService {
             .findFirst()
             .orElseThrow()
             .getIsMoving$()
-            .filter(isMoving -> shouldIgnoreMotionEven(motionSensorConfig, isMoving))
+            .filter(isMoving -> shouldIgnoreMotionEvent(motionSensorConfig, isMoving))
             .filter(isMoving -> blockMovingWhenNecessary(motionSensorConfig, isMoving))
             .switchMap(isMoving -> delayWhenNoMovement(isMoving, motionSensorConfig))
             .subscribe(isMoving -> handleMotionEvent(motionSensorConfig, isMoving)));
@@ -177,7 +177,11 @@ public class MotionSensorService {
     return config.getNotBefore().isBefore(LocalTime.now());
   }
 
-  private boolean shouldIgnoreMotionEven(MotionSensorConfig config, Boolean isMoving) {
-    return isMoving && config.isTurnLightOnWhenMovement();
+  private boolean shouldIgnoreMotionEvent(MotionSensorConfig config, Boolean isMoving) {
+    if (!isMoving) {
+      return true;
+    }
+
+    return config.isTurnLightOnWhenMovement();
   }
 }
