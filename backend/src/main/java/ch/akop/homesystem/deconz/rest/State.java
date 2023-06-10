@@ -1,7 +1,6 @@
 package ch.akop.homesystem.deconz.rest;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -52,5 +51,6 @@ public class State {
   private Boolean presence;
   private Boolean dark;
 
-  private LocalDateTime lastupdated;
+
+  private String lastupdated;
 }
