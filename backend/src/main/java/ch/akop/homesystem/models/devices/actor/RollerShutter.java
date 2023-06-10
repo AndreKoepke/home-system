@@ -20,6 +20,7 @@ public class RollerShutter extends Actor<RollerShutter> {
 
   private Subject<Integer> liftWasChanged = ReplaySubject.createWithSize(1);
   private Subject<Integer> tiltWasChanged = ReplaySubject.createWithSize(1);
+  private Subject<Boolean> openWasChanged = ReplaySubject.createWithSize(1);
 
   private final Consumer<Integer> functionToSetLift;
   private final Consumer<Integer> functionToSetTilt;
@@ -39,20 +40,21 @@ public class RollerShutter extends Actor<RollerShutter> {
   @Max(100)
   private Integer currentTilt;
 
-  public RollerShutter setCurrentLift(Integer newValue) {
+  private boolean isOpen;
+
+  private RollerShutter setCurrentLift(Integer newValue) {
     liftWasChanged.onNext(newValue);
     currentLift = newValue;
     return this;
   }
 
-  /**
-   * The deconz-connector currently doesn't offer any tilt updates.
-   *
-   * @return The angle of the shutters
-   * @deprecated because current deconz does not updating these values
-   */
-  @Deprecated(since = "not know yet")
-  public RollerShutter setCurrentTilt(Integer newValue) {
+  private RollerShutter setIsOpen(Boolean newValue) {
+    openWasChanged.onNext(newValue);
+    isOpen = newValue;
+    return this;
+  }
+
+  private RollerShutter setCurrentTilt(Integer newValue) {
     tiltWasChanged.onNext(newValue);
     currentTilt = newValue;
     return this;
@@ -93,14 +95,11 @@ public class RollerShutter extends Actor<RollerShutter> {
     setLiftAndThenTilt(0, 0);
   }
 
-  public boolean isCurrentlyOpen() {
-    // normally 255 means, that is open. But the actor never reaches 255.
-    return currentLift > 240;
-  }
 
   @Override
   protected void consumeInternalUpdate(State update) {
-    // bri as workaround, tilt was never updated
-    setCurrentLift(update.getBri());
+    setCurrentLift(update.getLift());
+    setCurrentTilt(update.getTilt());
+    setIsOpen(update.getOpen());
   }
 }
