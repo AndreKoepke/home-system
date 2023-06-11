@@ -132,10 +132,10 @@ public class RollerShutterService {
 
     if (rollerShutter.isOpen()
         && weatherService.getCurrentSunDirection().equals(config.getCompassDirection())
-        && brightnessIsGoingAboveThreshold(weather, 200)
+        && brightnessIsGoingAboveThreshold(weather, 150)
         && weather.current().getOuterTemperatur().isBiggerThan(15, DEGREE)) {
       log.info("Weather close for {} because it is too much sun", rollerShutter.getName());
-      rollerShutter.setLiftAndThenTilt(0, 20);
+      rollerShutter.setLiftAndThenTilt(70, 30);
     } else if (!rollerShutter.isOpen()
         && brightnessIsGoingAboveThreshold(weather, 50)
         && !config.isIgnoreWeatherInTheMorning()) {

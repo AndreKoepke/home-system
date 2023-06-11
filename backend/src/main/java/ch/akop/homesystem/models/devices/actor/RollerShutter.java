@@ -20,7 +20,6 @@ public class RollerShutter extends Actor<RollerShutter> {
 
   private Subject<Integer> liftWasChanged = ReplaySubject.createWithSize(1);
   private Subject<Integer> tiltWasChanged = ReplaySubject.createWithSize(1);
-  private Subject<Boolean> openWasChanged = ReplaySubject.createWithSize(1);
 
   private final Consumer<Integer> functionToSetLift;
   private final Consumer<Integer> functionToSetTilt;
@@ -40,17 +39,9 @@ public class RollerShutter extends Actor<RollerShutter> {
   @Max(100)
   private Integer currentTilt;
 
-  private boolean isOpen;
-
   private RollerShutter setCurrentLift(Integer newValue) {
     liftWasChanged.onNext(newValue);
     currentLift = newValue;
-    return this;
-  }
-
-  private RollerShutter setIsOpen(Boolean newValue) {
-    openWasChanged.onNext(newValue);
-    isOpen = newValue;
     return this;
   }
 
@@ -96,10 +87,13 @@ public class RollerShutter extends Actor<RollerShutter> {
   }
 
 
+  public boolean isOpen() {
+    return currentLift < 5;
+  }
+
   @Override
   protected void consumeInternalUpdate(State update) {
     setCurrentLift(update.getLift());
     setCurrentTilt(update.getTilt());
-    setIsOpen(update.getOpen());
   }
 }
