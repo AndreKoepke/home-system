@@ -3,7 +3,6 @@ package ch.akop.homesystem.services.impl;
 import static ch.akop.weathercloud.wind.WindSpeedUnit.KILOMETERS_PER_SECOND;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
-import ch.akop.homesystem.models.CompassDirection;
 import ch.akop.homesystem.persistence.model.config.BasicConfig;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.weathercloud.Weather;
@@ -13,15 +12,13 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.e175.klaus.solarpositioning.AzimuthZenithAngle;
 import net.e175.klaus.solarpositioning.Grena3;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -57,6 +54,7 @@ public class WeatherService {
         .subscribe(weather::onNext);
 
     weather.subscribe(weatherUpdate -> {
+      log.info("Got weather-update " + weatherUpdate);
       rainDetectorService.updateDatabaseIfNecessary(weatherUpdate);
       if (weatherUpdate.getWind().getAs(KILOMETERS_PER_SECOND).compareTo(new BigDecimal(50)) > 0) {
         messageService.sendMessageToMainChannel("Hui, ist das winding. Macht lieber die Stören hoch. Grade wehts mit %s."
@@ -81,14 +79,10 @@ public class WeatherService {
         .doOnNext(weatherData -> previousUpdate.set(weatherData.current));
   }
 
-  public CompassDirection getCurrentSunDirection() {
-    var config = basicConfigRepository.findFirstByOrderByModifiedDesc()
-        .orElseThrow();
-    var position = Grena3.calculateSolarPosition(ZonedDateTime.now(), config.getLatitude(), config.getLongitude(), 68);
-
-    return Arrays.stream(CompassDirection.values())
-        .min(Comparator.comparing(value -> Math.abs(value.getDirection() - position.getAzimuth())))
-        .orElseThrow(() -> new NoSuchElementException("Can't resolve direction for %s".formatted(position)));
+  public AzimuthZenithAngle getCurrentSunDirection() {
+    return basicConfigRepository.findFirstByOrderByModifiedDesc()
+        .map(config -> Grena3.calculateSolarPosition(ZonedDateTime.now(), config.getLatitude(), config.getLongitude(), 68))
+        .orElseThrow(() -> new RuntimeException("No basic config"));
   }
 
   public record CurrentAndPreviousWeather(Weather current, Weather previous) {

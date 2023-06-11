@@ -3,6 +3,7 @@ package ch.akop.homesystem.services.impl;
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 
+import ch.akop.homesystem.models.CompassDirection;
 import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
@@ -15,6 +16,8 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +29,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.e175.klaus.solarpositioning.AzimuthZenithAngle;
 
 @Slf4j
 @ApplicationScoped
@@ -35,6 +39,7 @@ public class RollerShutterService {
   private final DeviceService deviceService;
   private final WeatherService weatherService;
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
+  private final TelegramMessageService telegramMessageService;
 
   private final List<Disposable> disposables = new ArrayList<>();
   private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
@@ -131,8 +136,7 @@ public class RollerShutterService {
     var rollerShutter = getRollerShutter(config);
 
     if (rollerShutter.isOpen()
-        && weatherService.getCurrentSunDirection().equals(config.getCompassDirection())
-        && brightnessIsGoingAboveThreshold(weather, 150)
+        && shouldCloseBecauseOfSun(weather, config.getCompassDirection())
         && weather.current().getOuterTemperatur().isBiggerThan(15, DEGREE)) {
       log.info("Weather close for {} because it is too much sun", rollerShutter.getName());
       rollerShutter.setLiftAndThenTilt(70, 30);
@@ -142,6 +146,24 @@ public class RollerShutterService {
       log.info("Weather open for {}", rollerShutter.getName());
       rollerShutter.open();
     }
+  }
+
+  private boolean shouldCloseBecauseOfSun(WeatherService.CurrentAndPreviousWeather weather,
+      CompassDirection directionOfRollerShutter) {
+
+    if (!brightnessIsGoingAboveThreshold(weather, 100)) {
+      return false;
+    }
+
+    var sunDirection = weatherService.getCurrentSunDirection();
+    return sunDirection.getZenithAngle() < 55
+        && resolveCompassDirection(sunDirection).equals(directionOfRollerShutter);
+  }
+
+  private CompassDirection resolveCompassDirection(AzimuthZenithAngle sunDirection) {
+    return Arrays.stream(CompassDirection.values())
+        .min(Comparator.comparing(value -> Math.abs(value.getDirection() - sunDirection.getAzimuth())))
+        .orElseThrow(() -> new NoSuchElementException("Can't resolve direction for %s".formatted(sunDirection)));
   }
 
   private void itsGettingDarkerOutside(RollerShutterConfig config,
