@@ -95,6 +95,10 @@ public class RollerShutter extends Actor<RollerShutter> {
     setLiftAndThenTilt(0, 0);
   }
 
+  public boolean isNotCompletelyClosed() {
+    return currentLift > 5;
+  }
+
 
   @Override
   protected void consumeInternalUpdate(State update) {

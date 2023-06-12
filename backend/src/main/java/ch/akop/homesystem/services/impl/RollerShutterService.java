@@ -39,7 +39,6 @@ public class RollerShutterService {
   private final DeviceService deviceService;
   private final WeatherService weatherService;
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
-  private final TelegramMessageService telegramMessageService;
 
   private final List<Disposable> disposables = new ArrayList<>();
   private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
@@ -135,11 +134,11 @@ public class RollerShutterService {
       WeatherService.CurrentAndPreviousWeather weather) {
     var rollerShutter = getRollerShutter(config);
 
-    if (rollerShutter.isOpen()
+    if (rollerShutter.getCurrentLift() > 50
         && shouldCloseBecauseOfSun(weather, config.getCompassDirection())
         && weather.current().getOuterTemperatur().isBiggerThan(15, DEGREE)) {
       log.info("Weather close for {} because it is too much sun", rollerShutter.getName());
-      rollerShutter.setLiftAndThenTilt(70, 30);
+      rollerShutter.setLiftAndThenTilt(50, 30);
     } else if (!rollerShutter.isOpen()
         && brightnessIsGoingAboveThreshold(weather, 50)
         && !config.isIgnoreWeatherInTheMorning()) {
@@ -170,7 +169,7 @@ public class RollerShutterService {
       WeatherService.CurrentAndPreviousWeather weather) {
     var rollerShutter = getRollerShutter(config);
 
-    if (rollerShutter.isOpen()
+    if (rollerShutter.isNotCompletelyClosed()
         && brightnessIsGoingBelowThreshold(weather, 0)
         && !config.isIgnoreWeatherInTheEvening()) {
       log.info("Weather close for {} because it is getting dark", rollerShutter.getName());
