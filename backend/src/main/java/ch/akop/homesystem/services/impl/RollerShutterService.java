@@ -82,7 +82,7 @@ public class RollerShutterService {
     } else if (newBrightness < 100 && newBrightness > 10) {
       rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull()
           .map(this::getRollerShutter)
-          .filter(rollerShutter -> rollerShutter.getCurrentLift() < 60 && rollerShutter.getCurrentLift() > 40)
+          .filter(rollerShutter -> rollerShutter.getCurrentLift() < 90)
           .peek(rollerShutter -> log.info("Open RollerShutter " + rollerShutter.getName() + ". It is not so bright anymore"))
           .forEach(RollerShutter::open);
     } else if (newBrightness == 0) {
