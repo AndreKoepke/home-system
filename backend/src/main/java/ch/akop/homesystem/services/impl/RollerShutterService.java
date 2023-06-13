@@ -9,9 +9,8 @@ import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
 import ch.akop.homesystem.util.TimeUtil;
 import ch.akop.weathercloud.Weather;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Vertx;
 import io.vertx.rxjava3.RxHelper;
@@ -31,12 +30,9 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.e175.klaus.solarpositioning.AzimuthZenithAngle;
-import org.eclipse.microprofile.context.ManagedExecutor;
 
 @Slf4j
 @ApplicationScoped
@@ -47,27 +43,22 @@ public class RollerShutterService {
   private final WeatherService weatherService;
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
   private final TelegramMessageService telegramMessageService;
-  private final ManagedExecutor executor;
   private final Vertx vertx;
-  private Scheduler rxScheduler;
-
-  void onStart(@Observes StartupEvent ev) {
-    rxScheduler = RxHelper.blockingScheduler(vertx);
-  }
 
   private final List<Disposable> disposables = new ArrayList<>();
   private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
 
 
-  @Transactional
   public void init() {
+    var rxScheduler = RxHelper.blockingScheduler(vertx);
     disposables.add(weatherService.getWeather()
         .skip(1)
         .mergeWith(telegramMessageService.getMessages()
             .filter(message -> message.startsWith("/calcRollerShutter"))
             .switchMap(message -> weatherService.getWeather().take(1)))
         .subscribeOn(rxScheduler)
-        .subscribe(newWeather -> executor.runAsync(() -> handleWeatherUpdate(newWeather))));
+        .subscribe(newWeather -> QuarkusTransaction.requiringNew().run(() -> handleWeatherUpdate(newWeather)),
+            throwable -> log.error("Error at RollerShutterService", throwable)));
     initTimer();
   }
 
@@ -78,7 +69,7 @@ public class RollerShutterService {
       var sunDirection = weatherService.getCurrentSunDirection();
       var compassDirection = resolveCompassDirection(sunDirection);
 
-      if (newWeather.getOuterTemperatur().isSmallerThan(15, DEGREE) && sunDirection.getZenithAngle() > 55) {
+      if (newWeather.getOuterTemperatur().isSmallerThan(15, DEGREE) && sunDirection.getZenithAngle() < 40) {
         return;
       }
 

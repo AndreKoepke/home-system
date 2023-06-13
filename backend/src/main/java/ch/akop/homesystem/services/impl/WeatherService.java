@@ -15,6 +15,7 @@ import java.time.ZonedDateTime;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -79,6 +80,7 @@ public class WeatherService {
         .doOnNext(weatherData -> previousUpdate.set(weatherData.current));
   }
 
+  @Transactional
   public AzimuthZenithAngle getCurrentSunDirection() {
     return basicConfigRepository.findFirstByOrderByModifiedDesc()
         .map(config -> Grena3.calculateSolarPosition(ZonedDateTime.now(), config.getLatitude(), config.getLongitude(), 68))
