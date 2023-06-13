@@ -9,9 +9,12 @@ import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
 import ch.akop.homesystem.util.TimeUtil;
 import ch.akop.weathercloud.Weather;
-import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.quarkus.runtime.StartupEvent;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.vertx.core.Vertx;
+import io.vertx.rxjava3.RxHelper;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -28,6 +31,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +48,12 @@ public class RollerShutterService {
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
   private final TelegramMessageService telegramMessageService;
   private final ManagedExecutor executor;
+  private final Vertx vertx;
+  private Scheduler rxScheduler;
+
+  void onStart(@Observes StartupEvent ev) {
+    rxScheduler = RxHelper.blockingScheduler(vertx);
+  }
 
   private final List<Disposable> disposables = new ArrayList<>();
   private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
@@ -56,8 +66,8 @@ public class RollerShutterService {
         .mergeWith(telegramMessageService.getMessages()
             .filter(message -> message.startsWith("/calcRollerShutter"))
             .switchMap(message -> weatherService.getWeather().take(1)))
-        .subscribe(newWeather -> QuarkusTransaction.requiringNew()
-            .run(() -> executor.runAsync(() -> handleWeatherUpdate(newWeather)))));
+        .subscribeOn(rxScheduler)
+        .subscribe(newWeather -> executor.runAsync(() -> handleWeatherUpdate(newWeather))));
     initTimer();
   }
 
