@@ -104,7 +104,6 @@ public class UserService {
     var hasChanges = !newPresenceMap.equals(presenceMap);
     if (hasChanges) {
       presenceMap = newPresenceMap;
-      // wrapped with executor to get a thread with good context
       presenceMap$.onNext(newPresenceMap);
     }
   }

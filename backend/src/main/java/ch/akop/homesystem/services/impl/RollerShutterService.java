@@ -9,6 +9,7 @@ import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
 import ch.akop.homesystem.util.TimeUtil;
 import ch.akop.weathercloud.Weather;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import java.time.Duration;
@@ -55,7 +56,8 @@ public class RollerShutterService {
         .mergeWith(telegramMessageService.getMessages()
             .filter(message -> message.startsWith("/calcRollerShutter"))
             .switchMap(message -> weatherService.getWeather().take(1)))
-        .subscribe(newWeather -> executor.runAsync(() -> handleWeatherUpdate(newWeather))));
+        .subscribe(newWeather -> QuarkusTransaction.requiringNew()
+            .run(() -> executor.runAsync(() -> handleWeatherUpdate(newWeather)))));
     initTimer();
   }
 
