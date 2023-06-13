@@ -62,22 +62,22 @@ public class RollerShutter extends Actor<RollerShutter> {
 
 
   /**
-   * Set "lift" and wait until both reached their position. After that, set tilt to the given value.
+   * Set "tilt" and wait until both reached their position. After that, set lift to the given value.
    *
    * @param lift new lift value
    * @param tilt new tilt value
    */
   public void setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
-    log.info("Setting lift (to {}) and tilt (to {}) of {}", lift, tilt, getName());
-    functionToSetLift.accept(lift);
+    log.info("Setting tilt (to " + tilt + ") and lift (to " + lift + ") of " + getName());
+    functionToSetTilt.accept(tilt);
 
     //noinspection ResultOfMethodCallIgnored
-    liftWasChanged
-        .filter(newLift -> Math.abs(newLift - lift) < 20)
+    tiltWasChanged
+        .filter(newLift -> Math.abs(newLift - tilt) < 20)
         .take(1)
         .subscribe(ignored -> {
-          log.info("lift is ok, setting tilt to {}", tilt);
-          functionToSetTilt.accept(tilt);
+          log.info("tilt is ok, setting tilt to " + lift);
+          functionToSetLift.accept(lift);
         });
   }
 
