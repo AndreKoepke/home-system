@@ -35,6 +35,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.eclipse.microprofile.context.ManagedExecutor;
 
 @Startup
 @RequiredArgsConstructor
@@ -61,6 +62,7 @@ public class SleepState implements State {
   private final BasicConfigRepository basicConfigRepository;
   private final ImageCreatorService imageCreatorService;
   private final OpenAIService openAIService;
+  private final ManagedExecutor executor;
 
   private Disposable timerDoorOpen;
   private Map<String, Boolean> presenceAtBeginning;
@@ -125,11 +127,14 @@ public class SleepState implements State {
     messageService.sendMessageToMainChannel(pickRandomElement(POSSIBLE_MORNING_TEXTS));
 
     if (weatherService.isActive()) {
-      var weather = weatherService.getWeather().blockingFirst();
-      messageService.sendMessageToMainChannel("Es sind %s und es regnet%s.".formatted(
-          weather.getOuterTemperatur(),
-          weather.getRain().isBiggerThan(BigDecimal.ZERO, MILLIMETER_PER_HOUR) ? "" : " nicht"
-      ));
+      //noinspection ResultOfMethodCallIgnored
+      weatherService.getWeather()
+          .take(1)
+          .timeout(10, TimeUnit.SECONDS)
+          .subscribe(weather -> messageService.sendMessageToMainChannel("Es sind %s und es regnet%s.".formatted(
+              weather.getOuterTemperatur(),
+              weather.getRain().isBiggerThan(BigDecimal.ZERO, MILLIMETER_PER_HOUR) ? "" : " nicht"
+          )));
     }
 
     disposeWhenLeaveState.forEach(Disposable::dispose);
@@ -138,8 +143,8 @@ public class SleepState implements State {
     stopDoorOpenTimer();
     checkPresenceMapWhenLeave();
 
-    tellJoke();
-    imageCreatorService.generateAndSendDailyImage();
+    executor.runAsync(this::tellJoke);
+    executor.runAsync(imageCreatorService::generateAndSendDailyImage);
   }
 
   private void tellJoke() {
