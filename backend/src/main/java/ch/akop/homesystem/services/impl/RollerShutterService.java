@@ -72,10 +72,18 @@ public class RollerShutterService {
         return;
       }
 
-      rollerShutterConfigRepository.findByCompassDirection(compassDirection)
-          .map(this::getRollerShutter)
-          .peek(rollerShutter -> log.info("Weather close for " + rollerShutter.getName() + " because it is too much sun"))
-          .forEach(rollerShutter -> rollerShutter.setLiftAndThenTilt(50, 50));
+      rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull()
+          .forEach(config -> {
+                log.info("Weather close for " + getRollerShutter(config).getName() + " because it is too much sun");
+                var rollerShutter = getRollerShutter(config);
+
+                if (compassDirection.equals(config.getCompassDirection())) {
+                  rollerShutter.setLiftAndThenTilt(50, 50);
+                } else {
+                  rollerShutter.open();
+                }
+              }
+          );
 
     } else if (newBrightness < 200 && newBrightness > 10) {
       rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull()
@@ -88,6 +96,7 @@ public class RollerShutterService {
           .peek(rollerShutter -> log.info("Close RollerShutter " + rollerShutter.getName() + " because it is night."))
           .forEach(RollerShutter::close);
     }
+
   }
 
   private void initTimer() {
