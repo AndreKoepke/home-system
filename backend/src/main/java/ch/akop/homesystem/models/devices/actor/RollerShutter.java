@@ -2,6 +2,7 @@ package ch.akop.homesystem.models.devices.actor;
 
 import ch.akop.homesystem.deconz.rest.State;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.concurrent.TimeUnit;
@@ -50,39 +51,45 @@ public class RollerShutter extends Actor<RollerShutter> {
    * @param lift new lift value
    * @param tilt new tilt value
    */
-  public void setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
-    log.info("Setting tilt (to " + tilt + ") and lift (to " + lift + ") of " + getName());
-
+  public Observable<Object> setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
+    Observable<Boolean> tiltAction;
     if (Math.abs(currentTilt - tilt) > 20) {
-      functionToSetTilt.accept(tilt);
+      tiltAction = Observable.fromCallable(() -> {
+        log.info(this.getName() + ": tilt nok, set to " + tilt);
+        functionToSetTilt.accept(tilt);
+        return true;
+      });
+    } else {
+      tiltAction = Observable.just(true);
     }
 
-    //noinspection ResultOfMethodCallIgnored
-    tilt$
-        .filter(newTilt -> Math.abs(newTilt - tilt) < 20)
-        .take(1)
-        .timeout(30, TimeUnit.SECONDS)
-        .onErrorResumeNext(throwable -> Observable.just(1))
-        .subscribe(ignored -> {
-          log.info("tilt is ok, setting lift to " + lift);
-          if (Math.abs(currentLift - lift) < 20) {
-            functionToSetLift.accept(lift);
-          }
-        });
+    return tiltAction.switchMap(ignored -> tilt$
+            .filter(newTilt -> Math.abs(newTilt - tilt) < 20)
+            .take(1)
+            .timeout(30, TimeUnit.SECONDS)
+            .onErrorResumeNext(throwable -> Observable.just(1))
+            .map(ignored2 -> {
+              if (Math.abs(currentLift - lift) < 20) {
+                log.info(this.getName() + ": lift is nok, set to " + lift);
+                functionToSetLift.accept(lift);
+              }
+              return new Object();
+            }))
+        .subscribeOn(Schedulers.io());
   }
 
   /**
    * Opens the rollerShutters to maximum value
    */
-  public void open() {
-    setLiftAndThenTilt(100, 100);
+  public Observable<Object> open() {
+    return setLiftAndThenTilt(100, 100);
   }
 
   /**
    * Coles the rollerShutters to minimum value
    */
-  public void close() {
-    setLiftAndThenTilt(0, 0);
+  public Observable<Object> close() {
+    return setLiftAndThenTilt(0, 0);
   }
 
   @Override
