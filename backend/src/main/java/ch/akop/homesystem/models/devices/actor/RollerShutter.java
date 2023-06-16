@@ -52,29 +52,29 @@ public class RollerShutter extends Actor<RollerShutter> {
    * @param tilt new tilt value
    */
   public Observable<Object> setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
-    Observable<Boolean> tiltAction;
+    Observable<Object> tiltAction;
     if (Math.abs(currentTilt - tilt) > 20) {
-      tiltAction = Observable.fromCallable(() -> {
-        log.info(this.getName() + ": tilt (now at " + currentTilt + ") nok, set to " + tilt);
-        functionToSetTilt.accept(tilt);
-        return true;
-      });
+      tiltAction = Observable.fromRunnable(() -> {
+            log.info(this.getName() + ": tilt (now at " + currentTilt + ") nok, set to " + tilt);
+            functionToSetTilt.accept(tilt);
+          })
+          .switchMap(empty -> tilt$
+              .filter(newTilt -> Math.abs(newTilt - tilt) < 20)
+              .timeout(10, TimeUnit.SECONDS)
+              .onErrorResumeNext(throwable -> Observable.just(1))
+              .take(1));
     } else {
-      tiltAction = Observable.just(true);
+      tiltAction = Observable.just(new Object());
     }
 
-    return tiltAction.switchMap(ignored -> tilt$
-            .filter(newTilt -> Math.abs(newTilt - tilt) < 20)
-            .timeout(30, TimeUnit.SECONDS)
-            .onErrorResumeNext(throwable -> Observable.just(1))
-            .take(1)
-            .map(ignored2 -> {
-              if (Math.abs(currentLift - lift) > 20) {
-                log.info(this.getName() + ": lift (now at " + currentLift + ") is nok, set to " + lift);
-                functionToSetLift.accept(lift);
-              }
-              return new Object();
-            }))
+    return tiltAction
+        .map(ignored -> {
+          if (Math.abs(currentLift - lift) > 20) {
+            log.info(this.getName() + ": lift (now at " + currentLift + ") is nok, set to " + lift);
+            functionToSetLift.accept(lift);
+          }
+          return new Object();
+        })
         .subscribeOn(Schedulers.io());
   }
 
