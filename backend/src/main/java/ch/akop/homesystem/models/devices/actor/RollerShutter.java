@@ -69,7 +69,7 @@ public class RollerShutter extends Actor<RollerShutter> {
             .timeout(30, TimeUnit.SECONDS)
             .onErrorResumeNext(throwable -> Observable.just(1))
             .map(ignored2 -> {
-              if (Math.abs(currentLift - lift) < 20) {
+              if (Math.abs(currentLift - lift) > 20) {
                 log.info(this.getName() + ": lift is nok, set to " + lift);
                 functionToSetLift.accept(lift);
               }

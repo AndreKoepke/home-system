@@ -66,24 +66,30 @@ public class RollerShutterService {
     var newBrightness = newWeather.getLight().getAs(KILO_LUX).intValue();
 
     if (newBrightness > 250) {
-      var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
-      var compassDirection = resolveCompassDirection(sunDirection);
-
-      if (newWeather.getOuterTemperatur().isSmallerThan(15, DEGREE) && sunDirection.getZenithAngle() < 40) {
+      if (newWeather.getOuterTemperatur().isSmallerThan(15, DEGREE)) {
         return new ArrayList<>();
       }
+
+      var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
+      var compassDirection = resolveCompassDirection(sunDirection);
 
       return configs.stream()
           .map(config -> {
                 var rollerShutter = getRollerShutter(config);
 
-                if (compassDirection.equals(config.getCompassDirection())) {
-                  log.info("Weather close for " + rollerShutter.getName() + " because it is too much sun");
-                  return rollerShutter.setLiftAndThenTilt(50, 50);
-                } else {
-                  log.info("Weather open for " + rollerShutter.getName() + " because sun is coming from other direction");
-                  return rollerShutter.open();
+                if (config.getCompassDirection().contains(compassDirection)) {
+                  log.info("Weather close for " + rollerShutter.getName()
+                      + " because it is too much sun. Zenith is "
+                      + sunDirection.getZenithAngle() + "°.");
+
+                  if (sunDirection.getZenithAngle() > 40) {
+                    return rollerShutter.setLiftAndThenTilt(50, 50);
+                  } else if (sunDirection.getZenithAngle() > 20) {
+                    return rollerShutter.setLiftAndThenTilt(25, 50);
+                  }
                 }
+                log.info("Weather open for " + rollerShutter.getName() + " because sun is coming from other direction");
+                return rollerShutter.open();
               }
           ).toList();
 

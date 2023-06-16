@@ -1,14 +1,16 @@
 package ch.akop.homesystem.persistence.model.config;
 
 import ch.akop.homesystem.models.CompassDirection;
+import ch.akop.homesystem.persistence.conveter.ListOfEnumConverter;
 import java.time.LocalTime;
+import java.util.List;
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.springframework.lang.Nullable;
 
@@ -22,10 +24,10 @@ public class RollerShutterConfig {
   @Column(columnDefinition = "TEXT")
   private String name;
 
-  @Nullable
-  @Enumerated(EnumType.STRING)
+  @NonNull
   @Column(columnDefinition = "TEXT")
-  private CompassDirection compassDirection;
+  @Convert(converter = ListOfEnumConverter.class)
+  private List<CompassDirection> compassDirection;
 
   @Nullable
   private LocalTime closeAt;
