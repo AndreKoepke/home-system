@@ -52,7 +52,6 @@ public class RollerShutterService {
   public void init() {
     var rxScheduler = RxHelper.blockingScheduler(vertx);
     disposables.add(weatherService.getWeather()
-        .skip(1)
         .mergeWith(telegramMessageService.getMessages()
             .filter(message -> message.startsWith("/calcRollerShutter"))
             .switchMap(message -> weatherService.getWeather().take(1)))
@@ -65,7 +64,7 @@ public class RollerShutterService {
   private void handleWeatherUpdate(Weather newWeather) {
     var newBrightness = newWeather.getLight().getAs(KILO_LUX).intValue();
 
-    if (newBrightness > 150) {
+    if (newBrightness > 250) {
       var sunDirection = weatherService.getCurrentSunDirection();
       var compassDirection = resolveCompassDirection(sunDirection);
 
@@ -75,20 +74,17 @@ public class RollerShutterService {
 
       rollerShutterConfigRepository.findByCompassDirection(compassDirection)
           .map(this::getRollerShutter)
-          .filter(rollerShutter -> rollerShutter.getCurrentLift() > 45)
           .peek(rollerShutter -> log.info("Weather close for " + rollerShutter.getName() + " because it is too much sun"))
           .forEach(rollerShutter -> rollerShutter.setLiftAndThenTilt(50, 50));
 
-    } else if (newBrightness < 100 && newBrightness > 10) {
+    } else if (newBrightness < 200 && newBrightness > 10) {
       rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull()
           .map(this::getRollerShutter)
-          .filter(rollerShutter -> rollerShutter.getCurrentLift() < 90)
-          .peek(rollerShutter -> log.info("Open RollerShutter " + rollerShutter.getName() + ". It is not so bright anymore"))
+          .peek(rollerShutter -> log.info("Open RollerShutter " + rollerShutter.getName() + "."))
           .forEach(RollerShutter::open);
     } else if (newBrightness == 0) {
       rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull()
           .map(this::getRollerShutter)
-          .filter(RollerShutter::isNotCompletelyClosed)
           .peek(rollerShutter -> log.info("Close RollerShutter " + rollerShutter.getName() + " because it is night."))
           .forEach(RollerShutter::close);
     }

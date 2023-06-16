@@ -1,8 +1,10 @@
 package ch.akop.homesystem.models.devices.actor;
 
 import ch.akop.homesystem.deconz.rest.State;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -18,9 +20,9 @@ import lombok.extern.slf4j.Slf4j;
 @ToString(callSuper = true)
 public class RollerShutter extends Actor<RollerShutter> {
 
-  private Subject<Integer> liftWasChanged = ReplaySubject.createWithSize(1);
-  private Subject<Integer> tiltWasChanged = ReplaySubject.createWithSize(1);
-  private Subject<Boolean> openWasChanged = ReplaySubject.createWithSize(1);
+  private Subject<Integer> lift$ = ReplaySubject.createWithSize(1);
+  private Subject<Integer> tilt$ = ReplaySubject.createWithSize(1);
+  private Subject<Boolean> open$ = ReplaySubject.createWithSize(1);
 
   private final Consumer<Integer> functionToSetLift;
   private final Consumer<Integer> functionToSetTilt;
@@ -42,25 +44,6 @@ public class RollerShutter extends Actor<RollerShutter> {
 
   private boolean isOpen;
 
-  private RollerShutter setCurrentLift(Integer newValue) {
-    liftWasChanged.onNext(newValue);
-    currentLift = newValue;
-    return this;
-  }
-
-  private RollerShutter setIsOpen(Boolean newValue) {
-    openWasChanged.onNext(newValue);
-    isOpen = newValue;
-    return this;
-  }
-
-  private RollerShutter setCurrentTilt(Integer newValue) {
-    tiltWasChanged.onNext(newValue);
-    currentTilt = newValue;
-    return this;
-  }
-
-
   /**
    * Set "tilt" and wait until both reached their position. After that, set lift to the given value.
    *
@@ -69,15 +52,22 @@ public class RollerShutter extends Actor<RollerShutter> {
    */
   public void setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
     log.info("Setting tilt (to " + tilt + ") and lift (to " + lift + ") of " + getName());
-    functionToSetTilt.accept(tilt);
+
+    if (Math.abs(currentTilt - tilt) > 20) {
+      functionToSetTilt.accept(tilt);
+    }
 
     //noinspection ResultOfMethodCallIgnored
-    tiltWasChanged
-        .filter(newLift -> Math.abs(newLift - tilt) < 20)
+    tilt$
+        .filter(newTilt -> Math.abs(newTilt - tilt) < 20)
         .take(1)
+        .timeout(30, TimeUnit.SECONDS)
+        .onErrorResumeNext(throwable -> Observable.just(1))
         .subscribe(ignored -> {
-          log.info("tilt is ok, setting tilt to " + lift);
-          functionToSetLift.accept(lift);
+          log.info("tilt is ok, setting lift to " + lift);
+          if (Math.abs(currentLift - lift) < 20) {
+            functionToSetLift.accept(lift);
+          }
         });
   }
 
@@ -95,15 +85,25 @@ public class RollerShutter extends Actor<RollerShutter> {
     setLiftAndThenTilt(0, 0);
   }
 
-  public boolean isNotCompletelyClosed() {
-    return currentLift > 5;
-  }
-
-
   @Override
   protected void consumeInternalUpdate(State update) {
     setCurrentLift(update.getLift());
     setCurrentTilt(update.getTilt());
     setIsOpen(update.getOpen());
+  }
+
+  private void setCurrentLift(Integer newValue) {
+    lift$.onNext(newValue);
+    currentLift = newValue;
+  }
+
+  private void setIsOpen(Boolean newValue) {
+    open$.onNext(newValue);
+    isOpen = newValue;
+  }
+
+  private void setCurrentTilt(Integer newValue) {
+    tilt$.onNext(newValue);
+    currentTilt = newValue;
   }
 }
