@@ -232,8 +232,7 @@ public class DeconzConnector {
           .ifPresent(device -> device.consumeUpdate(update.getState()));
     } else if (update.getR().equals("lights")
         && update.getE().equals("changed")
-        && update.getState() != null
-        && update.getState().getOn() != null) {
+        && update.getState() != null) {
 
       deviceService.findDeviceById(update.getId(), Actor.class)
           .ifPresent(device -> device.consumeUpdate(update.getState()));
