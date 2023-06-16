@@ -55,7 +55,7 @@ public class RollerShutter extends Actor<RollerShutter> {
     Observable<Boolean> tiltAction;
     if (Math.abs(currentTilt - tilt) > 20) {
       tiltAction = Observable.fromCallable(() -> {
-        log.info(this.getName() + ": tilt nok, set to " + tilt);
+        log.info(this.getName() + ": tilt (now at " + currentTilt + ") nok, set to " + tilt);
         functionToSetTilt.accept(tilt);
         return true;
       });
@@ -65,12 +65,12 @@ public class RollerShutter extends Actor<RollerShutter> {
 
     return tiltAction.switchMap(ignored -> tilt$
             .filter(newTilt -> Math.abs(newTilt - tilt) < 20)
-            .take(1)
             .timeout(30, TimeUnit.SECONDS)
             .onErrorResumeNext(throwable -> Observable.just(1))
+            .take(1)
             .map(ignored2 -> {
               if (Math.abs(currentLift - lift) > 20) {
-                log.info(this.getName() + ": lift is nok, set to " + lift);
+                log.info(this.getName() + ": lift (now at " + currentLift + ") is nok, set to " + lift);
                 functionToSetLift.accept(lift);
               }
               return new Object();
