@@ -10,6 +10,7 @@ import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepos
 import ch.akop.homesystem.util.TimeUtil;
 import ch.akop.weathercloud.Weather;
 import io.quarkus.narayana.jta.QuarkusTransaction;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Vertx;
@@ -55,13 +56,15 @@ public class RollerShutterService {
         .mergeWith(telegramMessageService.getMessages()
             .filter(message -> message.startsWith("/calcRollerShutter"))
             .switchMap(message -> weatherService.getWeather().take(1)))
+        .debounce(10, TimeUnit.SECONDS)
         .subscribeOn(rxScheduler)
-        .switchMap(weather -> Observable.combineLatest(handleWeatherUpdate(weather), objects -> Observable.empty()))
+        .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
         .subscribe());
+
     initTimer();
   }
 
-  private List<Observable<Object>> handleWeatherUpdate(Weather newWeather) {
+  private List<Completable> handleWeatherUpdate(Weather newWeather) {
     var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
     var newBrightness = newWeather.getLight().getAs(KILO_LUX).intValue();
 

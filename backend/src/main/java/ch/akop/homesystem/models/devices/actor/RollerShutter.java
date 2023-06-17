@@ -1,6 +1,7 @@
 package ch.akop.homesystem.models.devices.actor;
 
 import ch.akop.homesystem.deconz.rest.State;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
@@ -51,44 +52,44 @@ public class RollerShutter extends Actor<RollerShutter> {
    * @param lift new lift value
    * @param tilt new tilt value
    */
-  public Observable<Object> setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
-    Observable<Object> tiltAction;
+  public Completable setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
+    Completable tiltAction;
     if (Math.abs(currentTilt - tilt) > 20) {
-      tiltAction = Observable.fromRunnable(() -> {
+      tiltAction = Completable.fromRunnable(() -> {
             log.info(this.getName() + ": tilt (now at " + currentTilt + ") nok, set to " + tilt);
             functionToSetTilt.accept(tilt);
           })
-          .switchMap(empty -> tilt$
+          .andThen(tilt$
               .filter(newTilt -> Math.abs(newTilt - tilt) < 20)
               .timeout(10, TimeUnit.SECONDS)
               .onErrorResumeNext(throwable -> Observable.just(1))
-              .take(1));
+              .take(1)
+              .flatMapCompletable(integer -> Completable.complete()));
     } else {
-      tiltAction = Observable.just(new Object());
+      tiltAction = Completable.complete();
     }
 
     return tiltAction
-        .map(ignored -> {
+        .andThen(Completable.fromRunnable(() -> {
           if (Math.abs(currentLift - lift) > 20) {
             log.info(this.getName() + ": lift (now at " + currentLift + ") is nok, set to " + lift);
             functionToSetLift.accept(lift);
           }
-          return new Object();
-        })
+        }))
         .subscribeOn(Schedulers.io());
   }
 
   /**
    * Opens the rollerShutters to maximum value
    */
-  public Observable<Object> open() {
+  public Completable open() {
     return setLiftAndThenTilt(100, 100);
   }
 
   /**
    * Coles the rollerShutters to minimum value
    */
-  public Observable<Object> close() {
+  public Completable close() {
     return setLiftAndThenTilt(0, 0);
   }
 
