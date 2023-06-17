@@ -85,7 +85,7 @@ public class RollerShutterService {
                   if (sunDirection.getZenithAngle() > 40) {
                     return rollerShutter.setLiftAndThenTilt(50, 50);
                   } else if (sunDirection.getZenithAngle() > 20) {
-                    return rollerShutter.setLiftAndThenTilt(25, 50);
+                    return rollerShutter.setLiftAndThenTilt(75, 50);
                   }
                 }
                 log.info("Weather open for " + rollerShutter.getName() + " because sun is coming from other direction");
