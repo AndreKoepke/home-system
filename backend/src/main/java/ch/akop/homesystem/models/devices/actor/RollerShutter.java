@@ -60,7 +60,7 @@ public class RollerShutter extends Actor<RollerShutter> {
             functionToSetTilt.accept(tilt);
           })
           .andThen(tilt$
-              .filter(newTilt -> Math.abs(newTilt - tilt) < 20)
+              .filter(newTilt -> Math.abs(newTilt - tilt) < 5)
               .timeout(10, TimeUnit.SECONDS)
               .onErrorResumeNext(throwable -> Observable.just(1))
               .take(1)
@@ -71,7 +71,7 @@ public class RollerShutter extends Actor<RollerShutter> {
 
     return tiltAction
         .andThen(Completable.fromRunnable(() -> {
-          if (Math.abs(currentLift - lift) > 20) {
+          if (Math.abs(currentLift - lift) > 5) {
             log.info(this.getName() + ": lift (now at " + currentLift + ") is nok, set to " + lift);
             functionToSetLift.accept(lift);
           }

@@ -96,7 +96,7 @@ public class RollerShutterService {
               }
           ).toList();
 
-    } else if (newBrightness < 200 && newBrightness > 10) {
+    } else if (newBrightness < 70 && newBrightness > 10) {
       return configs.stream()
           .map(this::getRollerShutter)
           .peek(rollerShutter -> log.info("Open RollerShutter " + rollerShutter.getName() + "."))
