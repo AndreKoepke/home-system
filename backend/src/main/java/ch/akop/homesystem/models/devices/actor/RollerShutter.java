@@ -22,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 @ToString(callSuper = true)
 public class RollerShutter extends Actor<RollerShutter> {
 
+  public static final int TILT_ALLOWED_DIFFERENCE = 20;
+  public static final int LIFT_ALLOWED_TOLERANCE = 5;
   private Subject<Integer> lift$ = ReplaySubject.createWithSize(1);
   private Subject<Integer> tilt$ = ReplaySubject.createWithSize(1);
   private Subject<Boolean> open$ = ReplaySubject.createWithSize(1);
@@ -54,13 +56,13 @@ public class RollerShutter extends Actor<RollerShutter> {
    */
   public Completable setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
     Completable tiltAction;
-    if (Math.abs(currentTilt - tilt) > 20) {
+    if (Math.abs(currentTilt - tilt) > TILT_ALLOWED_DIFFERENCE) {
       tiltAction = Completable.fromRunnable(() -> {
             log.info(this.getName() + ": tilt (now at " + currentTilt + ") nok, set to " + tilt);
             functionToSetTilt.accept(tilt);
           })
           .andThen(tilt$
-              .filter(newTilt -> Math.abs(newTilt - tilt) < 5)
+              .filter(newTilt -> Math.abs(newTilt - tilt) < TILT_ALLOWED_DIFFERENCE)
               .timeout(10, TimeUnit.SECONDS)
               .onErrorResumeNext(throwable -> Observable.just(1))
               .take(1)
@@ -71,7 +73,7 @@ public class RollerShutter extends Actor<RollerShutter> {
 
     return tiltAction
         .andThen(Completable.fromRunnable(() -> {
-          if (Math.abs(currentLift - lift) > 5) {
+          if (Math.abs(currentLift - lift) > LIFT_ALLOWED_TOLERANCE) {
             log.info(this.getName() + ": lift (now at " + currentLift + ") is nok, set to " + lift);
             functionToSetLift.accept(lift);
           }

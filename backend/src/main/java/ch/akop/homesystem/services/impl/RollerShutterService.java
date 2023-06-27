@@ -29,11 +29,13 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.e175.klaus.solarpositioning.AzimuthZenithAngle;
+import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 @ApplicationScoped
@@ -77,33 +79,19 @@ public class RollerShutterService {
       var compassDirection = resolveCompassDirection(sunDirection);
 
       return configs.stream()
-          .map(config -> {
-                var rollerShutter = getRollerShutter(config);
-
-                if (config.getCompassDirection().contains(compassDirection)) {
-                  log.info("Weather close for " + rollerShutter.getName()
-                      + " because it is too much sun. Zenith is "
-                      + sunDirection.getZenithAngle() + "°.");
-
-                  if (sunDirection.getZenithAngle() > 40) {
-                    return rollerShutter.setLiftAndThenTilt(50, 50);
-                  } else if (sunDirection.getZenithAngle() > 20) {
-                    return rollerShutter.setLiftAndThenTilt(75, 75);
-                  }
-                }
-                log.info("Weather open for " + rollerShutter.getName() + " because sun is coming from other direction");
-                return rollerShutter.open();
-              }
-          ).toList();
+          .map(handleHighBrightness(sunDirection, compassDirection))
+          .toList();
 
     } else if (newBrightness < 70 && newBrightness > 10) {
       return configs.stream()
+          .filter(rollerShutterConfig -> !rollerShutterConfig.isIgnoreWeatherInTheMorning())
           .map(this::getRollerShutter)
           .peek(rollerShutter -> log.info("Open RollerShutter " + rollerShutter.getName() + "."))
           .map(RollerShutter::open)
           .toList();
     } else if (newBrightness == 0) {
       return configs.stream()
+          .filter(rollerShutterConfig -> !rollerShutterConfig.isIgnoreWeatherInTheEvening())
           .map(this::getRollerShutter)
           .peek(rollerShutter -> log.info("Close RollerShutter " + rollerShutter.getName() + " because it is night."))
           .map(RollerShutter::close)
@@ -111,6 +99,32 @@ public class RollerShutterService {
     }
 
     return new ArrayList<>();
+  }
+
+  @NotNull
+  private Function<RollerShutterConfig, Completable> handleHighBrightness(AzimuthZenithAngle sunDirection, CompassDirection compassDirection) {
+    return config -> {
+      var rollerShutter = getRollerShutter(config);
+
+      if (config.getCompassDirection().contains(compassDirection)) {
+        log.info("Weather close for " + rollerShutter.getName()
+            + " because it is too much sun. Zenith is "
+            + sunDirection.getZenithAngle() + "°.");
+
+        if (sunDirection.getZenithAngle() > 40 && rollerShutter.getCurrentLift() > 50) {
+          return rollerShutter.setLiftAndThenTilt(50, 50);
+        } else if (sunDirection.getZenithAngle() > 20 && rollerShutter.getCurrentLift() > 75) {
+          return rollerShutter.setLiftAndThenTilt(75, 75);
+        }
+      }
+
+      if (config.isIgnoreWeatherInTheMorning()) {
+        return Completable.complete();
+      }
+
+      log.info("Weather open for " + rollerShutter.getName() + " because sun is coming from other direction");
+      return rollerShutter.open();
+    };
   }
 
   private void initTimer() {
