@@ -34,8 +34,4 @@ public class RollerShutterConfig {
 
   @Nullable
   private LocalTime openAt;
-
-  private boolean ignoreWeatherInTheMorning;
-  private boolean ignoreWeatherInTheEvening;
-
 }

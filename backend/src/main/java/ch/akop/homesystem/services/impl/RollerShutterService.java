@@ -42,6 +42,7 @@ import org.jetbrains.annotations.NotNull;
 @RequiredArgsConstructor
 public class RollerShutterService {
 
+  public static final Duration TIMEOUT_AFTER_MANUAL = Duration.ofHours(1);
   private final DeviceService deviceService;
   private final WeatherService weatherService;
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
@@ -84,16 +85,15 @@ public class RollerShutterService {
 
     } else if (newBrightness < 70 && newBrightness > 10) {
       return configs.stream()
-          .filter(rollerShutterConfig -> !rollerShutterConfig.isIgnoreWeatherInTheMorning())
+          .filter(config -> config.getOpenAt() == null || config.getOpenAt().isAfter(LocalTime.now()))
           .map(this::getRollerShutter)
-          .peek(rollerShutter -> log.info("Open RollerShutter " + rollerShutter.getName() + "."))
+          .filter(rollerShutter -> Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now()).compareTo(TIMEOUT_AFTER_MANUAL) < 0)
           .map(RollerShutter::open)
           .toList();
     } else if (newBrightness == 0) {
       return configs.stream()
-          .filter(rollerShutterConfig -> !rollerShutterConfig.isIgnoreWeatherInTheEvening())
           .map(this::getRollerShutter)
-          .peek(rollerShutter -> log.info("Close RollerShutter " + rollerShutter.getName() + " because it is night."))
+          .filter(rollerShutter -> Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now()).compareTo(TIMEOUT_AFTER_MANUAL) < 0)
           .map(RollerShutter::close)
           .toList();
     }
@@ -105,24 +105,24 @@ public class RollerShutterService {
   private Function<RollerShutterConfig, Completable> handleHighBrightness(AzimuthZenithAngle sunDirection, CompassDirection compassDirection) {
     return config -> {
       var rollerShutter = getRollerShutter(config);
+      var hasManuallyAction = Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now()).compareTo(TIMEOUT_AFTER_MANUAL) < 0;
+
+      if (hasManuallyAction) {
+        return Completable.complete();
+      }
+
+      if (config.getOpenAt() != null && config.getOpenAt().isBefore(LocalTime.now())) {
+        return Completable.complete();
+      }
 
       if (config.getCompassDirection().contains(compassDirection)) {
-        log.info("Weather close for " + rollerShutter.getName()
-            + " because it is too much sun. Zenith is "
-            + sunDirection.getZenithAngle() + "°.");
-
         if (sunDirection.getZenithAngle() > 40 && rollerShutter.getCurrentLift() > 50) {
-          return rollerShutter.setLiftAndThenTilt(50, 50);
+          return rollerShutter.setLiftAndThenTilt(50, 40);
         } else if (sunDirection.getZenithAngle() > 20 && rollerShutter.getCurrentLift() > 75) {
           return rollerShutter.setLiftAndThenTilt(75, 75);
         }
       }
 
-      if (config.isIgnoreWeatherInTheMorning()) {
-        return Completable.complete();
-      }
-
-      log.info("Weather open for " + rollerShutter.getName() + " because sun is coming from other direction");
       return rollerShutter.open();
     };
   }
