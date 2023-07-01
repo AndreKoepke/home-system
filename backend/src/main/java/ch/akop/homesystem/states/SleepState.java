@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
@@ -72,7 +73,7 @@ public class SleepState implements State {
     stateService.registerState(SleepState.class, this);
   }
 
-  //@PostConstruct
+  @PostConstruct
   @Transactional
   void loadNightSceneName() {
     nightSceneName = basicConfigRepository.findFirstByOrderByModifiedDesc()

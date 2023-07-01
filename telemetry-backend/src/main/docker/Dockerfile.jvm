@@ -77,20 +77,19 @@
 #   accessed directly. (example: "foo.example.com,bar.example.com")
 #
 ###
-FROM registry.access.redhat.com/ubi8/openjdk-11:1.15
+FROM eclipse-temurin:11
 
 ENV LANGUAGE='en_US:en'
 
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
-COPY --chown=185 build/quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 build/quarkus-app/*.jar /deployments/
-COPY --chown=185 build/quarkus-app/app/ /deployments/app/
-COPY --chown=185 build/quarkus-app/quarkus/ /deployments/quarkus/
+COPY build/quarkus-app/lib/ /deployments/lib/
+COPY build/quarkus-app/*.jar /deployments/
+COPY build/quarkus-app/app/ /deployments/app/
+COPY build/quarkus-app/quarkus/ /deployments/quarkus/
 
 EXPOSE 8080
-USER 185
-ENV AB_JOLOKIA_OFF=""
 ENV JAVA_OPTS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
 
+CMD ["java", "-jar", "/deployments/quarkus-run.jar"]
