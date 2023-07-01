@@ -29,7 +29,7 @@ class BucketService {
     }
 
 
-    @Scheduled(every = "10s")
+    @Scheduled(every = "20m")
     fun refillToken() {
         if (freeToken < BUCKET_CAPACITY) {
             freeToken += 1
