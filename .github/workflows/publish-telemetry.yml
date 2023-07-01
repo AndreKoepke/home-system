@@ -18,7 +18,7 @@ jobs:
         with:
           java-version: 11
           distribution: adopt
-          cache: gradle-telemetry
+          cache: gradle
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
