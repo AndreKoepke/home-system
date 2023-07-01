@@ -24,7 +24,7 @@ jobs:
 
       - name: Java build
         working-directory: ./backend
-        run: ./gradlew build
+        run: ./gradlew build  --no-daemon
         env:
           REPO_USERNAME: '${{ secrets.REPO_GITHUB_NAME }}'
           REPO_TOKEN: '${{ secrets.REPO_GITHUB_TOKEN }}'

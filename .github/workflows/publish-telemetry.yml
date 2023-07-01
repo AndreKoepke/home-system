@@ -13,19 +13,27 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - uses: actions/cache@v3
+        with:
+          path: |
+            telemetry-backend/.gradle/caches
+            telemetry-backend/.gradle/wrapper
+          key: telemetry-${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            telemetry-${{ runner.os }}-gradle-
+
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: 11
           distribution: adopt
-          cache: gradle
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
 
       - name: Java build
         working-directory: ./telemetry-backend
-        run: ./gradlew build
+        run: ./gradlew build --no-daemon
         env:
           REPO_USERNAME: '${{ secrets.REPO_GITHUB_NAME }}'
           REPO_TOKEN: '${{ secrets.REPO_GITHUB_TOKEN }}'
