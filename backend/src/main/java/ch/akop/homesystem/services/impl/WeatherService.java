@@ -13,7 +13,6 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +36,7 @@ public class WeatherService {
   @Getter
   private boolean active;
 
-  @PostConstruct
+  //@PostConstruct
   void startFetchingData() {
     // TODO restart when config changes
     var nearestWeatherCloudStation = basicConfigRepository.findFirstByOrderByModifiedDesc()

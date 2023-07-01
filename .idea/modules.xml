@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.github/.github.iml" filepath="$PROJECT_DIR$/.github/.github.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend.main.iml" filepath="$PROJECT_DIR$/.idea/modules/backend.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ch.akop.backend.main.iml" filepath="$PROJECT_DIR$/.idea/modules/ch.akop.backend.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/deploy/deploy.iml" filepath="$PROJECT_DIR$/deploy/deploy.iml" />
       <module fileurl="file://$PROJECT_DIR$/frontend/frontend.iml" filepath="$PROJECT_DIR$/frontend/frontend.iml" />
     </modules>
