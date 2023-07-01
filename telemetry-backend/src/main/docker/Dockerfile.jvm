@@ -81,8 +81,6 @@ FROM eclipse-temurin:11
 
 ENV LANGUAGE='en_US:en'
 
-RUN ls -la build/quarkus-app/
-
 # We make four distinct layers so if there are application changes the library layers can be re-used
 COPY build/quarkus-app/lib/ /deployments/lib/
 COPY build/quarkus-app/*.jar /deployments/
