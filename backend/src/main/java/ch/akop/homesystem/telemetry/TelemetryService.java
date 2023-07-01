@@ -51,8 +51,8 @@ public class TelemetryService {
     telemetryRepository.findAll()
         .forEach(telemetryData -> telemetryServer.heartbeat(new Heartbeat()
             .setId(telemetryData.getId())
-            .setGitBranch("")
-            .setGitCommit("")
-            .setGitCommitDate(LocalDateTime.now())));
+            .setGitBranch(gitBranch)
+            .setGitCommit(gitCommit)
+            .setGitCommitDate(gitCommitDate)));
   }
 }
