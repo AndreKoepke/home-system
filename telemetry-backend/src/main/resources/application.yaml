@@ -4,7 +4,6 @@ server:
     include-message: always
   address: 0.0.0.0
 
-
 quarkus:
 
   scheduler:
@@ -12,15 +11,14 @@ quarkus:
 
   flyway:
     migrate-at-start: true
-    validate-on-migrate: false
+    baseline-on-migrate: true
 
   datasource:
     db-kind: postgresql
     jdbc:
-      url: ${JDBC_URL:jdbc:postgresql://localhost/}
+      url: ${JDBC_URL:jdbc:postgresql://localhost:5432/}
     username: ${DB_USER:postgres}
     password: ${DB_PASS:postgres}
-
 
   hibernate-orm:
     physical-naming-strategy: "org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy"
@@ -33,4 +31,3 @@ quarkus:
       ~: true
       origins: "*"
       methods: "GET,OPTIONS"
-      exposed-headers: "prompt"

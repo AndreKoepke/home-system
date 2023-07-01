@@ -3,9 +3,9 @@ on:
   push:
     branches: [ master ]
     paths:
-      - 'backend/src/**'
-      - 'backend/build.gradle'
-      - '.github/workflows/publish.yml'
+      - 'telemetry-backend/src/**'
+      - 'telemetry-backend/build.gradle'
+      - '.github/workflows/publish-telemetry.yml'
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -23,7 +23,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Java build
-        working-directory: ./backend
+        working-directory: ./telemetry-backend
         run: ./gradlew build
         env:
           REPO_USERNAME: '${{ secrets.REPO_GITHUB_NAME }}'
@@ -45,8 +45,8 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: backend/
-          file: backend/src/main/docker/Dockerfile.jvm
+          file: telemetry-backend/src/main/docker/Dockerfile.jvm
           platforms: linux/amd64,linux/arm/v7,linux/arm64/v8
           push: true
           pull: true
-          tags: akop/home-system:latest
+          tags: akop/home-system-telemetry:latest
