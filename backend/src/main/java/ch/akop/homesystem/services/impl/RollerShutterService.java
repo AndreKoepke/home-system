@@ -93,7 +93,7 @@ public class RollerShutterService {
     } else if (newBrightness == 0) {
       return configs.stream()
           .map(this::getRollerShutter)
-          .filter(rollerShutter -> Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now()).compareTo(TIMEOUT_AFTER_MANUAL) < 0)
+          .filter(rollerShutter -> Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now()).compareTo(TIMEOUT_AFTER_MANUAL) > 0)
           .map(RollerShutter::close)
           .toList();
     }
