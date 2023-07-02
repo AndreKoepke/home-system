@@ -6,5 +6,5 @@ import lombok.Data;
 @Data
 public class SyncAck {
 
-  private final UUID id;
+  private UUID id;
 }
