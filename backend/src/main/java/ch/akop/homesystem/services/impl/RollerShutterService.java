@@ -128,7 +128,7 @@ public class RollerShutterService {
         return Completable.complete();
       }
 
-      if (config.getOpenAt() != null && config.getOpenAt().isBefore(LocalTime.now())) {
+      if (config.getOpenAt() != null && config.getOpenAt().isAfter(LocalTime.now())) {
         return Completable.complete();
       }
 
