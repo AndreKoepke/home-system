@@ -3,6 +3,8 @@ package ch.akop.homesystem.services.impl;
 import static ch.akop.homesystem.util.Comparer.is;
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
+import static ch.akop.weathercloud.wind.WindSpeedUnit.METERS_PER_SECOND;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import ch.akop.homesystem.models.CompassDirection;
 import ch.akop.homesystem.models.devices.actor.RollerShutter;
@@ -11,7 +13,6 @@ import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepos
 import ch.akop.homesystem.util.TimeUtil;
 import ch.akop.homesystem.util.TimedGateKeeper;
 import ch.akop.weathercloud.Weather;
-import ch.akop.weathercloud.wind.WindSpeedUnit;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
@@ -31,8 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
@@ -64,7 +63,7 @@ public class RollerShutterService {
         .mergeWith(telegramMessageService.getMessages()
             .filter(message -> message.startsWith("/calcRollerShutter"))
             .switchMap(message -> weatherService.getWeather().take(1)))
-        .debounce(10, TimeUnit.SECONDS)
+        .debounce(10, SECONDS)
         .subscribeOn(rxScheduler)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
         .subscribe());
@@ -73,7 +72,8 @@ public class RollerShutterService {
   }
 
   private void checkWindSpeed(Weather weather) {
-    if (weather.getWind().isBiggerThan(10, WindSpeedUnit.METERS_PER_SECOND)) {
+    if (weather.getWind().isBiggerThan(10, METERS_PER_SECOND)) {
+      telegramMessageService.sendMessageToMainChannel("Hui das ist sehr winding. Ich mach die Stören hoch.");
       deviceService.getDevicesOfType(RollerShutter.class)
           .forEach(RollerShutter::reportHighWind);
     }
@@ -93,7 +93,7 @@ public class RollerShutterService {
       var compassDirection = resolveCompassDirection(sunDirection);
 
       return configs.stream()
-          .map(handleHighBrightness(sunDirection, compassDirection))
+          .map(config -> handleHighBrightness(config, sunDirection, compassDirection))
           .toList();
 
     } else if (newBrightness < 70 && newBrightness > 10 && highSunLock.isGateOpen()) {
@@ -115,33 +115,30 @@ public class RollerShutterService {
   }
 
   private static boolean hasNoManualAction(RollerShutter rollerShutter) {
-    return is(Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now())).biggerAs(TIMEOUT_AFTER_MANUAL);
+    return is(Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now()).abs()).biggerAs(TIMEOUT_AFTER_MANUAL);
   }
 
   @NotNull
-  private Function<RollerShutterConfig, Completable> handleHighBrightness(AzimuthZenithAngle sunDirection, CompassDirection compassDirection) {
-    return config -> {
-      var rollerShutter = getRollerShutter(config);
-      var hasManuallyAction = Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now()).compareTo(TIMEOUT_AFTER_MANUAL) < 0;
+  private Completable handleHighBrightness(RollerShutterConfig config, AzimuthZenithAngle sunDirection, CompassDirection compassDirection) {
+    var rollerShutter = getRollerShutter(config);
 
-      if (hasManuallyAction) {
-        return Completable.complete();
+    if (hasNoManualAction(rollerShutter)) {
+      return Completable.complete();
+    }
+
+    if (config.getOpenAt() != null && config.getOpenAt().isAfter(LocalTime.now())) {
+      return Completable.complete();
+    }
+
+    if (config.getCompassDirection().contains(compassDirection)) {
+      if (sunDirection.getZenithAngle() > 40 && rollerShutter.getCurrentLift() > 50) {
+        return rollerShutter.setLiftAndThenTilt(50, 40);
+      } else if (sunDirection.getZenithAngle() > 20 && rollerShutter.getCurrentLift() > 75) {
+        return rollerShutter.setLiftAndThenTilt(75, 75);
       }
+    }
 
-      if (config.getOpenAt() != null && config.getOpenAt().isAfter(LocalTime.now())) {
-        return Completable.complete();
-      }
-
-      if (config.getCompassDirection().contains(compassDirection)) {
-        if (sunDirection.getZenithAngle() > 40 && rollerShutter.getCurrentLift() > 50) {
-          return rollerShutter.setLiftAndThenTilt(50, 40);
-        } else if (sunDirection.getZenithAngle() > 20 && rollerShutter.getCurrentLift() > 75) {
-          return rollerShutter.setLiftAndThenTilt(75, 75);
-        }
-      }
-
-      return rollerShutter.open();
-    };
+    return rollerShutter.open();
   }
 
   private void initTimer() {
@@ -171,7 +168,7 @@ public class RollerShutterService {
     var nextExecutionTime = getNextExecutionTime().atZone(ZoneId.systemDefault());
     var nextEvent = Duration.between(ZonedDateTime.now(), nextExecutionTime);
 
-    return Observable.timer(nextEvent.toSeconds(), TimeUnit.SECONDS)
+    return Observable.timer(nextEvent.toSeconds(), SECONDS)
         .map(ignored -> nextExecutionTime.toLocalTime())
         .doOnNext(this::handleTime);
   }

@@ -65,6 +65,7 @@ public class RollerShutter extends Actor<RollerShutter> {
   public Completable setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
 
     if (!highWindLock.isGateOpen()) {
+      log.warn("Ignored command because of high windspeed for " + getName());
       return Completable.complete();
     }
 
