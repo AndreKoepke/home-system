@@ -28,10 +28,12 @@ public class RollerShutter extends Actor<RollerShutter> {
 
   public static final int TILT_ALLOWED_DIFFERENCE = 20;
   public static final int LIFT_ALLOWED_TOLERANCE = 5;
+  public static final Duration BLOCK_TIME_WHEN_HIGH_WIND = Duration.ofHours(1);
   private final Subject<Integer> lift$ = ReplaySubject.createWithSize(1);
   private final Subject<Integer> tilt$ = ReplaySubject.createWithSize(1);
   private final Subject<Boolean> open$ = ReplaySubject.createWithSize(1);
-  private final TimedGateKeeper automaticAction = new TimedGateKeeper();
+  private final TimedGateKeeper automaticActionLock = new TimedGateKeeper();
+  private final TimedGateKeeper highWindLock = new TimedGateKeeper();
 
   private final Consumer<Integer> functionToSetLift;
   private final Consumer<Integer> functionToSetTilt;
@@ -61,12 +63,17 @@ public class RollerShutter extends Actor<RollerShutter> {
    * @param tilt new tilt value
    */
   public Completable setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
+
+    if (!highWindLock.isGateOpen()) {
+      return Completable.complete();
+    }
+
     return setTiltTo(tilt)
         .andThen(Completable.fromRunnable(() -> {
           if (Math.abs(currentLift - lift) > LIFT_ALLOWED_TOLERANCE) {
             log.info(this.getName() + ": lift (now at " + currentLift + ") is nok, set to " + lift);
             functionToSetLift.accept(lift);
-            automaticAction.blockFor(Duration.ofMinutes(1));
+            automaticActionLock.blockFor(Duration.ofMinutes(1));
           }
         }))
         .observeOn(Schedulers.io())
@@ -82,7 +89,7 @@ public class RollerShutter extends Actor<RollerShutter> {
     return Completable.fromRunnable(() -> {
           log.info(this.getName() + ": tilt (now at " + currentTilt + ") nok, set to " + tilt);
           functionToSetTilt.accept(tilt);
-          automaticAction.blockFor(Duration.ofSeconds(10));
+          automaticActionLock.blockFor(Duration.ofSeconds(10));
         })
         .andThen(tilt$
             .filter(newTilt -> Math.abs(newTilt - tilt) < TILT_ALLOWED_DIFFERENCE)
@@ -106,9 +113,14 @@ public class RollerShutter extends Actor<RollerShutter> {
     return setLiftAndThenTilt(0, 0);
   }
 
+  public void reportHighWind() {
+    close().subscribe();
+    highWindLock.blockFor(BLOCK_TIME_WHEN_HIGH_WIND);
+  }
+
   @Override
   protected void consumeInternalUpdate(State update) {
-    if (currentLift != null && automaticAction.isGateOpen()) {
+    if (currentLift != null && automaticActionLock.isGateOpen()) {
       lastManuallAction = LocalDateTime.now();
     }
 

@@ -1,5 +1,7 @@
 package ch.akop.homesystem.models.devices.sensor;
 
+import static ch.akop.homesystem.util.Comparer.is;
+
 import ch.akop.homesystem.deconz.rest.State;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -26,7 +28,7 @@ public class Button extends Sensor<Button> {
     try {
       var lastUpdated = LocalDateTime.parse(update.getLastupdated());
       var updatedBefore = Duration.between(lastUpdated.atZone(ZoneOffset.UTC), ZonedDateTime.now()).abs();
-      if (updatedBefore.compareTo(Duration.ofSeconds(30)) < 0) {
+      if (is(updatedBefore).biggerAs(Duration.ofSeconds(30))) {
         events$.onNext(update.getButtonevent());
       }
     } catch (DateTimeParseException e) {

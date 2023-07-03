@@ -64,7 +64,7 @@ public class DeviceService {
   }
 
 
-  public <T> Collection<T> getDevicesOfType(Class<T> clazz) {
+  public <T extends Device<?>> Collection<T> getDevicesOfType(Class<T> clazz) {
     return devices.stream()
         .filter(clazz::isInstance)
         .map(clazz::cast)

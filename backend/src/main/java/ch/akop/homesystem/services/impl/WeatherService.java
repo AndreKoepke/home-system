@@ -1,6 +1,5 @@
 package ch.akop.homesystem.services.impl;
 
-import static ch.akop.weathercloud.wind.WindSpeedUnit.KILOMETERS_PER_SECOND;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 import ch.akop.homesystem.persistence.model.config.BasicConfig;
@@ -9,7 +8,6 @@ import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.scraper.weathercloud.Scraper;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,10 +55,6 @@ public class WeatherService {
     weather.subscribe(weatherUpdate -> {
       log.info("Got weather-update " + weatherUpdate);
       rainDetectorService.updateDatabaseIfNecessary(weatherUpdate);
-      if (weatherUpdate.getWind().getAs(KILOMETERS_PER_SECOND).compareTo(new BigDecimal(50)) > 0) {
-        messageService.sendMessageToMainChannel("Hui, ist das winding. Macht lieber die Stören hoch. Grade wehts mit %s."
-            .formatted(weatherUpdate.getWind()));
-      }
     });
 
     log.info("WeatherService is up");

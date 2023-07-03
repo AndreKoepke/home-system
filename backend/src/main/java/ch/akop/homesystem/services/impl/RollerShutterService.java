@@ -1,5 +1,6 @@
 package ch.akop.homesystem.services.impl;
 
+import static ch.akop.homesystem.util.Comparer.is;
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 
@@ -8,7 +9,9 @@ import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
 import ch.akop.homesystem.util.TimeUtil;
+import ch.akop.homesystem.util.TimedGateKeeper;
 import ch.akop.weathercloud.Weather;
+import ch.akop.weathercloud.wind.WindSpeedUnit;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
@@ -43,6 +46,7 @@ import org.jetbrains.annotations.NotNull;
 public class RollerShutterService {
 
   public static final Duration TIMEOUT_AFTER_MANUAL = Duration.ofHours(1);
+
   private final DeviceService deviceService;
   private final WeatherService weatherService;
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
@@ -51,11 +55,12 @@ public class RollerShutterService {
 
   private final List<Disposable> disposables = new ArrayList<>();
   private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
-
+  private final TimedGateKeeper highSunLock = new TimedGateKeeper();
 
   public void init() {
     var rxScheduler = RxHelper.blockingScheduler(vertx);
     disposables.add(weatherService.getWeather()
+        .doOnNext(this::checkWindSpeed)
         .mergeWith(telegramMessageService.getMessages()
             .filter(message -> message.startsWith("/calcRollerShutter"))
             .switchMap(message -> weatherService.getWeather().take(1)))
@@ -67,6 +72,13 @@ public class RollerShutterService {
     initTimer();
   }
 
+  private void checkWindSpeed(Weather weather) {
+    if (weather.getWind().isBiggerThan(10, WindSpeedUnit.METERS_PER_SECOND)) {
+      deviceService.getDevicesOfType(RollerShutter.class)
+          .forEach(RollerShutter::reportHighWind);
+    }
+  }
+
   private List<Completable> handleWeatherUpdate(Weather newWeather) {
     var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
     var newBrightness = newWeather.getLight().getAs(KILO_LUX).intValue();
@@ -76,6 +88,7 @@ public class RollerShutterService {
         return new ArrayList<>();
       }
 
+      highSunLock.blockFor(Duration.ofHours(1));
       var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
       var compassDirection = resolveCompassDirection(sunDirection);
 
@@ -83,22 +96,26 @@ public class RollerShutterService {
           .map(handleHighBrightness(sunDirection, compassDirection))
           .toList();
 
-    } else if (newBrightness < 70 && newBrightness > 10) {
+    } else if (newBrightness < 70 && newBrightness > 10 && highSunLock.isGateOpen()) {
       return configs.stream()
           .filter(config -> config.getOpenAt() == null || config.getOpenAt().isAfter(LocalTime.now()))
           .map(this::getRollerShutter)
-          .filter(rollerShutter -> Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now()).compareTo(TIMEOUT_AFTER_MANUAL) < 0)
+          .filter(RollerShutterService::hasNoManualAction)
           .map(RollerShutter::open)
           .toList();
     } else if (newBrightness == 0) {
       return configs.stream()
           .map(this::getRollerShutter)
-          .filter(rollerShutter -> Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now()).compareTo(TIMEOUT_AFTER_MANUAL) > 0)
+          .filter(RollerShutterService::hasNoManualAction)
           .map(RollerShutter::close)
           .toList();
     }
 
     return new ArrayList<>();
+  }
+
+  private static boolean hasNoManualAction(RollerShutter rollerShutter) {
+    return is(Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now())).biggerAs(TIMEOUT_AFTER_MANUAL);
   }
 
   @NotNull
