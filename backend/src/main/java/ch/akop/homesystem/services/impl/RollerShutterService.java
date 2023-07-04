@@ -19,12 +19,13 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Vertx;
 import io.vertx.rxjava3.RxHelper;
-import java.text.DateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -47,8 +48,8 @@ import org.jetbrains.annotations.NotNull;
 public class RollerShutterService {
 
   public static final Duration TIMEOUT_AFTER_MANUAL = Duration.ofHours(1);
-  private static final DateFormat GERMANY_DATE_TIME = DateFormat.getDateTimeInstance(
-      DateFormat.MEDIUM, DateFormat.SHORT, Locale.GERMANY);
+  private static final DateTimeFormatter GERMANY_DATE_TIME = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+      .withLocale(Locale.GERMANY);
 
   private final DeviceService deviceService;
   private final WeatherService weatherService;
@@ -91,7 +92,7 @@ public class RollerShutterService {
                 .doOnError(throwable -> telegramMessageService.sendMessageToMainChannel("Das habe ich nicht verstanden. Nochmal von vorne mit /noAutomaticsForRollerShutter"))
                 .doOnNext(period -> QuarkusTransaction.requiringNew().run(() -> {
                   var endDate = LocalDateTime.now().plus(period);
-                  telegramMessageService.sendMessageToMainChannel("Alles klar, ich ignoriere die Störe bis " + GERMANY_DATE_TIME.format(endDate));
+                  telegramMessageService.sendMessageToMainChannel("Alles klar, ich ignoriere die Störe bis " + endDate.format(GERMANY_DATE_TIME));
                   rollerShutterConfigRepository.save(rollerShutter.setNoAutomaticsUntil(endDate));
                 }))
                 .take(1)
