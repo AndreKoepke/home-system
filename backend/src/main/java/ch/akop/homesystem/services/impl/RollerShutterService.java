@@ -77,7 +77,7 @@ public class RollerShutterService {
         .subscribeOn(rxScheduler)
         .doOnNext(message -> telegramMessageService.sendMessageToMainChannel("Ok, welche Störe soll ich eine Zeit in Ruhe lassen?"))
         .doOnNext(message -> deviceService.getDevicesOfType(RollerShutter.class)
-            .forEach(rollerShutter -> telegramMessageService.sendMessageToMainChannel("/" + rollerShutter.getName())))
+            .forEach(rollerShutter -> telegramMessageService.sendMessageToMainChannel(rollerShutter.getName())))
         .switchMap(ignoredMessage -> telegramMessageService.getMessages()
             .map(messageTarget -> deviceService.findDeviceByName(messageTarget.substring(1), RollerShutter.class))
             .filter(Optional::isPresent)
@@ -87,7 +87,7 @@ public class RollerShutterService {
             .take(1)
             .doOnNext(rollerShutter -> telegramMessageService.sendMessageToMainChannel("Aye. Für wie lange?"))
             .switchMap(rollerShutter -> telegramMessageService.getMessages()
-                .map(messageDuration -> TimeUtil.parseGermanDuration(messageDuration.substring(1)))
+                .map(TimeUtil::parseGermanDuration)
                 .doOnError(throwable -> telegramMessageService.sendMessageToMainChannel("Das habe ich nicht verstanden. Nochmal von vorne mit /noAutomaticsForRollerShutter"))
                 .doOnNext(period -> QuarkusTransaction.requiringNew().run(() -> {
                   var endDate = LocalDateTime.now().plus(period);
