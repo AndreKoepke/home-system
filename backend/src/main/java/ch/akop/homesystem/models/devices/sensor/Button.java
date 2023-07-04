@@ -28,7 +28,7 @@ public class Button extends Sensor<Button> {
     try {
       var lastUpdated = LocalDateTime.parse(update.getLastupdated());
       var updatedBefore = Duration.between(lastUpdated.atZone(ZoneOffset.UTC), ZonedDateTime.now()).abs();
-      if (is(updatedBefore).smallerThan(Duration.ofSeconds(10))) {
+      if (is(updatedBefore).smallerThan(Duration.ofMinutes(1))) {
         events$.onNext(update.getButtonevent());
       }
     } catch (DateTimeParseException e) {
@@ -37,3 +37,10 @@ public class Button extends Sensor<Button> {
     }
   }
 }
+
+
+
+
+
+
+
