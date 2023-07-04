@@ -80,7 +80,7 @@ public class RollerShutterService {
         .doOnNext(message -> deviceService.getDevicesOfType(RollerShutter.class)
             .forEach(rollerShutter -> telegramMessageService.sendMessageToMainChannel(rollerShutter.getName())))
         .switchMap(ignoredMessage -> telegramMessageService.getMessages()
-            .map(messageTarget -> deviceService.findDeviceByName(messageTarget.substring(1), RollerShutter.class))
+            .map(messageTarget -> deviceService.findDeviceByName(messageTarget, RollerShutter.class))
             .filter(Optional::isPresent)
             .map(Optional::get)
             .map(rollerShutter -> rollerShutterConfigRepository.findByNameLike(rollerShutter.getName())
@@ -162,15 +162,17 @@ public class RollerShutterService {
       return Completable.complete();
     }
 
-    if (config.getCompassDirection().contains(compassDirection)) {
-      if (sunDirection.getZenithAngle() > 40 && rollerShutter.getCurrentLift() > 50) {
-        return rollerShutter.setLiftAndThenTilt(50, 40);
-      } else if (sunDirection.getZenithAngle() > 20 && rollerShutter.getCurrentLift() > 75) {
-        return rollerShutter.setLiftAndThenTilt(75, 75);
-      }
+    if (!config.getCompassDirection().contains(compassDirection)) {
+      return rollerShutter.open();
+    }
+    
+    if (sunDirection.getZenithAngle() > 40 && rollerShutter.getCurrentLift() > 50) {
+      return rollerShutter.setLiftAndThenTilt(50, 40);
+    } else if (sunDirection.getZenithAngle() > 20 && rollerShutter.getCurrentLift() > 75) {
+      return rollerShutter.setLiftAndThenTilt(75, 75);
     }
 
-    return rollerShutter.open();
+    return Completable.complete();
   }
 
   private static boolean isOkToOpen(RollerShutterConfig config) {
