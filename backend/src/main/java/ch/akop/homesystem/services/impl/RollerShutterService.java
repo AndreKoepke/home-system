@@ -178,13 +178,13 @@ public class RollerShutterService {
   private static boolean isOkToOpen(RollerShutterConfig config) {
     //noinspection DataFlowIssue
     return (config.getOpenAt() == null || config.getOpenAt().isBefore(LocalTime.now()))
-        && config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isAfter(LocalDateTime.now());
+        && config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now());
   }
 
   private static boolean isOkToClose(RollerShutterConfig config) {
     //noinspection DataFlowIssue
     return (config.getCloseAt() == null || config.getCloseAt().isAfter(LocalTime.now()))
-        && config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isAfter(LocalDateTime.now());
+        && config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now());
   }
 
   private void initTimer() {
