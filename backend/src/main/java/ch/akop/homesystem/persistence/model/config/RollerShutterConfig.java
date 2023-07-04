@@ -2,6 +2,7 @@ package ch.akop.homesystem.persistence.model.config;
 
 import ch.akop.homesystem.models.CompassDirection;
 import ch.akop.homesystem.persistence.conveter.ListOfEnumConverter;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import javax.persistence.Column;
@@ -34,4 +35,7 @@ public class RollerShutterConfig {
 
   @Nullable
   private LocalTime openAt;
+
+  @Nullable
+  private LocalDateTime noAutomaticsUntil;
 }

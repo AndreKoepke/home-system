@@ -29,6 +29,7 @@ public class RollerShutter extends Actor<RollerShutter> {
   public static final int TILT_ALLOWED_DIFFERENCE = 20;
   public static final int LIFT_ALLOWED_TOLERANCE = 5;
   public static final Duration BLOCK_TIME_WHEN_HIGH_WIND = Duration.ofHours(1);
+
   private final Subject<Integer> lift$ = ReplaySubject.createWithSize(1);
   private final Subject<Integer> tilt$ = ReplaySubject.createWithSize(1);
   private final Subject<Boolean> open$ = ReplaySubject.createWithSize(1);
@@ -37,7 +38,7 @@ public class RollerShutter extends Actor<RollerShutter> {
 
   private final Consumer<Integer> functionToSetLift;
   private final Consumer<Integer> functionToSetTilt;
-  private final Runnable functionToStep;
+
   private LocalDateTime lastManuallAction = LocalDateTime.MIN;
 
   /**
@@ -65,7 +66,7 @@ public class RollerShutter extends Actor<RollerShutter> {
   public Completable setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
 
     if (!highWindLock.isGateOpen()) {
-      log.warn("Ignored command because of high windspeed for " + getName());
+      log.warn("Ignored command because of high wind speed for " + getName());
       return Completable.complete();
     }
 

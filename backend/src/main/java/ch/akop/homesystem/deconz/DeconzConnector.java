@@ -158,8 +158,7 @@ public class DeconzConnector {
 
     var rollerShutter = new RollerShutter(
         lift -> deconzService.updateLight(id, new State().setLift(lift)),
-        tilt -> deconzService.updateLight(id, new State().setTilt(tilt)),
-        () -> deconzService.updateLight(id, new State().setStop(true))
+        tilt -> deconzService.updateLight(id, new State().setTilt(tilt))
     );
 
     return Optional.of(rollerShutter);

@@ -19,6 +19,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Vertx;
 import io.vertx.rxjava3.RxHelper;
+import java.text.DateFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -29,6 +30,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -45,6 +47,8 @@ import org.jetbrains.annotations.NotNull;
 public class RollerShutterService {
 
   public static final Duration TIMEOUT_AFTER_MANUAL = Duration.ofHours(1);
+  private static final DateFormat GERMANY_DATE_TIME = DateFormat.getDateTimeInstance(
+      DateFormat.MEDIUM, DateFormat.SHORT, Locale.GERMANY);
 
   private final DeviceService deviceService;
   private final WeatherService weatherService;
@@ -66,6 +70,32 @@ public class RollerShutterService {
         .debounce(10, SECONDS)
         .subscribeOn(rxScheduler)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
+        .subscribe());
+
+    disposables.add(telegramMessageService.getMessages()
+        .filter(message -> message.startsWith("/noAutomaticsForRollerShutter"))
+        .subscribeOn(rxScheduler)
+        .doOnNext(message -> telegramMessageService.sendMessageToMainChannel("Ok, welche Störe soll ich eine Zeit in Ruhe lassen?"))
+        .doOnNext(message -> deviceService.getDevicesOfType(RollerShutter.class)
+            .forEach(rollerShutter -> telegramMessageService.sendMessageToMainChannel("/" + rollerShutter.getName())))
+        .switchMap(ignoredMessage -> telegramMessageService.getMessages()
+            .map(messageTarget -> deviceService.findDeviceByName(messageTarget.substring(1), RollerShutter.class))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(rollerShutter -> rollerShutterConfigRepository.findByNameLike(rollerShutter.getName())
+                .orElseThrow(() -> new RuntimeException("Not found")))
+            .take(1)
+            .doOnNext(rollerShutter -> telegramMessageService.sendMessageToMainChannel("Aye. Für wie lange?"))
+            .switchMap(rollerShutter -> telegramMessageService.getMessages()
+                .map(messageDuration -> TimeUtil.parseGermanDuration(messageDuration.substring(1)))
+                .doOnError(throwable -> telegramMessageService.sendMessageToMainChannel("Das habe ich nicht verstanden. Nochmal von vorne mit /noAutomaticsForRollerShutter"))
+                .doOnNext(period -> QuarkusTransaction.requiringNew().run(() -> {
+                  var endDate = LocalDateTime.now().plus(period);
+                  telegramMessageService.sendMessageToMainChannel("Alles klar, ich ignoriere die Störe bis " + GERMANY_DATE_TIME.format(endDate));
+                  rollerShutterConfigRepository.save(rollerShutter.setNoAutomaticsUntil(endDate));
+                }))
+                .take(1)
+            ))
         .subscribe());
 
     initTimer();
@@ -98,13 +128,14 @@ public class RollerShutterService {
 
     } else if (newBrightness < 70 && newBrightness > 10 && highSunLock.isGateOpen()) {
       return configs.stream()
-          .filter(config -> config.getOpenAt() == null || config.getOpenAt().isAfter(LocalTime.now()))
+          .filter(RollerShutterService::isOkToOpen)
           .map(this::getRollerShutter)
           .filter(RollerShutterService::hasNoManualAction)
           .map(RollerShutter::open)
           .toList();
     } else if (newBrightness == 0) {
       return configs.stream()
+          .filter(RollerShutterService::isOkToClose)
           .map(this::getRollerShutter)
           .filter(RollerShutterService::hasNoManualAction)
           .map(RollerShutter::close)
@@ -122,11 +153,11 @@ public class RollerShutterService {
   private Completable handleHighBrightness(RollerShutterConfig config, AzimuthZenithAngle sunDirection, CompassDirection compassDirection) {
     var rollerShutter = getRollerShutter(config);
 
-    if (hasNoManualAction(rollerShutter)) {
+    if (!hasNoManualAction(rollerShutter)) {
       return Completable.complete();
     }
 
-    if (config.getOpenAt() != null && config.getOpenAt().isAfter(LocalTime.now())) {
+    if (!isOkToOpen(config)) {
       return Completable.complete();
     }
 
@@ -139,6 +170,18 @@ public class RollerShutterService {
     }
 
     return rollerShutter.open();
+  }
+
+  private static boolean isOkToOpen(RollerShutterConfig config) {
+    //noinspection DataFlowIssue
+    return (config.getOpenAt() == null || config.getOpenAt().isBefore(LocalTime.now()))
+        && config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isAfter(LocalDateTime.now());
+  }
+
+  private static boolean isOkToClose(RollerShutterConfig config) {
+    //noinspection DataFlowIssue
+    return (config.getCloseAt() == null || config.getCloseAt().isAfter(LocalTime.now()))
+        && config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isAfter(LocalDateTime.now());
   }
 
   private void initTimer() {
