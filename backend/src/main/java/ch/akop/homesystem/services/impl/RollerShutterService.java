@@ -53,7 +53,6 @@ public class RollerShutterService {
 
   private final DeviceService deviceService;
   private final WeatherService weatherService;
-
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
   private final TelegramMessageService telegramMessageService;
   private final Vertx vertx;
@@ -115,7 +114,7 @@ public class RollerShutterService {
     var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
     var newBrightness = newWeather.getLight().getAs(KILO_LUX).intValue();
 
-    if (newBrightness > 400) {
+    if (newBrightness > 250) {
       if (newWeather.getOuterTemperatur().isSmallerThan(15, DEGREE)) {
         return new ArrayList<>();
       }
@@ -128,11 +127,135 @@ public class RollerShutterService {
           .map(config -> handleHighBrightness(config, sunDirection, compassDirection))
           .toList();
 
-    } else if (newBrightness < 200 && newBrightness > 10 && highSunLock.isGateOpen()) {
+    } else if (newBrightness < 70 && newBrightness > 10 && highSunLock.isGateOpen()) {
       return configs.stream()
           .filter(RollerShutterService::isOkToOpen)
           .map(this::getRollerShutter)
           .filter(RollerShutterService::hasNoManualAction)
           .map(RollerShutter::open)
           .toList();
+    } else if (newBrightness == 0) {
+      return configs.stream()
+          .filter(RollerShutterService::isOkToClose)
+          .map(this::getRollerShutter)
+          .filter(RollerShutterService::hasNoManualAction)
+          .map(RollerShutter::close)
+          .toList();
+    }
 
+    return new ArrayList<>();
+  }
+
+  private static boolean hasNoManualAction(RollerShutter rollerShutter) {
+    return is(Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now()).abs()).biggerAs(TIMEOUT_AFTER_MANUAL);
+  }
+
+  @NotNull
+  private Completable handleHighBrightness(RollerShutterConfig config, AzimuthZenithAngle sunDirection, CompassDirection compassDirection) {
+    var rollerShutter = getRollerShutter(config);
+
+    if (!hasNoManualAction(rollerShutter)) {
+      return Completable.complete();
+    }
+
+    if (!isOkToOpen(config)) {
+      return Completable.complete();
+    }
+
+    if (!config.getCompassDirection().contains(compassDirection)) {
+      return rollerShutter.open();
+    }
+    
+    if (sunDirection.getZenithAngle() > 40 && rollerShutter.getCurrentLift() > 50) {
+      return rollerShutter.setLiftAndThenTilt(50, 40);
+    } else if (sunDirection.getZenithAngle() > 20 && rollerShutter.getCurrentLift() > 75) {
+      return rollerShutter.setLiftAndThenTilt(75, 75);
+    }
+
+    return Completable.complete();
+  }
+
+  private static boolean isOkToOpen(RollerShutterConfig config) {
+    return (config.getOpenAt() == null || config.getOpenAt().isBefore(LocalTime.now()))
+        && (config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now()));
+  }
+
+  private static boolean isOkToClose(RollerShutterConfig config) {
+    return (config.getCloseAt() == null || config.getCloseAt().isAfter(LocalTime.now()))
+        && (config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now()));
+  }
+
+  private void initTimer() {
+    rollerShutterConfigRepository.findAll().stream()
+        .filter(config -> config.getCloseAt() != null || config.getOpenAt() != null)
+        .forEach(config -> {
+          Optional.ofNullable(config.getOpenAt())
+              .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new ArrayList<>()))
+              .ifPresent(list -> list.add(config.getName()));
+
+          Optional.ofNullable(config.getCloseAt())
+              .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new ArrayList<>()))
+              .ifPresent(list -> list.add(config.getName()));
+        });
+
+    if (timeToConfigs.isEmpty()) {
+      // no defined times = nop
+      return;
+    }
+
+    disposables.add(Observable.defer(this::timerForNextEvent)
+        .repeat()
+        .subscribe());
+  }
+
+  private Observable<LocalTime> timerForNextEvent() {
+    var nextExecutionTime = getNextExecutionTime().atZone(ZoneId.systemDefault());
+    var nextEvent = Duration.between(ZonedDateTime.now(), nextExecutionTime);
+
+    return Observable.timer(nextEvent.toSeconds(), SECONDS)
+        .map(ignored -> nextExecutionTime.toLocalTime())
+        .doOnNext(this::handleTime);
+  }
+
+  private void handleTime(LocalTime time) {
+    timeToConfigs.get(time)
+        .stream()
+        .map(id -> rollerShutterConfigRepository.findById(id)
+            .orElseThrow(() -> new IllegalStateException("RollerShutterConfig %s is not in database".formatted(id))))
+        .forEach(config -> {
+          var rollerShutter = getRollerShutter(config);
+          if (config.getCloseAt() != null && config.getCloseAt().equals(time)) {
+            log.info("Timed close for {}", rollerShutter.getName());
+            rollerShutter.setLiftAndThenTilt(0, 0).subscribe();
+          } else {
+            log.info("Timed open for {}", rollerShutter.getName());
+            rollerShutter.setLiftAndThenTilt(100, 100).subscribe();
+          }
+        });
+  }
+
+  private LocalDateTime getNextExecutionTime() {
+    return timeToConfigs
+        .keySet()
+        .stream()
+        .map(TimeUtil::getLocalDateTimeForTodayOrTomorrow)
+        .min(LocalDateTime::compareTo)
+        .orElseThrow();
+  }
+
+  @PreDestroy
+  void tearDown() {
+    disposables.forEach(Disposable::dispose);
+  }
+
+  private CompassDirection resolveCompassDirection(AzimuthZenithAngle sunDirection) {
+    return Arrays.stream(CompassDirection.values())
+        .min(Comparator.comparing(value -> Math.abs(value.getDirection() - sunDirection.getAzimuth())))
+        .orElseThrow(() -> new NoSuchElementException("Can't resolve direction for %s".formatted(sunDirection)));
+  }
+
+  private RollerShutter getRollerShutter(RollerShutterConfig config) {
+    return deviceService.findDeviceByName(config.getName(), RollerShutter.class)
+        .orElseThrow(() -> new NoSuchElementException("No rollerShutter named '%s' was found in deviceList.".formatted(config.getName())));
+  }
+}
