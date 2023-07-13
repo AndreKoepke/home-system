@@ -19,6 +19,7 @@ public class MotionSensor extends Sensor<MotionSensor> {
 
   @Override
   protected void consumeInternalUpdate(State update) {
+
     isMoving$.onNext(update.getPresence());
     isDark$.onNext(update.getDark() != null && update.getDark());
   }

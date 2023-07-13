@@ -158,8 +158,7 @@ public class DeconzConnector {
 
     var rollerShutter = new RollerShutter(
         lift -> deconzService.updateLight(id, new State().setLift(lift)),
-        tilt -> deconzService.updateLight(id, new State().setTilt(tilt)),
-        () -> deconzService.updateLight(id, new State().setStop(true))
+        tilt -> deconzService.updateLight(id, new State().setTilt(tilt))
     );
 
     return Optional.of(rollerShutter);
@@ -232,8 +231,7 @@ public class DeconzConnector {
           .ifPresent(device -> device.consumeUpdate(update.getState()));
     } else if (update.getR().equals("lights")
         && update.getE().equals("changed")
-        && update.getState() != null
-        && update.getState().getOn() != null) {
+        && update.getState() != null) {
 
       deviceService.findDeviceById(update.getId(), Actor.class)
           .ifPresent(device -> device.consumeUpdate(update.getState()));
