@@ -114,7 +114,7 @@ public class RollerShutterService {
     var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
     var newBrightness = newWeather.getLight().getAs(KILO_LUX).intValue();
 
-    if (newBrightness > 400) {
+    if (newBrightness > 350) {
       if (newWeather.getOuterTemperatur().isSmallerThan(15, DEGREE)) {
         return new ArrayList<>();
       }
@@ -127,7 +127,7 @@ public class RollerShutterService {
           .map(config -> handleHighBrightness(config, sunDirection, compassDirection))
           .toList();
 
-    } else if (newBrightness < 200 && newBrightness > 10 && highSunLock.isGateOpen()) {
+    } else if (newBrightness < 350 && newBrightness > 10 && highSunLock.isGateOpen()) {
       return configs.stream()
           .filter(RollerShutterService::isOkToOpen)
           .map(this::getRollerShutter)
