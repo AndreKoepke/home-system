@@ -1,4 +1,5 @@
-# home-system [<img src="https://img.shields.io/docker/pulls/akop/home-system.svg">](https://hub.docker.com/r/akop/home-system) <img src="https://home-system-telemetry.akop.online/telemetry/badge?">
+# home-system [<img src="https://img.shields.io/docker/pulls/akop/home-system.svg">](https://hub.docker.com/r/akop/home-system) ![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fhome-system-telemetry.akop.online%2Ftelemetry%2Fbadge-data&query=%24.liveConnections&style=plastic&label=Live%20systems)
+
 
 Smart homes are rising. But often, a home with programmable switches is called "smart".  
 I think, that a home reaches "smartness", when you only have to touch a button rarely.  
