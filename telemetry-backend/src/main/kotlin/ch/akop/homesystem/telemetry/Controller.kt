@@ -24,4 +24,8 @@ class Controller(val service: Service,
     @Produces("image/svg+xml")
     fun badge() = service.badge()
 
+    @GET
+    @Path("badge-data")
+    fun badgeData() = service.badgeData()
+
 }

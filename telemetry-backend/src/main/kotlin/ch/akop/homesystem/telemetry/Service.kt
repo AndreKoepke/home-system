@@ -1,6 +1,7 @@
 package ch.akop.homesystem.telemetry
 
 import ch.akop.homesystem.telemetry.exceptions.TooManyRequests
+import ch.akop.homesystem.telemetry.models.BadgeData
 import ch.akop.homesystem.telemetry.models.Heartbeat
 import ch.akop.homesystem.telemetry.models.SyncAck
 import org.springframework.stereotype.Service
@@ -27,10 +28,10 @@ class Service(val bucketService: BucketService,
                 null
         ))
 
-        return SyncAck(new.id);
+        return SyncAck(new.id)
     }
 
-    fun heartBeat(heartbeat: Heartbeat): Unit {
+    fun heartBeat(heartbeat: Heartbeat) {
         repository.findById(heartbeat.id)
                 .ifPresent {
                     it.contacts = if (Duration.between(it.lastContact, LocalDateTime.now()).toHours() > 10) it.contacts + 1 else it.contacts
@@ -45,7 +46,13 @@ class Service(val bucketService: BucketService,
 
     fun badge(): ByteArray {
         return templateText.replace("%KEY%", "Live")
-                .replace("%VALUE%", repository.findAll().stream().filter { it.contacts > 3 && Duration.between(it.lastContact, LocalDateTime.now()).toDays() < 3 }.count().toString())
+                .replace("%VALUE%", getLiveConnections().toString())
                 .encodeToByteArray()
+    }
+
+    private fun getLiveConnections() = repository.findAll().stream().filter { it.contacts > 3 && Duration.between(it.lastContact, LocalDateTime.now()).toDays() < 3 }.count()
+
+    fun badgeData(): BadgeData {
+        return BadgeData(getLiveConnections())
     }
 }
