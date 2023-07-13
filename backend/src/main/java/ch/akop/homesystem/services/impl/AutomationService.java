@@ -1,5 +1,11 @@
 package ch.akop.homesystem.services.impl;
 
+import static ch.akop.homesystem.util.EventConstants.BUTTON;
+import static ch.akop.homesystem.util.EventConstants.BUTTON_INTERNAL;
+import static ch.akop.homesystem.util.EventConstants.CLOSE_CONTACT;
+import static ch.akop.homesystem.util.EventConstants.CUBE;
+import static ch.akop.homesystem.util.EventConstants.GENERAL;
+
 import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.sensor.AqaraCube;
 import ch.akop.homesystem.models.devices.sensor.Button;
@@ -11,6 +17,7 @@ import ch.akop.homesystem.models.events.CloseContactEvent;
 import ch.akop.homesystem.models.events.CubeEvent;
 import ch.akop.homesystem.models.events.CubeEventType;
 import ch.akop.homesystem.models.events.Event;
+import ch.akop.homesystem.persistence.model.config.BasicConfig;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.persistence.repository.config.OffButtonConfigRepository;
 import io.quarkus.vertx.ConsumeEvent;
@@ -64,41 +71,35 @@ public class AutomationService {
         .add(device);
 
     if (device instanceof CloseContact closeContact) {
-      var mainDoorName = basicConfigRepository.findFirstByOrderByModifiedDesc()
-          .orElseThrow()
-          .getMainDoorName();
-      if (closeContact.getName()
-          .equals(mainDoorName)) {
-        //noinspection ResultOfMethodCallIgnored
-        closeContact.getState$()
-            .skip(1)
-            .distinctUntilChanged()
-            .throttleLatest(MARCEL_CONSTANT_SECONDS, TimeUnit.SECONDS)
-            .subscribe(this::mainDoorStateChanged);
-      }
+      //noinspection ResultOfMethodCallIgnored
+      basicConfigRepository.findByOrderByModifiedDesc()
+          .map(BasicConfig::getMainDoorName)
+          .filter(mainDoorName -> mainDoorName.equals(closeContact.getName()))
+          .ifPresent(mainDoorName -> closeContact.getState$()
+              .skip(1)
+              .distinctUntilChanged()
+              .throttleLatest(MARCEL_CONSTANT_SECONDS, TimeUnit.SECONDS)
+              .subscribe(this::mainDoorStateChanged));
 
       //noinspection ResultOfMethodCallIgnored
       closeContact.getState$()
           .skip(1)
           .distinctUntilChanged()
-          .subscribe(newState -> eventPublisher.publish("home/close-contact",
-              new CloseContactEvent(closeContact.getName(), newState)));
+          .subscribe(newState -> eventPublisher.publish(CLOSE_CONTACT, new CloseContactEvent(closeContact.getName(), newState)));
     }
 
     if (device instanceof Button button) {
       //noinspection ResultOfMethodCallIgnored
-      button.getEvents$().subscribe(integer -> eventPublisher.publish("home/button-internal",
+      button.getEvents$().subscribe(integer -> eventPublisher.publish(BUTTON_INTERNAL,
           new ButtonPressInternalEvent(button.getName(), integer)));
     } else if (device instanceof AqaraCube cube) {
       //noinspection ResultOfMethodCallIgnored
       cube.getActiveSide$()
           .skip(1)
-          .subscribe(activeSide -> eventPublisher.publish("home/cube",
-              new CubeEvent(cube.getName(), determineFlippedSide(activeSide))));
+          .subscribe(activeSide -> eventPublisher.publish(CUBE, new CubeEvent(cube.getName(), determineFlippedSide(activeSide))));
       //noinspection ResultOfMethodCallIgnored
       cube.getShacked$()
-          .subscribe(empty -> eventPublisher.publish("home/cube",
-              new CubeEvent(cube.getName(), CubeEventType.SHAKED)));
+          .subscribe(empty -> eventPublisher.publish(CUBE, new CubeEvent(cube.getName(), CubeEventType.SHAKED)));
     }
   }
 
@@ -114,20 +115,20 @@ public class AutomationService {
     };
   }
 
-  @ConsumeEvent(value = "home/button-internal", blocking = true)
+  @ConsumeEvent(value = BUTTON_INTERNAL, blocking = true)
   public void buttonWasPressed(ButtonPressInternalEvent internalEvent) {
     if (wasCentralOffPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
-      eventPublisher.publish("home/general", Event.CENTRAL_OFF_PRESSED);
+      eventPublisher.publish(GENERAL, Event.CENTRAL_OFF_PRESSED);
     } else if (wasGoodNightButtonPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
-      eventPublisher.publish("home/general", Event.GOOD_NIGHT_PRESSED);
+      eventPublisher.publish(GENERAL, Event.GOOD_NIGHT_PRESSED);
     } else {
-      eventPublisher.publish("home/button", new ButtonPressEvent(internalEvent.getButtonName(), internalEvent.getButtonEvent()));
+      eventPublisher.publish(BUTTON, new ButtonPressEvent(internalEvent.getButtonName(), internalEvent.getButtonEvent()));
     }
   }
 
 
   private boolean wasGoodNightButtonPressed(String buttonName, int buttonEvent) {
-    var basicConfig = basicConfigRepository.findFirstByOrderByModifiedDesc().orElseThrow();
+    var basicConfig = basicConfigRepository.findByOrderByModifiedDesc().orElseThrow();
     if (basicConfig.getGoodNightButtonName() == null || basicConfig.getGoodNightButtonEvent() == null) {
       return false;
     }
@@ -144,9 +145,9 @@ public class AutomationService {
 
   private void mainDoorStateChanged(CloseContactState state) {
     if (state == CloseContactState.CLOSED) {
-      eventPublisher.publish("home/general", Event.DOOR_CLOSED);
+      eventPublisher.publish(GENERAL, Event.DOOR_CLOSED);
     } else {
-      eventPublisher.publish("home/general", Event.DOOR_OPENED);
+      eventPublisher.publish(GENERAL, Event.DOOR_OPENED);
     }
   }
 }

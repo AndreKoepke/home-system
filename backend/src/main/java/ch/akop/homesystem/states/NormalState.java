@@ -1,6 +1,8 @@
 package ch.akop.homesystem.states;
 
 import static ch.akop.homesystem.services.impl.UserService.KEEP_CHECKING_FOR;
+import static ch.akop.homesystem.util.EventConstants.CUBE;
+import static ch.akop.homesystem.util.EventConstants.GENERAL;
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
@@ -145,7 +147,7 @@ public class NormalState extends Activatable implements State {
   }
 
   @Transactional
-  @ConsumeEvent(value = "home/general", blocking = true)
+  @ConsumeEvent(value = GENERAL, blocking = true)
   public void event(Event event) {
 
     if (!(stateService.getCurrentState() instanceof NormalState)) {
@@ -161,7 +163,7 @@ public class NormalState extends Activatable implements State {
   }
 
   @Transactional
-  @ConsumeEvent(value = "home/cube", blocking = true)
+  @ConsumeEvent(value = CUBE, blocking = true)
   public void event(CubeEvent cubeEvent) {
     cubeConfigRepository.findById(cubeEvent.getCubeName())
         .ifPresent(cubeConfig -> {
@@ -226,7 +228,7 @@ public class NormalState extends Activatable implements State {
 
     canStartMainDoorAnimation.setForever(true);
     try {
-      eventBus.publish("home/animation/play", basicConfigRepository.findFirstByOrderByModifiedDesc()
+      eventBus.publish("home/animation/play", basicConfigRepository.findByOrderByModifiedDesc()
           .orElseThrow()
           .getWhenMainDoorOpened());
 

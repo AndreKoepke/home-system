@@ -1,6 +1,8 @@
 package ch.akop.homesystem.states;
 
 
+import static ch.akop.homesystem.util.EventConstants.GENERAL;
+
 import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.services.activatable.Activatable;
 import ch.akop.homesystem.services.activatable.SunsetReactor;
@@ -86,7 +88,7 @@ public class HolidayState extends Activatable implements State {
     super.dispose();
   }
 
-  @ConsumeEvent(value = "home/general", blocking = true)
+  @ConsumeEvent(value = GENERAL, blocking = true)
   public void event(Event event) {
     if (event == Event.DOOR_OPENED && stateService.isState(HolidayState.class)) {
       messageService.sendMessageToMainChannel("Irgendwer ist grade in die Wohnung gegangen");

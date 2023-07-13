@@ -27,7 +27,6 @@ import net.e175.klaus.solarpositioning.Grena3;
 public class WeatherService {
 
   private final BasicConfigRepository basicConfigRepository;
-  private final TelegramMessageService messageService;
   private final RainDetectorService rainDetectorService;
 
   @Getter
@@ -39,11 +38,12 @@ public class WeatherService {
   @PostConstruct
   void startFetchingData() {
     // TODO restart when config changes
-    var nearestWeatherCloudStation = basicConfigRepository.findFirstByOrderByModifiedDesc()
+    var nearestWeatherCloudStation = basicConfigRepository.findByOrderByModifiedDesc()
         .map(BasicConfig::getNearestWeatherCloudStation)
         .orElse(null);
 
     if (nearestWeatherCloudStation == null) {
+      log.warn("No weather station, no weather updates");
       return;
     }
 
@@ -76,7 +76,7 @@ public class WeatherService {
 
   @Transactional
   public AzimuthZenithAngle getCurrentSunDirection() {
-    return basicConfigRepository.findFirstByOrderByModifiedDesc()
+    return basicConfigRepository.findByOrderByModifiedDesc()
         .map(config -> Grena3.calculateSolarPosition(ZonedDateTime.now(), config.getLatitude(), config.getLongitude(), 68))
         .orElseThrow(() -> new RuntimeException("No basic config"));
   }

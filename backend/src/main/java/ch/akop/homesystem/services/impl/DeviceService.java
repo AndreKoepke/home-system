@@ -73,7 +73,7 @@ public class DeviceService {
 
   @Transactional
   public void turnAllLightsOff() {
-    var notLights = basicConfigRepository.findFirstByOrderByModifiedDesc()
+    var notLights = basicConfigRepository.findByOrderByModifiedDesc()
         .map(BasicConfig::getNotLights)
         .orElse(new HashSet<>());
 
@@ -95,7 +95,7 @@ public class DeviceService {
 
   @Transactional
   public boolean isAnyLightOn() {
-    var notLights = basicConfigRepository.findFirstByOrderByModifiedDesc()
+    var notLights = basicConfigRepository.findByOrderByModifiedDesc()
         .map(BasicConfig::getNotLights)
         .orElse(new HashSet<>());
 

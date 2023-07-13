@@ -5,6 +5,7 @@ import static java.util.Optional.ofNullable;
 import ch.akop.homesystem.deconz.websocket.WebSocketUpdate;
 import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
@@ -66,7 +67,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
           Observable.defer(() -> Observable.fromFuture(getWebSocketCompletableFuture(wsUrl, this)))
               .retryWhen(origin -> origin
                   .doOnNext(throwable -> log.warn("Connection attempt failed, retrying in 5s."))
-                  .delay(5000, TimeUnit.SECONDS))
+                  .delay(5, TimeUnit.SECONDS))
               .subscribeOn(blockingScheduler)
               .subscribe(webSocket -> this.webSocket = webSocket);
         });
@@ -122,8 +123,8 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
     log.error("WS-Connection closed, because of '{}'", reason);
     vertx.cancelTimer(timeoutHandler);
-    executor.runAsync(this::setupWebSocketListener);
-    return CompletableFuture.completedFuture(null);
+    QuarkusTransaction.requiringNew().run(this::setupWebSocketListener);
+    throw new RuntimeException("WS-Connection closed");
   }
 
   @Override
@@ -160,11 +161,11 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   private void checkTimeout(WebSocket webSocket) {
     var lastContact = Duration.between(this.lastContact, LocalDateTime.now());
 
-    if (lastContact.toSeconds() > 60) {
+    if (lastContact.toSeconds() > 30) {
       vertx.cancelTimer(timeoutHandler);
       log.error("WS-Connection has no longer contact", new TimeoutException("No websocket-contact since 60s. Timeout."));
       webSocket.abort();
-      executor.runAsync(this::setupWebSocketListener);
+      executor.runAsync(() -> QuarkusTransaction.requiringNew().run(this::setupWebSocketListener));
     } else if (lastContact.compareTo(TIMEOUT_HANDLER_INTERVAL.multipliedBy(2)) > 0) {
       log.warn("No websocket-contact since " + lastContact.toSeconds() + "s");
       webSocket.sendPing(ByteBuffer.wrap(new byte[]{1, 2, 3}));

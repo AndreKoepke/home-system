@@ -42,9 +42,6 @@ public class PowerMeterConfig {
   private Integer pausesDuringRun;
 
   @NonNull
-  private Boolean gotReadyWhenNobodyWasHome;
-
-  @NonNull
   private Integer sentRemindersCount;
 
 }
