@@ -1,5 +1,6 @@
 package ch.akop.homesystem.states;
 
+import static ch.akop.homesystem.util.EventConstants.GENERAL;
 import static ch.akop.homesystem.util.RandomUtil.pickRandomElement;
 import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -8,6 +9,7 @@ import ch.akop.homesystem.external.openai.OpenAIService;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.models.events.Event;
+import ch.akop.homesystem.persistence.model.config.BasicConfig;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.impl.DeviceService;
 import ch.akop.homesystem.services.impl.ImageCreatorService;
@@ -35,8 +37,10 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.context.ManagedExecutor;
 
+@Slf4j
 @Startup
 @RequiredArgsConstructor
 @ApplicationScoped
@@ -76,9 +80,12 @@ public class SleepState implements State {
   @PostConstruct
   @Transactional
   void loadNightSceneName() {
-    nightSceneName = basicConfigRepository.findFirstByOrderByModifiedDesc()
-        .orElseThrow(() -> new IllegalStateException("No basic-configuration found."))
-        .getNightSceneName();
+    basicConfigRepository.findByOrderByModifiedDesc()
+        .map(BasicConfig::getNightSceneName)
+        .ifPresentOrElse(
+            nightSceneName -> this.nightSceneName = nightSceneName,
+            () -> log.warn("No nightSceneName set")
+        );
   }
 
   @Override
@@ -168,7 +175,7 @@ public class SleepState implements State {
   }
 
   @Transactional
-  @ConsumeEvent(value = "home/general", blocking = true)
+  @ConsumeEvent(value = GENERAL, blocking = true)
   public void event(Event event) {
 
     if (!(stateService.getCurrentState() instanceof SleepState)) {
@@ -189,7 +196,7 @@ public class SleepState implements State {
     if (!sleepButtonState) {
       deviceService.getDevicesOfType(Group.class).stream()
           .flatMap(group -> group.getScenes().stream())
-          .filter(scene -> scene.getName().equals(basicConfigRepository.findFirstByOrderByModifiedDesc()
+          .filter(scene -> scene.getName().equals(basicConfigRepository.findByOrderByModifiedDesc()
               .orElseThrow()
               .getNightRunSceneName()))
           .forEach(Scene::activate);

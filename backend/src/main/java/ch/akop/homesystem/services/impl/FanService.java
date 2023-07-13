@@ -1,5 +1,7 @@
 package ch.akop.homesystem.services.impl;
 
+import static ch.akop.homesystem.util.EventConstants.BUTTON;
+
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.events.ButtonPressEvent;
 import ch.akop.homesystem.persistence.model.config.FanConfig;
@@ -30,7 +32,7 @@ public class FanService {
   private final Map<FanConfig, Disposable> subscribeMap = new ConcurrentHashMap<>();
   private final Map<FanConfig, Disposable> waitingToTurnOff = new ConcurrentHashMap<>();
 
-  @ConsumeEvent(value = "home/button", blocking = true)
+  @ConsumeEvent(value = BUTTON, blocking = true)
   @Transactional
   public void buttonEventHandler(ButtonPressEvent event) {
     fanConfigRepository.findAll()

@@ -1,5 +1,7 @@
 package ch.akop.homesystem.services.impl;
 
+import static ch.akop.homesystem.util.EventConstants.GENERAL;
+
 import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.model.config.UserConfig;
 import ch.akop.homesystem.persistence.repository.config.UserConfigRepository;
@@ -68,7 +70,7 @@ public class UserService {
   }
 
   @Transactional
-  @ConsumeEvent(value = "home/general", blocking = true)
+  @ConsumeEvent(value = GENERAL, blocking = true)
   public void gotEvent(Event event) {
     if (event == Event.DOOR_CLOSED && (checkPresenceSubscription == null || checkPresenceSubscription.isDisposed())) {
       log.info("Start discovering users ...");

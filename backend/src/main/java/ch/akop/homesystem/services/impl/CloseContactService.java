@@ -1,5 +1,7 @@
 package ch.akop.homesystem.services.impl;
 
+import static ch.akop.homesystem.util.EventConstants.CLOSE_CONTACT;
+
 import ch.akop.homesystem.models.devices.sensor.CloseContactState;
 import ch.akop.homesystem.models.events.CloseContactEvent;
 import ch.akop.homesystem.persistence.repository.config.CloseContactConfigRepository;
@@ -22,7 +24,7 @@ public class CloseContactService {
   private final EventBus eventBus;
   private final StateService stateService;
 
-  @ConsumeEvent(value = "home/close-contact", blocking = true)
+  @ConsumeEvent(value = CLOSE_CONTACT, blocking = true)
   @Transactional
   public void receiveCloseContactOpen(CloseContactEvent closeContactEvent) {
 
