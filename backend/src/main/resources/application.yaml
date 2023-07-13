@@ -17,9 +17,9 @@ quarkus:
   datasource:
     db-kind: postgresql
     jdbc:
-      url: ${JDBC_URL:jdbc:postgresql://localhost/heimsystem}
+      url: ${JDBC_URL:jdbc:postgresql://localhost:5555/postgres}
     username: ${DB_USER:postgres}
-    password: ${DB_PASS:postgres}
+    password: ${DB_PASS:super_long_and_very_secure_password_should_be_fine_okay?}
 
 
   hibernate-orm:

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-telemetry
+  labels:
+    product: home-system
+    component: telemetry
+
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      product: home-system
+      component: telemetry
+
+  template:
+    metadata:
+      labels:
+        product: home-system
+        component: telemetry
+
+      annotations:
+        # set timestamp to trick k8s to roll out a new version (even when nothing else changed)
+        timstamp: "{{ now | date "20060102150405" }}"
+
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: backend
+          image: {{ .Values.image.base }}:{{ .Values.image.tag }}
+          imagePullPolicy: Always
+          env:
+            - name: TZ
+              value: {{ .Values.timezone }}
+            - name: JDBC_URL
+              valueFrom:
+                secretKeyRef:
+                  key: jdbc_url
+                  name: {{ .Release.Name }}-telemetry
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  key: db_user
+                  name: {{ .Release.Name }}-telemetry
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  key: db_pass
+                  name: {{ .Release.Name }}-telemetry
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
