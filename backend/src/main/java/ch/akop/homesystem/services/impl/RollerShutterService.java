@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
@@ -73,10 +74,9 @@ public class RollerShutterService {
         .debounce(10, SECONDS)
         .subscribeOn(rxScheduler)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
-        .retry(exception -> {
-          log.error("Error while roller-Shutter-Logic");
-          return true;
-        })
+        .retryWhen(origin -> origin
+            .doOnNext(throwable -> log.error("Error while setting rollerShutters. Retrying in 5min"))
+            .delay(5, TimeUnit.MINUTES))
         .subscribe());
 
     disposables.add(telegramMessageService.getMessages()
