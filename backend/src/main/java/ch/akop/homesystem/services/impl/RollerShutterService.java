@@ -37,6 +37,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.e175.klaus.solarpositioning.AzimuthZenithAngle;
@@ -61,6 +62,7 @@ public class RollerShutterService {
   private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
   private final TimedGateKeeper highSunLock = new TimedGateKeeper();
 
+  @Transactional
   public void init() {
     var rxScheduler = RxHelper.blockingScheduler(vertx);
     disposables.add(weatherService.getWeather()
@@ -71,6 +73,10 @@ public class RollerShutterService {
         .debounce(10, SECONDS)
         .subscribeOn(rxScheduler)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
+        .retry(exception -> {
+          log.error("Error while roller-Shutter-Logic");
+          return true;
+        })
         .subscribe());
 
     disposables.add(telegramMessageService.getMessages()
@@ -119,7 +125,7 @@ public class RollerShutterService {
         return new ArrayList<>();
       }
 
-      highSunLock.blockFor(Duration.ofHours(1));
+      highSunLock.blockFor(Duration.ofMinutes(30));
       var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
       var compassDirection = resolveCompassDirection(sunDirection);
 
@@ -165,7 +171,7 @@ public class RollerShutterService {
     if (!config.getCompassDirection().contains(compassDirection)) {
       return rollerShutter.open();
     }
-    
+
     if (sunDirection.getZenithAngle() > 40 && rollerShutter.getCurrentLift() > 50) {
       return rollerShutter.setLiftAndThenTilt(50, 40);
     } else if (sunDirection.getZenithAngle() > 20 && rollerShutter.getCurrentLift() > 75) {
@@ -220,7 +226,7 @@ public class RollerShutterService {
   private void handleTime(LocalTime time) {
     timeToConfigs.get(time)
         .stream()
-        .map(id -> rollerShutterConfigRepository.findById(id)
+        .map(id -> QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findById(id))
             .orElseThrow(() -> new IllegalStateException("RollerShutterConfig %s is not in database".formatted(id))))
         .forEach(config -> {
           var rollerShutter = getRollerShutter(config);
