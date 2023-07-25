@@ -67,7 +67,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
           Observable.defer(() -> Observable.fromFuture(getWebSocketCompletableFuture(wsUrl, this)))
               .retryWhen(origin -> origin
                   .doOnNext(throwable -> log.warn("Connection attempt failed, retrying in 5s."))
-                  .delay(5, TimeUnit.SECONDS))
+                  .delay(30, TimeUnit.SECONDS))
               .subscribeOn(blockingScheduler)
               .subscribe(webSocket -> this.webSocket = webSocket);
         });
