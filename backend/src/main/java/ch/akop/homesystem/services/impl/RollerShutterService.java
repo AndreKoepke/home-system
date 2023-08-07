@@ -121,16 +121,12 @@ public class RollerShutterService {
     var newBrightness = newWeather.getLight().getAs(KILO_LUX).intValue();
 
     if (newBrightness > 300) {
-      if (newWeather.getOuterTemperatur().isSmallerThan(15, DEGREE)) {
-        return new ArrayList<>();
-      }
-
       highSunLock.blockFor(Duration.ofMinutes(30));
       var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
       var compassDirection = resolveCompassDirection(sunDirection);
 
       return configs.stream()
-          .map(config -> handleHighBrightness(config, sunDirection, compassDirection))
+          .map(config -> handleHighBrightness(config, sunDirection, compassDirection, newWeather))
           .toList();
 
     } else if (newBrightness < 300 && newBrightness > 10 && highSunLock.isGateOpen()) {
@@ -157,7 +153,10 @@ public class RollerShutterService {
   }
 
   @NotNull
-  private Completable handleHighBrightness(RollerShutterConfig config, AzimuthZenithAngle sunDirection, CompassDirection compassDirection) {
+  private Completable handleHighBrightness(RollerShutterConfig config,
+      AzimuthZenithAngle sunDirection,
+      CompassDirection compassDirection,
+      Weather weather) {
     var rollerShutter = getRollerShutter(config);
 
     if (!hasNoManualAction(rollerShutter)) {
@@ -166,6 +165,10 @@ public class RollerShutterService {
 
     if (!isOkToOpen(config)) {
       return Completable.complete();
+    }
+
+    if (weather.getOuterTemperatur().isSmallerThan(22, DEGREE)) {
+      return rollerShutter.open();
     }
 
     if (!config.getCompassDirection().contains(compassDirection)) {
