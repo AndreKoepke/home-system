@@ -75,7 +75,7 @@ public class RollerShutterService {
         .subscribeOn(rxScheduler)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
         .retryWhen(origin -> origin
-            .doOnNext(throwable -> log.error("Error while setting rollerShutters. Retrying in 5min"))
+            .doOnNext(throwable -> log.error("Error while setting rollerShutters. Retrying in 5min", throwable))
             .delay(5, TimeUnit.MINUTES))
         .subscribe());
 
