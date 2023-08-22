@@ -159,7 +159,7 @@ public class RollerShutterService {
         .filter(RollerShutterService::isOkToClose)
         .map(this::getRollerShutter)
         .filter(RollerShutterService::hasNoManualAction)
-        .filter(rollerShutter -> rollerShutter.getCurrentLift() < 10)
+        .filter(rollerShutter -> rollerShutter.getCurrentLift() > 10)
         .map(rollerShutter -> rollerShutter.setLiftAndThenTilt(10, 15))
         .toList();
   }
