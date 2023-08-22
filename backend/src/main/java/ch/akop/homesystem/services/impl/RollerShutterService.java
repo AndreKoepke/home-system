@@ -120,6 +120,11 @@ public class RollerShutterService {
     var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
     var newBrightness = newWeather.getLight().getAs(KILO_LUX).intValue();
 
+    if (newWeather.getOuterTemperatur().isBiggerThan(30, DEGREE)) {
+      return handleHighTemperature(configs);
+    }
+
+
     if (newBrightness > 300) {
       highSunLock.blockFor(Duration.ofMinutes(30));
       var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
@@ -146,6 +151,17 @@ public class RollerShutterService {
     }
 
     return new ArrayList<>();
+  }
+
+  @NotNull
+  private List<Completable> handleHighTemperature(List<RollerShutterConfig> configs) {
+    return configs.stream()
+        .filter(RollerShutterService::isOkToClose)
+        .map(this::getRollerShutter)
+        .filter(RollerShutterService::hasNoManualAction)
+        .filter(rollerShutter -> rollerShutter.getCurrentLift() > 90)
+        .map(rollerShutter -> rollerShutter.setLiftAndThenTilt(100, 75))
+        .toList();
   }
 
   private static boolean hasNoManualAction(RollerShutter rollerShutter) {
