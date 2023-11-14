@@ -50,3 +50,23 @@ jobs:
           push: true
           pull: true
           tags: akop/home-system:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    environment: Deploy
+    steps:
+      - name: Set up WireGuard
+        uses: egor-tensin/setup-wireguard@v1
+        with:
+          endpoint: '${{ secrets.WIREGUARD_ENDPOINT }}'
+          endpoint_public_key: '${{ secrets.WIREGUARD_SERVER_PUBLIC_KEY }}'
+          ips: '${{ secrets.WIREGUARD_CLIENT_IP }}'
+          allowed_ips: '${{ secrets.WIREGUARD_ALLOWED_IPS }}'
+          private_key: '${{ secrets.WIREGUARD_CLIENT_PRIVATE_KEY }}'
+      - uses: actions/checkout@v3
+      - name: Deploy
+        uses: WyriHaximus/github-action-helm3@v3
+        with:
+          exec: echo '${{ secrets.VALUES_YAML_HOME_SYSTEM }}' | helm upgrade akops-home ./deploy/backend --install --wait --atomic --values -
+          kubeconfig: '${{ secrets.K8S_CONF_AKOP_ONLINE }}'
+

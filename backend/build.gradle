@@ -12,14 +12,19 @@ java {
   targetCompatibility = JavaVersion.VERSION_17
 }
 
+try {
+  apply from: 'gradle-local.properties'
+} catch (Exception e) {
+}
+
 repositories {
   mavenCentral()
   mavenLocal()
   maven {
     url "https://maven.pkg.github.com/AndreKoepke/weathercloud"
     credentials {
-      username = project.findProperty("gpr.user") ?: System.getenv("REPO_USERNAME")
-      password = project.findProperty("gpr.pass") ?: System.getenv("REPO_TOKEN")
+      username = project.findProperty("repo_user") ?: System.getenv("REPO_USERNAME")
+      password = project.findProperty("repo_pass") ?: System.getenv("REPO_TOKEN")
     }
   }
 }
