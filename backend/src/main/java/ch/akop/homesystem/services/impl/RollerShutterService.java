@@ -10,9 +10,9 @@ import ch.akop.homesystem.models.CompassDirection;
 import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
+import ch.akop.homesystem.services.impl.WeatherService.CurrentAndPreviousWeather;
 import ch.akop.homesystem.util.TimeUtil;
 import ch.akop.homesystem.util.TimedGateKeeper;
-import ch.akop.weathercloud.Weather;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
@@ -50,6 +50,7 @@ import org.jetbrains.annotations.NotNull;
 public class RollerShutterService {
 
   public static final Duration TIMEOUT_AFTER_MANUAL = Duration.ofHours(1);
+  public static final Duration KEEP_OPEN_AFTER_DARKNESS_FOR = Duration.ofMinutes(30);
   private static final DateTimeFormatter GERMANY_DATE_TIME = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
       .withLocale(Locale.GERMANY);
 
@@ -66,11 +67,11 @@ public class RollerShutterService {
   @Transactional
   public void init() {
     var rxScheduler = RxHelper.blockingScheduler(vertx);
-    disposables.add(weatherService.getWeather()
+    disposables.add(weatherService.getCurrentAndPreviousWeather()
         .doOnNext(this::checkWindSpeed)
         .mergeWith(telegramMessageService.getMessages()
             .filter(message -> message.startsWith("/calcRollerShutter"))
-            .switchMap(message -> weatherService.getWeather().take(1)))
+            .switchMap(message -> weatherService.getCurrentAndPreviousWeather().take(1)))
         .debounce(10, SECONDS)
         .subscribeOn(rxScheduler)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
@@ -108,20 +109,20 @@ public class RollerShutterService {
     initTimer();
   }
 
-  private void checkWindSpeed(Weather weather) {
-    if (weather.getWind().isBiggerThan(10, METERS_PER_SECOND)) {
+  private void checkWindSpeed(CurrentAndPreviousWeather weather) {
+    if (weather.current().getWind().isBiggerThan(10, METERS_PER_SECOND)) {
       telegramMessageService.sendMessageToMainChannel("Hui das ist sehr winding. Ich mach die Stören hoch.");
       deviceService.getDevicesOfType(RollerShutter.class)
           .forEach(RollerShutter::reportHighWind);
     }
   }
 
-  private List<Completable> handleWeatherUpdate(Weather newWeather) {
+  private List<Completable> handleWeatherUpdate(CurrentAndPreviousWeather weather) {
     var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
-    var newBrightness = newWeather.getLight().getAs(KILO_LUX).intValue();
+    var newBrightness = weather.current().getLight().getAs(KILO_LUX).intValue();
 
     if (newBrightness > 300) {
-      if (newWeather.getOuterTemperatur().isSmallerThan(15, DEGREE)) {
+      if (weather.current().getOuterTemperatur().isSmallerThan(15, DEGREE)) {
         return new ArrayList<>();
       }
 
@@ -140,7 +141,7 @@ public class RollerShutterService {
           .filter(RollerShutterService::hasNoManualAction)
           .map(RollerShutter::open)
           .toList();
-    } else if (newBrightness == 0) {
+    } else if (newBrightness == 0 && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
       return configs.stream()
           .filter(RollerShutterService::isOkToClose)
           .map(this::getRollerShutter)
