@@ -37,7 +37,7 @@ public class WeatherService {
   @Getter
   private boolean active;
 
-  private LocalDateTime gotDarkAt;
+  private LocalDateTime gotDarkAt = LocalDateTime.MIN;
 
 
   @PostConstruct
