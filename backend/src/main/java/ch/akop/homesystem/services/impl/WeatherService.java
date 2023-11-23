@@ -62,9 +62,7 @@ public class WeatherService {
       rainDetectorService.updateDatabaseIfNecessary(weatherUpdate);
     });
 
-    getCurrentAndPreviousWeather()
-        .filter(CurrentAndPreviousWeather::isGettingDark)
-        .subscribe(weatherUpdate -> gotDarkAt = LocalDateTime.now());
+    getCurrentAndPreviousWeather().subscribe(this::checkDarkness);
 
     log.info("WeatherService is up");
   }
@@ -101,13 +99,18 @@ public class WeatherService {
         .orElseThrow(() -> new RuntimeException("No basic config"));
   }
 
+  public void checkDarkness(CurrentAndPreviousWeather update) {
+    var currentLight = update.current().getLight().getAs(LightUnit.KILO_LUX).intValue();
+    var previousLight = update.previous().getLight().getAs(LightUnit.KILO_LUX).intValue();
+
+    if (currentLight > 0) {
+      gotDarkAt = null;
+    } else if (previousLight > 0) {
+      gotDarkAt = LocalDateTime.now();
+    }
+  }
+
   public record CurrentAndPreviousWeather(Weather current, Weather previous) {
 
-    public boolean isGettingDark() {
-      var currentLight = current().getLight().getAs(LightUnit.KILO_LUX).intValue();
-      var previousLight = previous().getLight().getAs(LightUnit.KILO_LUX).intValue();
-
-      return currentLight == 0 && previousLight != 0;
-    }
   }
 }
