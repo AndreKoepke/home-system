@@ -10,9 +10,9 @@ import ch.akop.homesystem.models.CompassDirection;
 import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
-import ch.akop.homesystem.services.impl.WeatherService.CurrentAndPreviousWeather;
 import ch.akop.homesystem.util.TimeUtil;
 import ch.akop.homesystem.util.TimedGateKeeper;
+import ch.akop.weathercloud.Weather;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
@@ -67,11 +67,11 @@ public class RollerShutterService {
   @Transactional
   public void init() {
     var rxScheduler = RxHelper.blockingScheduler(vertx);
-    disposables.add(weatherService.getCurrentAndPreviousWeather()
+    disposables.add(weatherService.getWeather()
         .doOnNext(this::checkWindSpeed)
         .mergeWith(telegramMessageService.getMessages()
             .filter(message -> message.startsWith("/calcRollerShutter"))
-            .switchMap(message -> weatherService.getCurrentAndPreviousWeather().take(1)))
+            .switchMap(message -> weatherService.getWeather().take(1)))
         .debounce(10, SECONDS)
         .subscribeOn(rxScheduler)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
@@ -109,20 +109,20 @@ public class RollerShutterService {
     initTimer();
   }
 
-  private void checkWindSpeed(CurrentAndPreviousWeather weather) {
-    if (weather.current().getWind().isBiggerThan(10, METERS_PER_SECOND)) {
+  private void checkWindSpeed(Weather weather) {
+    if (weather.getWind().isBiggerThan(10, METERS_PER_SECOND)) {
       telegramMessageService.sendMessageToMainChannel("Hui das ist sehr winding. Ich mach die Stören hoch.");
       deviceService.getDevicesOfType(RollerShutter.class)
           .forEach(RollerShutter::reportHighWind);
     }
   }
 
-  private List<Completable> handleWeatherUpdate(CurrentAndPreviousWeather weather) {
+  private List<Completable> handleWeatherUpdate(Weather weather) {
     var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
-    var newBrightness = weather.current().getLight().getAs(KILO_LUX).intValue();
+    var newBrightness = weather.getLight().getAs(KILO_LUX).intValue();
 
     if (newBrightness > 300) {
-      if (weather.current().getOuterTemperatur().isSmallerThan(15, DEGREE)) {
+      if (weather.getOuterTemperatur().isSmallerThan(15, DEGREE)) {
         return new ArrayList<>();
       }
 
