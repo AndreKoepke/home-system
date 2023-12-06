@@ -50,7 +50,7 @@ import org.jetbrains.annotations.NotNull;
 public class RollerShutterService {
 
   public static final Duration TIMEOUT_AFTER_MANUAL = Duration.ofHours(1);
-  public static final Duration KEEP_OPEN_AFTER_DARKNESS_FOR = Duration.ofMinutes(30);
+  public static final Duration KEEP_OPEN_AFTER_DARKNESS_FOR = Duration.ofMinutes(20);
   private static final DateTimeFormatter GERMANY_DATE_TIME = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
       .withLocale(Locale.GERMANY);
 

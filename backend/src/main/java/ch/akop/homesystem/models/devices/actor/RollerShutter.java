@@ -33,13 +33,14 @@ public class RollerShutter extends Actor<RollerShutter> {
   private final Subject<Integer> lift$ = ReplaySubject.createWithSize(1);
   private final Subject<Integer> tilt$ = ReplaySubject.createWithSize(1);
   private final Subject<Boolean> open$ = ReplaySubject.createWithSize(1);
-  private final TimedGateKeeper automaticActionLock = new TimedGateKeeper();
   private final TimedGateKeeper highWindLock = new TimedGateKeeper();
 
   private final Consumer<Integer> functionToSetLift;
   private final Consumer<Integer> functionToSetTilt;
 
   private LocalDateTime lastManuallAction = LocalDateTime.MIN;
+  private Integer automaticTiltTarget = null;
+  private Integer automaticLiftTarget = null;
 
   /**
    * 100% means, it is open 0% means, it is closed
@@ -75,11 +76,12 @@ public class RollerShutter extends Actor<RollerShutter> {
           if (Math.abs(currentLift - lift) > LIFT_ALLOWED_TOLERANCE) {
             log.info(this.getName() + ": lift (now at " + currentLift + ") is nok, set to " + lift);
             functionToSetLift.accept(lift);
-            automaticActionLock.blockFor(Duration.ofMinutes(1));
+            automaticLiftTarget = lift;
           }
         }))
         .observeOn(Schedulers.io())
-        .subscribeOn(Schedulers.io());
+        .subscribeOn(Schedulers.io())
+        .doFinally(() -> automaticLiftTarget = null);
   }
 
   @NotNull
@@ -91,14 +93,15 @@ public class RollerShutter extends Actor<RollerShutter> {
     return Completable.fromRunnable(() -> {
           log.info(this.getName() + ": tilt (now at " + currentTilt + ") nok, set to " + tilt);
           functionToSetTilt.accept(tilt);
-          automaticActionLock.blockFor(Duration.ofSeconds(10));
+          automaticTiltTarget = tilt;
         })
         .andThen(tilt$
             .filter(newTilt -> Math.abs(newTilt - tilt) < TILT_ALLOWED_DIFFERENCE)
             .timeout(10, TimeUnit.SECONDS)
             .onErrorResumeNext(throwable -> Observable.just(1))
             .take(1)
-            .flatMapCompletable(integer -> Completable.complete()));
+            .flatMapCompletable(integer -> Completable.complete()))
+        .doFinally(() -> automaticTiltTarget = null);
   }
 
   /**
@@ -122,13 +125,29 @@ public class RollerShutter extends Actor<RollerShutter> {
 
   @Override
   protected void consumeInternalUpdate(State update) {
-    if (currentLift != null && automaticActionLock.isGateOpen()) {
+    if (isUpdateCausedByManualCommand(automaticLiftTarget, currentLift, update.getLift())
+        || isUpdateCausedByManualCommand(automaticTiltTarget, currentTilt, update.getTilt())) {
       lastManuallAction = LocalDateTime.now();
     }
 
     setCurrentLift(update.getLift());
     setCurrentTilt(update.getTilt());
     setIsOpen(update.getOpen());
+  }
+
+  boolean isUpdateCausedByManualCommand(Integer targetValue, Integer previousValue, Integer updateValue) {
+    if (targetValue == null) {
+      return true;
+    }
+
+    if (previousValue == null) {
+      return false;
+    }
+
+    var differenceBefore = Math.abs(previousValue - targetValue);
+    var differenceAfter = Math.abs(updateValue - targetValue);
+
+    return differenceAfter > differenceBefore;
   }
 
   private void setCurrentLift(Integer newValue) {
