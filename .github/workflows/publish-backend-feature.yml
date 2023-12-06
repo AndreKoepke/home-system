@@ -66,6 +66,6 @@ jobs:
       - name: Deploy
         uses: WyriHaximus/github-action-helm3@v3
         with:
-          exec: echo '${{ secrets.VALUES_YAML_HOME_SYSTEM }}' | helm upgrade akops-home ./deploy/backend --install --wait --atomic --values -
-          kubeconfig: '${{ secrets.K8S_CONF_AKOP_ONLINE_FEATURE }}'
+          exec: echo '${{ secrets.VALUES_YAML_HOME_SYSTEM_FEATURE }}' | helm upgrade akops-home ./deploy/backend --install --wait --atomic --values -
+          kubeconfig: '${{ secrets.K8S_CONF_AKOP_ONLINE }}'
 
