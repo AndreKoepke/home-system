@@ -20,7 +20,9 @@ import ch.akop.homesystem.models.devices.sensor.CloseContact;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.persistence.model.config.DeconzConfig;
+import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
+import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
 import ch.akop.homesystem.services.impl.AutomationService;
 import ch.akop.homesystem.services.impl.DeviceService;
 import io.quarkus.runtime.Startup;
@@ -47,6 +49,7 @@ public class DeconzConnector {
   private final DeviceService deviceService;
   private final AutomationService automationService;
   private final DeconzConfigRepository deconzConfigRepository;
+  private final RollerShutterConfigRepository rollerShutterConfigRepository;
 
   DeconzService deconzService;
 
@@ -158,7 +161,10 @@ public class DeconzConnector {
 
     var rollerShutter = new RollerShutter(
         lift -> deconzService.updateLight(id, new State().setLift(lift)),
-        tilt -> deconzService.updateLight(id, new State().setTilt(tilt))
+        tilt -> deconzService.updateLight(id, new State().setTilt(tilt)),
+        rollerShutterConfigRepository.findById(id)
+            .map(RollerShutterConfig::getCloseWithInterrupt)
+            .orElse(false)
     );
 
     return Optional.of(rollerShutter);

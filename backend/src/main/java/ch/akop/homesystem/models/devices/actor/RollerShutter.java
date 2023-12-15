@@ -38,6 +38,11 @@ public class RollerShutter extends Actor<RollerShutter> {
   private final Consumer<Integer> functionToSetLift;
   private final Consumer<Integer> functionToSetTilt;
 
+  /**
+   * Some rollerShutters are blocking when closing. To avoid that, these rollerShutters can be closed only half and after that, open a bit and close again.
+   */
+  private final boolean closeWithInterruption;
+
   private LocalDateTime lastManuallAction = LocalDateTime.MIN;
   private Integer automaticTiltTarget = null;
   private Integer automaticLiftTarget = null;
@@ -115,6 +120,11 @@ public class RollerShutter extends Actor<RollerShutter> {
    * Coles the rollerShutters to minimum value
    */
   public Completable close() {
+    if (closeWithInterruption && currentLift > 75) {
+      return setLiftAndThenTilt(50, 0)
+          .andThen(setTiltTo(100))
+          .andThen(setLiftAndThenTilt(0, 0));
+    }
     return setLiftAndThenTilt(0, 0);
   }
 
