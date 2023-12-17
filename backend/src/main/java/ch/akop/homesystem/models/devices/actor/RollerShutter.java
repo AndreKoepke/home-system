@@ -121,8 +121,7 @@ public class RollerShutter extends Actor<RollerShutter> {
    */
   public Completable close() {
     if (closeWithInterruption && currentLift > 75) {
-      return setLiftAndThenTilt(50, 0)
-          .andThen(setTiltTo(100))
+      return setLiftAndThenTilt(50, 75)
           .andThen(setLiftAndThenTilt(0, 0));
     }
     return setLiftAndThenTilt(0, 0);
@@ -146,11 +145,7 @@ public class RollerShutter extends Actor<RollerShutter> {
   }
 
   boolean isUpdateCausedByManualCommand(Integer targetValue, Integer previousValue, Integer updateValue) {
-    if (targetValue == null) {
-      return true;
-    }
-
-    if (previousValue == null) {
+    if (previousValue == null || targetValue == null) {
       return false;
     }
 

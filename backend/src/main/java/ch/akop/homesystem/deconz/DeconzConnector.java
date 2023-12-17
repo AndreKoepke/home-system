@@ -162,7 +162,7 @@ public class DeconzConnector {
     var rollerShutter = new RollerShutter(
         lift -> deconzService.updateLight(id, new State().setLift(lift)),
         tilt -> deconzService.updateLight(id, new State().setTilt(tilt)),
-        rollerShutterConfigRepository.findById(id)
+        rollerShutterConfigRepository.findByNameLike(light.getName())
             .map(RollerShutterConfig::getCloseWithInterrupt)
             .orElse(false)
     );
