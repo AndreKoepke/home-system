@@ -6,11 +6,13 @@ import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.light.Light;
 import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@ApplicationScoped
 public class LightnessControlledDeviceService {
 
   private final LightnessControlledDeviceRepository configRepository;
