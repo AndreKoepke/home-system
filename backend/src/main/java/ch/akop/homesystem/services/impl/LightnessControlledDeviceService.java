@@ -4,9 +4,10 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.persistence.repository.config.LightnessControlledDeviceRepository;
 import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.light.Light;
+import io.quarkus.runtime.StartupEvent;
 import java.util.function.Consumer;
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,8 +21,7 @@ public class LightnessControlledDeviceService {
   private final WeatherService weatherService;
   private final TelegramMessageService telegramMessageService;
 
-  @PostConstruct
-  void setupWeatherListener() {
+  void setupWeatherListener(@Observes StartupEvent startup) {
     weatherService.getWeather()
         .map(Weather::getLight)
         .subscribe(this::handleWeatherUpdate);
