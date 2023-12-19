@@ -42,6 +42,6 @@ public class LightnessControlledDeviceConfig {
       return false;
     }
 
-    return light.isSmallerThan(turnOffWhenLighterAs, KILO_LUX);
+    return light.isBiggerThan(turnOffWhenLighterAs, KILO_LUX);
   }
 }
