@@ -5,12 +5,15 @@ import ch.akop.homesystem.persistence.model.config.LightnessControlledDeviceConf
 import ch.akop.homesystem.persistence.repository.config.LightnessControlledDeviceRepository;
 import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.light.Light;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.runtime.StartupEvent;
+import io.vertx.core.Vertx;
+import io.vertx.rxjava3.RxHelper;
 import java.util.function.Consumer;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
+import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.eclipse.microprofile.context.ManagedExecutor;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,17 +25,22 @@ public class LightnessControlledDeviceService {
   private final DeviceService deviceService;
   private final WeatherService weatherService;
   private final TelegramMessageService telegramMessageService;
-  private final ManagedExecutor executor;
+  private final Vertx vertx;
 
+  @Transactional
   void setupWeatherListener(@Observes StartupEvent startup) {
+    var rxScheduler = RxHelper.blockingScheduler(vertx);
     weatherService.getWeather()
         .map(Weather::getLight)
+        .subscribeOn(rxScheduler)
         .subscribe(this::handleWeatherUpdate);
   }
 
   private void handleWeatherUpdate(Light lightOutside) {
-    executor.runAsync(() -> configRepository.findAll()
-        .forEach(config -> handleConfig(lightOutside, config)));
+    QuarkusTransaction.requiringNew().run(() -> {
+      var all = configRepository.findAll();
+      all.forEach(config -> handleConfig(lightOutside, config));
+    });
   }
 
   private void handleConfig(Light lightOutside, LightnessControlledDeviceConfig config) {
