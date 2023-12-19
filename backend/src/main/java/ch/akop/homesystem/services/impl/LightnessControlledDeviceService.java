@@ -5,6 +5,8 @@ import ch.akop.homesystem.persistence.repository.config.LightnessControlledDevic
 import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.light.Light;
 import io.quarkus.runtime.StartupEvent;
+import io.vertx.core.Vertx;
+import io.vertx.rxjava3.RxHelper;
 import java.util.function.Consumer;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -20,10 +22,13 @@ public class LightnessControlledDeviceService {
   private final DeviceService deviceService;
   private final WeatherService weatherService;
   private final TelegramMessageService telegramMessageService;
+  private final Vertx vertx;
 
   void setupWeatherListener(@Observes StartupEvent startup) {
+    var rxScheduler = RxHelper.blockingScheduler(vertx);
     weatherService.getWeather()
         .map(Weather::getLight)
+        .subscribeOn(rxScheduler)
         .subscribe(this::handleWeatherUpdate);
   }
 
