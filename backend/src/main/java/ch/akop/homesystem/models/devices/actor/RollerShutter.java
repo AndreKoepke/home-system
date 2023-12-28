@@ -80,8 +80,8 @@ public class RollerShutter extends Actor<RollerShutter> {
         .andThen(Completable.fromRunnable(() -> {
           if (Math.abs(currentLift - lift) > LIFT_ALLOWED_TOLERANCE) {
             log.info(this.getName() + ": lift (now at " + currentLift + ") is nok, set to " + lift);
-            functionToSetLift.accept(lift);
             automaticLiftTarget = lift;
+            functionToSetLift.accept(lift);
           }
         }))
         .observeOn(Schedulers.io())
@@ -97,8 +97,8 @@ public class RollerShutter extends Actor<RollerShutter> {
 
     return Completable.fromRunnable(() -> {
           log.info(this.getName() + ": tilt (now at " + currentTilt + ") nok, set to " + tilt);
-          functionToSetTilt.accept(tilt);
           automaticTiltTarget = tilt;
+          functionToSetTilt.accept(tilt);
         })
         .andThen(tilt$
             .filter(newTilt -> Math.abs(newTilt - tilt) < TILT_ALLOWED_DIFFERENCE)
@@ -145,8 +145,12 @@ public class RollerShutter extends Actor<RollerShutter> {
   }
 
   boolean isUpdateCausedByManualCommand(Integer targetValue, Integer previousValue, Integer updateValue) {
-    if (previousValue == null || targetValue == null) {
+    if (previousValue == null) {
       return false;
+    }
+
+    if (targetValue == null) {
+      return true;
     }
 
     var differenceBefore = Math.abs(previousValue - targetValue);
