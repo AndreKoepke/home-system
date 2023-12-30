@@ -120,15 +120,16 @@ public class RollerShutter extends Actor<RollerShutter> {
    * Coles the rollerShutters to minimum value
    */
   public Completable close() {
-    if (closeWithInterruption && currentLift > 75) {
-      return setLiftAndThenTilt(50, 75)
+    if (closeWithInterruption && currentLift > 60) {
+      return setLiftAndThenTilt(50, 100)
+          .delay(5, TimeUnit.SECONDS)
           .andThen(setLiftAndThenTilt(0, 0));
     }
     return setLiftAndThenTilt(0, 0);
   }
 
   public void reportHighWind() {
-    close().subscribe();
+    open().subscribe();
     highWindLock.blockFor(BLOCK_TIME_WHEN_HIGH_WIND);
   }
 
