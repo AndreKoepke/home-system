@@ -6,19 +6,15 @@ import ch.akop.homesystem.persistence.repository.config.LightnessControlledDevic
 import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.light.Light;
 import io.quarkus.narayana.jta.QuarkusTransaction;
-import io.quarkus.runtime.StartupEvent;
 import io.vertx.core.Vertx;
 import io.vertx.rxjava3.RxHelper;
 import java.util.function.Consumer;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@ApplicationScoped
 public class LightnessControlledDeviceService {
 
   private final LightnessControlledDeviceRepository configRepository;
@@ -28,7 +24,7 @@ public class LightnessControlledDeviceService {
   private final Vertx vertx;
 
   @Transactional
-  void setupWeatherListener(@Observes StartupEvent startup) {
+  public void init() {
     var rxScheduler = RxHelper.blockingScheduler(vertx);
     weatherService.getWeather()
         .map(Weather::getLight)
