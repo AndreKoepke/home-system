@@ -44,12 +44,10 @@ public class LightnessControlledDeviceService {
   }
 
   private void handleConfig(Light lightOutside, LightnessControlledDeviceConfig config) {
-    if (config.isDarkerAs(lightOutside)) {
-      tryTo(config.getName(), SimpleLight::turnOn);
-    }
-
-    if (config.isLighterAs(lightOutside)) {
+    if (config.isLighterAs(lightOutside) || !config.isTimeOkForBeingOn()) {
       tryTo(config.getName(), SimpleLight::turnOff);
+    } else if (config.isDarkerAs(lightOutside)) {
+      tryTo(config.getName(), SimpleLight::turnOn);
     }
   }
 
