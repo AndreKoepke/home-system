@@ -13,8 +13,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -33,18 +36,31 @@ public class RollerShutter extends Actor<RollerShutter> {
   private final Subject<Integer> lift$ = ReplaySubject.createWithSize(1);
   private final Subject<Integer> tilt$ = ReplaySubject.createWithSize(1);
   private final Subject<Boolean> open$ = ReplaySubject.createWithSize(1);
+
+  @Getter(AccessLevel.PRIVATE)
   private final TimedGateKeeper highWindLock = new TimedGateKeeper();
 
+  @Getter(AccessLevel.PRIVATE)
   private final Consumer<Integer> functionToSetLift;
+
+  @Getter(AccessLevel.PRIVATE)
   private final Consumer<Integer> functionToSetTilt;
 
   /**
    * Some rollerShutters are blocking when closing. To avoid that, these rollerShutters can be closed only half and after that, open a bit and close again.
    */
+  @Getter(AccessLevel.PRIVATE)
   private final boolean closeWithInterruption;
 
+  @Setter(AccessLevel.PRIVATE)
   private LocalDateTime lastManuallAction = LocalDateTime.MIN;
+
+  @Getter(AccessLevel.PRIVATE)
+  @Setter(AccessLevel.PRIVATE)
   private Integer automaticTiltTarget = null;
+
+  @Getter(AccessLevel.PRIVATE)
+  @Setter(AccessLevel.PRIVATE)
   private Integer automaticLiftTarget = null;
 
   /**
