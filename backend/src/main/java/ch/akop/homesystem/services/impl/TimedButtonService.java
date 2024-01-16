@@ -11,28 +11,28 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TimedButtonService {
 
   private final TimedButtonConfigRepository configRepository;
   private final DeviceService deviceService;
-
   private final Map<String, Disposable> runningJobs = new HashMap<>();
 
   @Transactional
   @ConsumeEvent(value = BUTTON, blocking = true)
   public void buttonEventHandler(ButtonPressEvent event) {
-    configRepository.findAll()
-        .stream()
-        .filter(config -> config.eventMatches(event.getButtonName(), event.getButtonEvent()))
+    configRepository.findAllByButtonNameAndButtonEvent(event.getButtonName(), event.getButtonEvent())
         .forEach(this::handleButtonPressed);
   }
 
@@ -50,13 +50,16 @@ public class TimedButtonService {
   private Disposable turnLightOffAfterConfiguratedTime(TimedButtonConfig config) {
     return Observable.timer(config.getKeepOnFor().getSeconds(), TimeUnit.SECONDS)
         .take(1)
-        .subscribe(aLong -> forEveryLight(config, SimpleLight::turnOff));
+        .subscribe(aLong -> {
+          runningJobs.remove(config.getButtonName());
+          forEveryLight(config, SimpleLight::turnOff);
+        });
   }
 
   private void forEveryLight(TimedButtonConfig config, Consumer<SimpleLight> action) {
     config.getLights().stream()
-        .flatMap(name -> deviceService.findDeviceByName(name, SimpleLight.class).stream())
-        .filter(SimpleLight::isCurrentStateIsOn)
+        .map(name -> deviceService.findDeviceByName(name, SimpleLight.class)
+            .orElseThrow(() -> new NoSuchElementException("Light " + name + " not found")))
         .forEach(action);
   }
 }

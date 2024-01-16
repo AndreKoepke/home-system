@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS config_timed_button
 (
-  buttonName  VARCHAR NOT NULL PRIMARY KEY,
-  buttonEvent INTEGER NOT NULL,
-  keepOnFor   BIGINT  NOT NULL,
+  button_name  VARCHAR NOT NULL PRIMARY KEY,
+  button_event INTEGER NOT NULL,
+  keep_on_for  BIGINT  NOT NULL,
   lights      TEXT    NOT NULL
 );
