@@ -38,4 +38,7 @@ public class RollerShutterConfig {
 
   @Nullable
   private LocalDateTime noAutomaticsUntil;
+
+  @Nullable
+  private Boolean closeWithInterrupt;
 }

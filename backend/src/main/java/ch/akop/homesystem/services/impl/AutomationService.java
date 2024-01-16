@@ -44,6 +44,7 @@ public class AutomationService {
   private final PowerMeterService powerMeterService;
   private final MotionSensorService motionSensorService;
   private final RollerShutterService rollerShutterService;
+  private final LightnessControlledDeviceService lightnessControlledDeviceService;
   private final EventBus eventPublisher;
 
   @SuppressWarnings("rawtypes")
@@ -59,6 +60,7 @@ public class AutomationService {
     powerMeterService.init();
     motionSensorService.init();
     rollerShutterService.init();
+    lightnessControlledDeviceService.init();
   }
 
   private boolean unknownDevice(Device<?> device) {

@@ -23,8 +23,8 @@ spec:
         component: backend
 
       annotations:
-        # set timestamp to trick k8s to roll out a new version (even when nothing else changed)
-        timstamp: "{{ now | date "20060102150405" }}"
+        # enforce k8s to restart the pod
+        rollme: {{ randAlphaNum 5 | quote }}
 
     spec:
       automountServiceAccountToken: false
