@@ -145,7 +145,14 @@ public class MotionSensorService {
 
     return isMatchingTime(config)
         && isMatchingState(config)
-        && isMatchingWeather(config);
+        && isMatchingWeather(config)
+        && areAllLightsOff(config);
+  }
+
+  private boolean areAllLightsOff(MotionSensorConfig config) {
+    return config.getLights().stream()
+        .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
+        .allMatch(SimpleLight::isCurrentlyOff);
   }
 
   private boolean isMatchingWeather(MotionSensorConfig config) {
