@@ -1,12 +1,12 @@
 package ch.akop.homesystem.persistence.model.config;
 
-import static java.util.stream.Stream.ofNullable;
-
 import ch.akop.homesystem.persistence.model.animation.Animation;
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Nullable;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
@@ -55,10 +55,9 @@ public class MotionSensorConfig {
   @Nullable
   private Animation animation;
 
-  public Stream<String> getAffectedLightNames() {
-    return Stream.concat(
-        this.getLights().stream(),
-        ofNullable(this.getAnimation()).flatMap(animation -> animation.getLights().stream())
-    );
+  public Set<String> getAffectedLightNames() {
+    var allRelatedLights = new HashSet<>(getLights());
+    Optional.ofNullable(getAnimation()).ifPresent(animation -> allRelatedLights.addAll(animation.getLights()));
+    return allRelatedLights;
   }
 }

@@ -11,7 +11,9 @@ import ch.akop.homesystem.states.NormalState;
 import ch.akop.homesystem.states.SleepState;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Observable;
+import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.rxjava3.RxHelper;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -34,12 +36,14 @@ public class MotionSensorService {
   private final StateService stateService;
   private final WeatherService weatherService;
   private final EventBus eventBus;
+  private final Vertx vertx;
   private final Set<String> sensorsWithHigherTimeout = new HashSet<>();
 
   @SuppressWarnings({"ResultOfMethodCallIgnored"})
   @PostConstruct
   @Transactional
   public void init() {
+    var rxScheduler = RxHelper.blockingScheduler(vertx);
     // TODO restart when config changes
     motionSensorConfigRepository.findAll()
         .forEach(motionSensorConfig -> deviceService.getDevicesOfType(MotionSensor.class)
@@ -48,6 +52,7 @@ public class MotionSensorService {
             .findFirst()
             .orElseThrow()
             .getIsMoving$()
+            .observeOn(rxScheduler)
             .filter(isMoving -> shouldIgnoreMotionEvent(motionSensorConfig, isMoving))
             .filter(isMoving -> blockMovingWhenNecessary(motionSensorConfig, isMoving))
             .switchMap(isMoving -> delayWhenNoMovement(isMoving, motionSensorConfig))
@@ -151,9 +156,11 @@ public class MotionSensorService {
   }
 
   private boolean areAllLightsOff(MotionSensorConfig config) {
-    return QuarkusTransaction.requiringNew().call(() -> config.getAffectedLightNames()
+    var lights = QuarkusTransaction.requiringNew().call(config::getAffectedLightNames);
+
+    return lights.stream()
         .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
-        .allMatch(SimpleLight::isCurrentlyOff));
+        .allMatch(SimpleLight::isCurrentlyOff);
   }
 
   private boolean isMatchingWeather(MotionSensorConfig config) {
