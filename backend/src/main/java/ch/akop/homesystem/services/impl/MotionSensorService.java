@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
@@ -150,7 +151,9 @@ public class MotionSensorService {
   }
 
   private boolean areAllLightsOff(MotionSensorConfig config) {
-    return config.getLights().stream()
+    return Stream.concat(
+            config.getLights().stream(),
+            Stream.ofNullable(config.getAnimation()).flatMap(animation -> animation.getLights().stream()))
         .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
         .allMatch(SimpleLight::isCurrentlyOff);
   }
