@@ -9,6 +9,7 @@ import ch.akop.homesystem.persistence.model.config.MotionSensorConfig;
 import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigRepository;
 import ch.akop.homesystem.states.NormalState;
 import ch.akop.homesystem.states.SleepState;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.eventbus.EventBus;
 import java.time.Duration;
@@ -19,7 +20,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
@@ -151,11 +151,9 @@ public class MotionSensorService {
   }
 
   private boolean areAllLightsOff(MotionSensorConfig config) {
-    return Stream.concat(
-            config.getLights().stream(),
-            Stream.ofNullable(config.getAnimation()).flatMap(animation -> animation.getLights().stream()))
+    return QuarkusTransaction.requiringNew().call(() -> config.getAffectedLightNames()
         .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
-        .allMatch(SimpleLight::isCurrentlyOff);
+        .allMatch(SimpleLight::isCurrentlyOff));
   }
 
   private boolean isMatchingWeather(MotionSensorConfig config) {
