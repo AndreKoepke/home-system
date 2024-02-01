@@ -9,7 +9,6 @@ import ch.akop.homesystem.persistence.model.config.MotionSensorConfig;
 import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigRepository;
 import ch.akop.homesystem.states.NormalState;
 import ch.akop.homesystem.states.SleepState;
-import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
@@ -25,7 +24,9 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
+import javax.transaction.UserTransaction;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 
 @ApplicationScoped
 @RequiredArgsConstructor
@@ -37,6 +38,7 @@ public class MotionSensorService {
   private final WeatherService weatherService;
   private final EventBus eventBus;
   private final Vertx vertx;
+  private final UserTransaction userTransaction;
   private final Set<String> sensorsWithHigherTimeout = new HashSet<>();
 
   @SuppressWarnings({"ResultOfMethodCallIgnored"})
@@ -133,11 +135,14 @@ public class MotionSensorService {
     }
   }
 
+  @SneakyThrows
   private void handleMotionEventLightsTarget(MotionSensorConfig config, boolean isMoving) {
     if (isMoving) {
       turnLightsOn(config.getLights());
     } else {
-      turnLightsOff(config.getLights());
+      userTransaction.begin();
+      turnLightsOff(config.getAffectedLightNames());
+      userTransaction.commit();
       sensorsWithHigherTimeout.remove(config.getName().toLowerCase());
     }
   }
@@ -155,8 +160,11 @@ public class MotionSensorService {
         && areAllLightsOff(config);
   }
 
+  @SneakyThrows
   private boolean areAllLightsOff(MotionSensorConfig config) {
-    var lights = QuarkusTransaction.requiringNew().call(config::getAffectedLightNames);
+    userTransaction.begin();
+    var lights = config.getAffectedLightNames();
+    userTransaction.commit();
 
     return lights.stream()
         .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
