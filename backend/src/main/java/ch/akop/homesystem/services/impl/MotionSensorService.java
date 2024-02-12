@@ -58,6 +58,7 @@ public class MotionSensorService {
     private final MotionSensor sensor;
     private final MotionSensorConfig config;
     private final List<SimpleLight> referencedLights;
+    private boolean movementDetected = false;
 
     public ConfigWithLights(MotionSensorConfig config) {
       this.config = config;
@@ -116,7 +117,7 @@ public class MotionSensorService {
       return isMatchingTime()
           && isMatchingState()
           && isMatchingWeather()
-          && areAllLightsOff();
+          && (movementDetected || areAllLightsOff());
     }
 
     private boolean isMatchingWeather() {
@@ -172,6 +173,7 @@ public class MotionSensorService {
     }
 
     private void handleMotionEvent(boolean isMoving) {
+      movementDetected = isMoving;
       if (config.getAnimation() == null) {
         handleMotionEventLightsTarget(isMoving);
       } else {
