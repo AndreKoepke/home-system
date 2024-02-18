@@ -116,8 +116,7 @@ public class MotionSensorService {
 
       return isMatchingTime()
           && isMatchingState()
-          && isMatchingWeather()
-          && (movementDetected || areAllLightsOff());
+          && isMatchingWeather();
     }
 
     private boolean isMatchingWeather() {
@@ -173,6 +172,9 @@ public class MotionSensorService {
     }
 
     private void handleMotionEvent(boolean isMoving) {
+      if (movementDetected) {
+        return;
+      }
       movementDetected = isMoving;
       if (config.getAnimation() == null) {
         handleMotionEventLightsTarget(isMoving);
