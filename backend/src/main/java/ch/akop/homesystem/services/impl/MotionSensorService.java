@@ -95,10 +95,6 @@ public class MotionSensorService {
       });
     }
 
-    public boolean areAllLightsOff() {
-      return referencedLights.stream().allMatch(SimpleLight::isCurrentlyOff);
-    }
-
     private boolean shouldIgnoreMotionEvent(Boolean isMoving) {
       if (!isMoving) {
         return true;
@@ -172,7 +168,7 @@ public class MotionSensorService {
     }
 
     private void handleMotionEvent(boolean isMoving) {
-      if (movementDetected) {
+      if (movementDetected && isMoving) {
         return;
       }
       movementDetected = isMoving;
