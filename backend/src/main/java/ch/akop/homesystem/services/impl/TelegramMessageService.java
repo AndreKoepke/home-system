@@ -1,5 +1,7 @@
 package ch.akop.homesystem.services.impl;
 
+import static java.util.Optional.ofNullable;
+
 import ch.akop.homesystem.persistence.model.config.TelegramConfig;
 import ch.akop.homesystem.persistence.repository.config.TelegramConfigRepository;
 import com.pengrad.telegrambot.TelegramBot;
@@ -11,16 +13,18 @@ import com.pengrad.telegrambot.request.SetWebhook;
 import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.Nullable;
-
+import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
-import java.util.List;
-
-import static java.util.Optional.ofNullable;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 
 @Startup
 @ApplicationScoped
@@ -42,7 +46,7 @@ public class TelegramMessageService {
   void turnBotOn() {
     var configOpt = ofNullable(telegramConfigRepository.getFirstByOrderByModifiedDesc());
     if (configOpt.isEmpty()) {
-      log.info("No telegrambot will be started.");
+      log.info("No TelegramBot will be started.");
       return;
     }
     var config = configOpt.get();
@@ -52,13 +56,25 @@ public class TelegramMessageService {
         .build();
 
     if (config.getBotPath() != null) {
+      log.info("Path configured, setting up webhook");
       setupWebhook(config);
     } else {
+      log.info("Path configured");
       deleteWebhook();
-      bot.setUpdatesListener(updates -> {
-        updates.forEach(update -> consumeUpdate(update, config));
-        return UpdatesListener.CONFIRMED_UPDATES_ALL;
-      });
+      bot.setUpdatesListener(
+          updates -> {
+            updates.forEach(update -> consumeUpdate(update, config));
+            return UpdatesListener.CONFIRMED_UPDATES_ALL;
+          },
+          exception -> {
+            if (exception.response() != null) {
+              log.error("Telegram answered with an error. Code: " + exception.response().errorCode()
+                  + " \n"
+                  + exception.response().description());
+            } else {
+              log.error("There was an error while talking to Telegram.", exception);
+            }
+          });
     }
   }
 
