@@ -3,7 +3,10 @@ package ch.akop.homesystem.persistence.model.config;
 import ch.akop.homesystem.persistence.model.animation.Animation;
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Nullable;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
@@ -52,4 +55,9 @@ public class MotionSensorConfig {
   @Nullable
   private Animation animation;
 
+  public Set<String> getAffectedLightNames() {
+    var allRelatedLights = new HashSet<>(getLights());
+    Optional.ofNullable(getAnimation()).ifPresent(animation -> allRelatedLights.addAll(animation.getLights()));
+    return allRelatedLights;
+  }
 }
