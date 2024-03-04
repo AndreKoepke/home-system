@@ -23,9 +23,6 @@ public class TelegramConfig {
   private String botToken;
 
   @Column(columnDefinition = "TEXT")
-  private String botUsername;
-
-  @Column(columnDefinition = "TEXT")
   private String botPath;
 
   @Column(columnDefinition = "TEXT")
