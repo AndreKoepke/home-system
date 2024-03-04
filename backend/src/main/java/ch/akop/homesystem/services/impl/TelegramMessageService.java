@@ -59,7 +59,7 @@ public class TelegramMessageService {
       log.info("Path configured, setting up webhook");
       setupWebhook(config);
     } else {
-      log.info("Path configured");
+      log.info("Path not configured, setting up update-poller");
       deleteWebhook();
       bot.setUpdatesListener(
           updates -> {
@@ -68,7 +68,7 @@ public class TelegramMessageService {
           },
           exception -> {
             if (exception.response() != null) {
-              log.error("Telegram answered with an error. Code: " + exception.response().errorCode()
+              log.error("Telegram an∆swered with an error. Code: " + exception.response().errorCode()
                   + " \n"
                   + exception.response().description());
             } else {
