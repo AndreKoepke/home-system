@@ -119,11 +119,10 @@ public class NormalState extends Activatable implements State {
 
     super.disposeWhenClosed(userService.isAnyoneAtHome$()
         .skip(1)
-        .filter(anyOneAtHome -> !anyOneAtHome)
         .distinctUntilChanged()
         .filter(anyOneAtHome -> deviceService.isAnyLightOn())
         .delay(10, TimeUnit.MINUTES)
-        .switchMap(isAnyOneAtHome -> shouldLightsTurnedOff())
+        .switchMap(this::shouldLightsTurnedOff)
         .filter(canTurnOff -> canTurnOff)
         .subscribe(canTurnOff -> deviceService.turnAllLightsOff()));
 
@@ -204,7 +203,12 @@ public class NormalState extends Activatable implements State {
     deviceService.turnAllLightsOff();
   }
 
-  private Flowable<Boolean> shouldLightsTurnedOff() {
+  private Flowable<Boolean> shouldLightsTurnedOff(boolean anyOneAtHome) {
+
+    if (anyOneAtHome) {
+      return Flowable.just(false);
+    }
+
     messageService.sendMessageToMainChannel("Es niemand zu Hause, deswegen mache ich gleich die Lichter aus." +
         "Es sei denn, /lassAn");
 
