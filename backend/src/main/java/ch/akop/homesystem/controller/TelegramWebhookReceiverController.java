@@ -1,7 +1,7 @@
 package ch.akop.homesystem.controller;
 
 import ch.akop.homesystem.services.impl.TelegramMessageService;
-import com.pengrad.telegrambot.BotUtils;
+import com.pengrad.telegrambot.utility.BotUtils;
 import javax.annotation.security.PermitAll;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
