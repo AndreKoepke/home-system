@@ -31,13 +31,14 @@ public class StateService {
 
 
   @Transactional
-  public void registerState(Class<?> clazz, State state) {
+  public synchronized void registerState(Class<?> clazz, State state) {
     states.put(clazz.getSimpleName(), state);
-    if (currentState == null
-        && ofNullable(stateRepository.getFirstByOrderByActivatedAtDesc())
+
+    var targetStateName = ofNullable(stateRepository.getFirstByOrderByActivatedAtDesc())
         .map(ch.akop.homesystem.persistence.model.State::getClassName)
-        .orElse(DEFAULT_STATE)
-        .equals(clazz.getSimpleName())) {
+        .orElse(DEFAULT_STATE);
+
+    if (targetStateName.equals(clazz.getSimpleName())) {
       activateStateQuietly(clazz);
     }
   }
