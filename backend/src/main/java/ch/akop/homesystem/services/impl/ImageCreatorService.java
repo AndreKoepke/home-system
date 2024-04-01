@@ -74,6 +74,12 @@ public class ImageCreatorService {
         .orElseThrow(() -> new NoSuchElementException("There are no images right now."));
   }
 
+  public String getLastPrompt() {
+    return imageRepository.findFirstByOrderByCreatedDesc()
+        .map(ImageOfOpenAI::getPrompt)
+        .orElseThrow(() -> new NoSuchElementException("There are no images right now."));
+  }
+
   public void increaseDownloadCounter(LocalDateTime imageThatWasCreatedAt) {
     imageRepository.increaseDownloadCounter(imageThatWasCreatedAt);
   }
