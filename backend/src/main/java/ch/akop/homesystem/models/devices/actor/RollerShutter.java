@@ -4,7 +4,6 @@ import ch.akop.homesystem.deconz.rest.State;
 import ch.akop.homesystem.util.TimedGateKeeper;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.time.Duration;
@@ -95,13 +94,11 @@ public class RollerShutter extends Actor<RollerShutter> {
     return setTiltTo(tilt)
         .andThen(Completable.fromRunnable(() -> {
           if (Math.abs(currentLift - lift) > LIFT_ALLOWED_TOLERANCE) {
-            log.info(this.getName() + ": lift (now at " + currentLift + ") is nok, set to " + lift);
+            log.info("{}: lift (now at {}) is nok, set to {}", getName(), currentLift, lift);
             automaticLiftTarget = lift;
             functionToSetLift.accept(lift);
           }
         }))
-        .observeOn(Schedulers.io())
-        .subscribeOn(Schedulers.io())
         .doFinally(() -> automaticLiftTarget = null);
   }
 

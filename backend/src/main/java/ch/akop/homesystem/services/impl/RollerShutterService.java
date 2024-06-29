@@ -66,14 +66,14 @@ public class RollerShutterService {
 
   @Transactional
   public void init() {
-    var rxScheduler = RxHelper.blockingScheduler(vertx);
+    var rxScheduler = RxHelper.blockingScheduler(vertx, false);
     disposables.add(weatherService.getWeather()
+        .subscribeOn(rxScheduler)
         .doOnNext(this::checkWindSpeed)
         .mergeWith(telegramMessageService.getMessages()
             .filter(message -> message.startsWith("/calcRollerShutter"))
             .switchMap(message -> weatherService.getWeather().take(1)))
         .debounce(10, SECONDS)
-        .subscribeOn(rxScheduler)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
         .retryWhen(origin -> origin
             .doOnNext(throwable -> log.error("Error while setting rollerShutters. Retrying in 5min", throwable))
@@ -125,7 +125,6 @@ public class RollerShutterService {
       return handleHighTemperature(configs);
     }
 
-
     if (newBrightness > 300) {
       if (weather.getOuterTemperatur().isSmallerThan(15, DEGREE)) {
         return new ArrayList<>();
@@ -136,7 +135,7 @@ public class RollerShutterService {
       var compassDirection = resolveCompassDirection(sunDirection);
 
       return configs.stream()
-          .map(config -> handleHighBrightness(config, sunDirection, compassDirection, newWeather))
+          .map(config -> handleHighBrightness(config, sunDirection, compassDirection, weather))
           .toList();
 
     } else if (newBrightness < 300 && newBrightness > 10 && highSunLock.isGateOpen()) {
