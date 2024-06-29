@@ -50,6 +50,7 @@ import org.jetbrains.annotations.NotNull;
 public class RollerShutterService {
 
   public static final Duration TIMEOUT_AFTER_MANUAL = Duration.ofHours(1);
+  public static final Duration KEEP_OPEN_AFTER_DARKNESS_FOR = Duration.ofMinutes(20);
   private static final DateTimeFormatter GERMANY_DATE_TIME = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
       .withLocale(Locale.GERMANY);
 
@@ -116,16 +117,20 @@ public class RollerShutterService {
     }
   }
 
-  private List<Completable> handleWeatherUpdate(Weather newWeather) {
+  private List<Completable> handleWeatherUpdate(Weather weather) {
     var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
-    var newBrightness = newWeather.getLight().getAs(KILO_LUX).intValue();
+    var newBrightness = weather.getLight().getAs(KILO_LUX).intValue();
 
-    if (newWeather.getOuterTemperatur().isBiggerThan(30, DEGREE)) {
+    if (weather.getOuterTemperatur().isBiggerThan(30, DEGREE)) {
       return handleHighTemperature(configs);
     }
 
 
     if (newBrightness > 300) {
+      if (weather.getOuterTemperatur().isSmallerThan(15, DEGREE)) {
+        return new ArrayList<>();
+      }
+
       highSunLock.blockFor(Duration.ofMinutes(30));
       var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
       var compassDirection = resolveCompassDirection(sunDirection);
@@ -141,7 +146,7 @@ public class RollerShutterService {
           .filter(RollerShutterService::hasNoManualAction)
           .map(RollerShutter::open)
           .toList();
-    } else if (newBrightness == 0) {
+    } else if (newBrightness == 0 && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
       return configs.stream()
           .filter(RollerShutterService::isOkToClose)
           .map(this::getRollerShutter)

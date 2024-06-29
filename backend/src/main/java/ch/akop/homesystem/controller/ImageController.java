@@ -26,16 +26,25 @@ public class ImageController {
     var image = imageCreatorService.getLastImage();
     imageCreatorService.increaseDownloadCounter(image.getCreated());
 
-    var cacheControl = new CacheControl();
-    cacheControl.setMaxAge((int) Duration.ofHours(10).toSeconds());
-    cacheControl.setMustRevalidate(false);
-
     return ResponseBuilder.ok(image.getImage(), new MediaType("image", "jpeg"))
         .tag(image.getCreated().toString())
         .header("prompt", image.getPrompt())
-        .cacheControl(cacheControl)
+        .cacheControl(getLongTermCache())
         .build();
   }
 
+  @Path("prompt")
+  @GET
+  @PermitAll
+  public String getPrompt() {
+    return imageCreatorService.getLastPrompt();
+  }
+
+  private CacheControl getLongTermCache() {
+    var cacheControl = new CacheControl();
+    cacheControl.setMaxAge((int) Duration.ofHours(10).toSeconds());
+    cacheControl.setMustRevalidate(false);
+    return cacheControl;
+  }
 
 }

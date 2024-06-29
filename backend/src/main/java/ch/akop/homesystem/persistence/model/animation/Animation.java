@@ -57,11 +57,10 @@ public class Animation {
   }
 
   public Set<String> getLights() {
-    return Stream.of(
+    return Stream.concat(
             onOffSteps.stream().map(OnOffStep::getNameOfLight),
             dimmLightSteps.stream().map(DimmLightStep::getNameOfLight)
         )
-        .flatMap(stream -> stream)
         .collect(Collectors.toSet());
   }
 }
