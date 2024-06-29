@@ -30,9 +30,11 @@ import io.quarkus.runtime.StartupEvent;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +52,9 @@ public class DeconzConnector {
   private final AutomationService automationService;
   private final DeconzConfigRepository deconzConfigRepository;
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
+
+  @Getter
+  private AtomicBoolean isConnected = new AtomicBoolean(false);
 
   DeconzService deconzService;
 
@@ -160,14 +165,23 @@ public class DeconzConnector {
     }
 
     var rollerShutter = new RollerShutter(
-        lift -> deconzService.updateLight(id, new State().setLift(lift)),
-        tilt -> deconzService.updateLight(id, new State().setTilt(tilt)),
+        lift -> updateLight(id, new State().setLift(lift)),
+        tilt -> updateLight(id, new State().setTilt(tilt)),
         rollerShutterConfigRepository.findByNameLike(light.getName())
             .map(RollerShutterConfig::getCloseWithInterrupt)
             .orElse(false)
     );
 
     return Optional.of(rollerShutter);
+  }
+
+  private void updateLight(String id, State newState) {
+    if (!isConnected.get()) {
+      log.warn("Not connected. Ignored update for " + id + " with " + newState);
+      return;
+    }
+
+    deconzService.updateLight(id, newState);
   }
 
   private ColoredLight createColorLight(String id) {
@@ -202,7 +216,7 @@ public class DeconzConnector {
       newState.setTransitiontime((int) duration.toSeconds() * 10);
     }
 
-    deconzService.updateLight(id, newState);
+    updateLight(id, newState);
   }
 
   private void setColorOfLight(String id, Color color, Duration duration) {
@@ -215,12 +229,12 @@ public class DeconzConnector {
       newState.setTransitiontime((int) duration.toSeconds() * 10);
     }
 
-    deconzService.updateLight(id, newState);
+    updateLight(id, newState);
   }
 
 
   private void turnOnOrOff(String id, boolean on) {
-    deconzService.updateLight(id, new State().setOn(on));
+    updateLight(id, new State().setOn(on));
   }
 
   private void activateScene(String sceneId, String groupId) {

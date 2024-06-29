@@ -94,6 +94,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   @Override
   public void onOpen(WebSocket webSocket) {
     log.info("WS-Connection is established.");
+    deconzConnector.getIsConnected().set(true);
     lastContact = LocalDateTime.now();
     webSocket.request(1);
 
@@ -123,6 +124,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
   public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
     log.error("WS-Connection closed, because of '{}'", reason);
     vertx.cancelTimer(timeoutHandler);
+    deconzConnector.getIsConnected().set(false);
     QuarkusTransaction.requiringNew().run(this::setupWebSocketListener);
     throw new RuntimeException("WS-Connection closed");
   }
@@ -164,6 +166,7 @@ public class DeconzWebsocketListener implements WebSocket.Listener {
     if (lastContact.toSeconds() > 30) {
       vertx.cancelTimer(timeoutHandler);
       log.error("WS-Connection has no longer contact", new TimeoutException("No websocket-contact since 60s. Timeout."));
+      deconzConnector.getIsConnected().set(false);
       webSocket.abort();
       executor.runAsync(() -> QuarkusTransaction.requiringNew().run(this::setupWebSocketListener));
     } else if (lastContact.compareTo(TIMEOUT_HANDLER_INTERVAL.multipliedBy(2)) > 0) {

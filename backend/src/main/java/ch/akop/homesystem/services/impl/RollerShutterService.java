@@ -66,17 +66,17 @@ public class RollerShutterService {
 
   @Transactional
   public void init() {
-    var rxScheduler = RxHelper.blockingScheduler(vertx);
+    var rxScheduler = RxHelper.blockingScheduler(vertx, false);
     disposables.add(weatherService.getWeather()
+        .subscribeOn(rxScheduler)
         .doOnNext(this::checkWindSpeed)
         .mergeWith(telegramMessageService.getMessages()
             .filter(message -> message.startsWith("/calcRollerShutter"))
             .switchMap(message -> weatherService.getWeather().take(1)))
         .debounce(10, SECONDS)
-        .subscribeOn(rxScheduler)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
         .retryWhen(origin -> origin
-            .doOnNext(throwable -> log.error("Error while setting rollerShutters. Retrying in 5min"))
+            .doOnNext(throwable -> log.error("Error while setting rollerShutters. Retrying in 5min", throwable))
             .delay(5, TimeUnit.MINUTES))
         .subscribe());
 
@@ -121,6 +121,10 @@ public class RollerShutterService {
     var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
     var newBrightness = weather.getLight().getAs(KILO_LUX).intValue();
 
+    if (weather.getOuterTemperatur().isBiggerThan(30, DEGREE)) {
+      return handleHighTemperature(configs);
+    }
+
     if (newBrightness > 300) {
       if (weather.getOuterTemperatur().isSmallerThan(15, DEGREE)) {
         return new ArrayList<>();
@@ -131,7 +135,7 @@ public class RollerShutterService {
       var compassDirection = resolveCompassDirection(sunDirection);
 
       return configs.stream()
-          .map(config -> handleHighBrightness(config, sunDirection, compassDirection))
+          .map(config -> handleHighBrightness(config, sunDirection, compassDirection, weather))
           .toList();
 
     } else if (newBrightness < 300 && newBrightness > 10 && highSunLock.isGateOpen()) {
@@ -153,12 +157,26 @@ public class RollerShutterService {
     return new ArrayList<>();
   }
 
+  @NotNull
+  private List<Completable> handleHighTemperature(List<RollerShutterConfig> configs) {
+    return configs.stream()
+        .filter(RollerShutterService::isOkToClose)
+        .map(this::getRollerShutter)
+        .filter(RollerShutterService::hasNoManualAction)
+        .filter(rollerShutter -> rollerShutter.getCurrentLift() > 10)
+        .map(rollerShutter -> rollerShutter.setLiftAndThenTilt(10, 15))
+        .toList();
+  }
+
   private static boolean hasNoManualAction(RollerShutter rollerShutter) {
     return is(Duration.between(rollerShutter.getLastManuallAction(), LocalDateTime.now()).abs()).biggerAs(TIMEOUT_AFTER_MANUAL);
   }
 
   @NotNull
-  private Completable handleHighBrightness(RollerShutterConfig config, AzimuthZenithAngle sunDirection, CompassDirection compassDirection) {
+  private Completable handleHighBrightness(RollerShutterConfig config,
+      AzimuthZenithAngle sunDirection,
+      CompassDirection compassDirection,
+      Weather weather) {
     var rollerShutter = getRollerShutter(config);
 
     if (!hasNoManualAction(rollerShutter)) {
@@ -167,6 +185,10 @@ public class RollerShutterService {
 
     if (!isOkToOpen(config)) {
       return Completable.complete();
+    }
+
+    if (weather.getOuterTemperatur().isSmallerThan(22, DEGREE)) {
+      return rollerShutter.open();
     }
 
     if (!config.getCompassDirection().contains(compassDirection)) {
