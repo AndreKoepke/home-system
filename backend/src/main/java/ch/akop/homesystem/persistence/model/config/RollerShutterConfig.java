@@ -41,4 +41,10 @@ public class RollerShutterConfig {
 
   @Nullable
   private Boolean closeWithInterrupt;
+
+  private int highSunLevel;
+  private int closeLevelLowTilt;
+  private int closeLevelHighTilt;
+  private int closeLevelLowLift;
+  private int closeLevelHighLift;
 }

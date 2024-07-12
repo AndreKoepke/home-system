@@ -84,17 +84,17 @@ public class RollerShutter extends Actor<RollerShutter> {
    * @param lift new lift value
    * @param tilt new tilt value
    */
-  public Completable setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
+  public Completable setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt, String reason) {
 
     if (!highWindLock.isGateOpen()) {
       log.warn("Ignored command because of high wind speed for " + getName());
       return Completable.complete();
     }
 
-    return setTiltTo(tilt)
+    return setTiltTo(tilt, reason)
         .andThen(Completable.fromRunnable(() -> {
           if (Math.abs(currentLift - lift) > LIFT_ALLOWED_TOLERANCE) {
-            log.info("{}: lift (now at {}) is nok, set to {}", getName(), currentLift, lift);
+            log.info("{}: lift (now at {}) is nok, set to {} because of {}", getName(), currentLift, lift, reason);
             automaticLiftTarget = lift;
             functionToSetLift.accept(lift);
           }
@@ -103,13 +103,13 @@ public class RollerShutter extends Actor<RollerShutter> {
   }
 
   @NotNull
-  private Completable setTiltTo(Integer tilt) {
+  private Completable setTiltTo(Integer tilt, String reason) {
     if (Math.abs(currentTilt - tilt) < TILT_ALLOWED_DIFFERENCE) {
       return Completable.complete();
     }
 
     return Completable.fromRunnable(() -> {
-          log.info(this.getName() + ": tilt (now at " + currentTilt + ") nok, set to " + tilt);
+          log.info("{}: tilt (now at {}) nok, set to {} because of {}", this.getName(), currentTilt, tilt, reason);
           automaticTiltTarget = tilt;
           functionToSetTilt.accept(tilt);
         })
@@ -125,24 +125,24 @@ public class RollerShutter extends Actor<RollerShutter> {
   /**
    * Opens the rollerShutters to maximum value
    */
-  public Completable open() {
-    return setLiftAndThenTilt(100, 100);
+  public Completable open(String reason) {
+    return setLiftAndThenTilt(100, 100, reason);
   }
 
   /**
    * Coles the rollerShutters to minimum value
    */
-  public Completable close() {
+  public Completable close(String reason) {
     if (closeWithInterruption && currentLift > 60) {
-      return setLiftAndThenTilt(50, 100)
+      return setLiftAndThenTilt(50, 100, reason)
           .delay(5, TimeUnit.SECONDS)
-          .andThen(setLiftAndThenTilt(0, 0));
+          .andThen(setLiftAndThenTilt(0, 0, reason + " after interruption"));
     }
-    return setLiftAndThenTilt(0, 0);
+    return setLiftAndThenTilt(0, 0, reason);
   }
 
   public void reportHighWind() {
-    open().subscribe();
+    open("high wind").subscribe();
     highWindLock.blockFor(BLOCK_TIME_WHEN_HIGH_WIND);
   }
 

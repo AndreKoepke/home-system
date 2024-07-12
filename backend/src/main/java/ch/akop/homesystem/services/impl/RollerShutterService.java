@@ -50,7 +50,7 @@ import org.jetbrains.annotations.NotNull;
 public class RollerShutterService {
 
   public static final Duration TIMEOUT_AFTER_MANUAL = Duration.ofHours(1);
-  public static final Duration KEEP_OPEN_AFTER_DARKNESS_FOR = Duration.ofMinutes(20);
+  public static final Duration KEEP_OPEN_AFTER_DARKNESS_FOR = Duration.ofMinutes(10);
   private static final DateTimeFormatter GERMANY_DATE_TIME = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
       .withLocale(Locale.GERMANY);
 
@@ -126,13 +126,13 @@ public class RollerShutterService {
     }
 
     if (newBrightness > 300) {
-      if (weather.getOuterTemperatur().isSmallerThan(15, DEGREE)) {
-        return new ArrayList<>();
-      }
-
       highSunLock.blockFor(Duration.ofMinutes(30));
       var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
       var compassDirection = resolveCompassDirection(sunDirection);
+
+      log.info("Sun angles. Zenith %100.0f Azimuth %100.0f or %s".formatted(sunDirection.getZenithAngle(),
+          sunDirection.getAzimuth(),
+          compassDirection));
 
       return configs.stream()
           .map(config -> handleHighBrightness(config, sunDirection, compassDirection, weather))
@@ -143,14 +143,14 @@ public class RollerShutterService {
           .filter(RollerShutterService::isOkToOpen)
           .map(this::getRollerShutter)
           .filter(RollerShutterService::hasNoManualAction)
-          .map(RollerShutter::open)
+          .map(rollerShutter -> rollerShutter.open("not much light outside"))
           .toList();
     } else if (newBrightness == 0 && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
       return configs.stream()
           .filter(RollerShutterService::isOkToClose)
           .map(this::getRollerShutter)
           .filter(RollerShutterService::hasNoManualAction)
-          .map(RollerShutter::close)
+          .map(rollerShutter -> rollerShutter.close("night"))
           .toList();
     }
 
@@ -164,7 +164,7 @@ public class RollerShutterService {
         .map(this::getRollerShutter)
         .filter(RollerShutterService::hasNoManualAction)
         .filter(rollerShutter -> rollerShutter.getCurrentLift() > 10)
-        .map(rollerShutter -> rollerShutter.setLiftAndThenTilt(10, 15))
+        .map(rollerShutter -> rollerShutter.setLiftAndThenTilt(10, 15, "high temperature"))
         .toList();
   }
 
@@ -187,18 +187,22 @@ public class RollerShutterService {
       return Completable.complete();
     }
 
-    if (weather.getOuterTemperatur().isSmallerThan(22, DEGREE)) {
-      return rollerShutter.open();
-    }
-
     if (!config.getCompassDirection().contains(compassDirection)) {
-      return rollerShutter.open();
+      return rollerShutter.open("wrong compass direction");
     }
 
-    if (sunDirection.getZenithAngle() > 40 && rollerShutter.getCurrentLift() > 50) {
-      return rollerShutter.setLiftAndThenTilt(50, 40);
-    } else if (sunDirection.getZenithAngle() > 20 && rollerShutter.getCurrentLift() > 75) {
-      return rollerShutter.setLiftAndThenTilt(75, 75);
+    if (weather.getLight().isBiggerThan(config.getHighSunLevel(), KILO_LUX)) {
+      return openBasedOnZenithAngle(config, rollerShutter, sunDirection.getZenithAngle());
+    }
+
+    return Completable.complete();
+  }
+
+  private Completable openBasedOnZenithAngle(RollerShutterConfig config, RollerShutter rollerShutter, double zenithAngle) {
+    if (zenithAngle > 40) {
+      return rollerShutter.setLiftAndThenTilt(config.getCloseLevelLowLift(), config.getCloseLevelLowTilt(), "brightness");
+    } else if (zenithAngle > 20) {
+      return rollerShutter.setLiftAndThenTilt(config.getCloseLevelHighLift(), config.getCloseLevelHighTilt(), "brightness");
     }
 
     return Completable.complete();
@@ -254,11 +258,9 @@ public class RollerShutterService {
         .forEach(config -> {
           var rollerShutter = getRollerShutter(config);
           if (config.getCloseAt() != null && config.getCloseAt().equals(time)) {
-            log.info("Timed close for {}", rollerShutter.getName());
-            rollerShutter.setLiftAndThenTilt(0, 0).subscribe();
+            rollerShutter.close("time").subscribe();
           } else {
-            log.info("Timed open for {}", rollerShutter.getName());
-            rollerShutter.setLiftAndThenTilt(100, 100).subscribe();
+            rollerShutter.open("time").subscribe();
           }
         });
   }
