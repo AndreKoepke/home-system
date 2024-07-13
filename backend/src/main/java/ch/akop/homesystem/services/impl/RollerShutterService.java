@@ -127,34 +127,18 @@ public class RollerShutterService {
 
     if (newBrightness > 300) {
       highSunLock.blockFor(Duration.ofMinutes(30));
-      var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
-      var compassDirection = resolveCompassDirection(sunDirection);
-
-      log.info("Sun angles. Zenith %100.0f Azimuth %100.0f or %s".formatted(sunDirection.getZenithAngle(),
-          sunDirection.getAzimuth(),
-          compassDirection));
-
-      return configs.stream()
-          .map(config -> handleHighBrightness(config, sunDirection, compassDirection, weather))
-          .toList();
-
-    } else if (newBrightness < 300 && newBrightness > 10 && highSunLock.isGateOpen()) {
-      return configs.stream()
-          .filter(RollerShutterService::isOkToOpen)
-          .map(this::getRollerShutter)
-          .filter(RollerShutterService::hasNoManualAction)
-          .map(rollerShutter -> rollerShutter.open("not much light outside"))
-          .toList();
-    } else if (newBrightness == 0 && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
-      return configs.stream()
-          .filter(RollerShutterService::isOkToClose)
-          .map(this::getRollerShutter)
-          .filter(RollerShutterService::hasNoManualAction)
-          .map(rollerShutter -> rollerShutter.close("night"))
-          .toList();
     }
 
-    return new ArrayList<>();
+    var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
+    var compassDirection = resolveCompassDirection(sunDirection);
+
+    log.info("Sun angles. Zenith %5.0f Azimuth %5.0f (%s)".formatted(sunDirection.getZenithAngle(),
+        sunDirection.getAzimuth(),
+        compassDirection));
+
+    return configs.stream()
+        .map(config -> handleWeatherUpdate(config, sunDirection, compassDirection, weather))
+        .toList();
   }
 
   @NotNull
@@ -173,17 +157,14 @@ public class RollerShutterService {
   }
 
   @NotNull
-  private Completable handleHighBrightness(RollerShutterConfig config,
+  private Completable handleWeatherUpdate(RollerShutterConfig config,
       AzimuthZenithAngle sunDirection,
       CompassDirection compassDirection,
       Weather weather) {
     var rollerShutter = getRollerShutter(config);
+    var light = weather.getLight();
 
-    if (!hasNoManualAction(rollerShutter)) {
-      return Completable.complete();
-    }
-
-    if (!isOkToOpen(config)) {
+    if (!hasNoManualAction(rollerShutter) || !isOkToOpen(config)) {
       return Completable.complete();
     }
 
@@ -191,8 +172,12 @@ public class RollerShutterService {
       return rollerShutter.open("wrong compass direction");
     }
 
-    if (weather.getLight().isBiggerThan(config.getHighSunLevel(), KILO_LUX)) {
+    if (light.isBiggerThan(config.getHighSunLevel(), KILO_LUX)) {
       return openBasedOnZenithAngle(config, rollerShutter, sunDirection.getZenithAngle());
+    } else if (light.isBiggerThan(10, KILO_LUX) && highSunLock.isGateOpen()) {
+      return rollerShutter.open("not much light outside");
+    } else if (isOkToClose(config) && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
+      return rollerShutter.close("night");
     }
 
     return Completable.complete();
