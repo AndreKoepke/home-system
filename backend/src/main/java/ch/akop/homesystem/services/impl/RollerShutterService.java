@@ -168,11 +168,11 @@ public class RollerShutterService {
       return Completable.complete();
     }
 
-    if (!config.getCompassDirection().contains(compassDirection)) {
-      return rollerShutter.open("wrong compass direction");
-    }
 
     if (light.isBiggerThan(config.getHighSunLevel(), KILO_LUX)) {
+      if (!config.getCompassDirection().contains(compassDirection)) {
+        return rollerShutter.open("wrong compass direction");
+      }
       return openBasedOnZenithAngle(config, rollerShutter, sunDirection.getZenithAngle());
     } else if (light.isBiggerThan(10, KILO_LUX) && highSunLock.isGateOpen()) {
       return rollerShutter.open("not much light outside");
