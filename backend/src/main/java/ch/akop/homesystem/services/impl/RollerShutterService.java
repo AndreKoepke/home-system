@@ -168,7 +168,6 @@ public class RollerShutterService {
       return Completable.complete();
     }
 
-
     if (light.isBiggerThan(config.getHighSunLevel(), KILO_LUX)) {
       if (!config.getCompassDirection().contains(compassDirection)) {
         return rollerShutter.open("wrong compass direction");

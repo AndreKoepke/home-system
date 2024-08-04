@@ -4,6 +4,7 @@ import ch.akop.homesystem.deconz.rest.State;
 import ch.akop.homesystem.util.TimedGateKeeper;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.time.Duration;
@@ -114,11 +115,12 @@ public class RollerShutter extends Actor<RollerShutter> {
           functionToSetTilt.accept(tilt);
         })
         .andThen(tilt$
+            .observeOn(Schedulers.io())
             .filter(newTilt -> Math.abs(newTilt - tilt) < TILT_ALLOWED_DIFFERENCE)
-            .timeout(10, TimeUnit.SECONDS)
+            .timeout(10, TimeUnit.SECONDS, Schedulers.io())
             .onErrorResumeNext(throwable -> Observable.just(1))
             .take(1)
-            .flatMapCompletable(integer -> Completable.complete()))
+            .ignoreElements())
         .doFinally(() -> automaticTiltTarget = null);
   }
 
@@ -130,7 +132,7 @@ public class RollerShutter extends Actor<RollerShutter> {
   }
 
   /**
-   * Coles the rollerShutters to minimum value
+   * Closes the rollerShutters to minimum value
    */
   public Completable close(String reason) {
     if (closeWithInterruption && currentLift > 60) {

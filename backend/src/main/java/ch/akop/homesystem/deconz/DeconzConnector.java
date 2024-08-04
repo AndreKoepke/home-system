@@ -177,7 +177,7 @@ public class DeconzConnector {
 
   private void updateLight(String id, State newState) {
     if (!isConnected.get()) {
-      log.warn("Not connected. Ignored update for " + id + " with " + newState);
+      log.warn("Not connected. Ignored update for {} with {}", id, newState);
       return;
     }
 
