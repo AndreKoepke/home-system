@@ -121,7 +121,7 @@ public class RollerShutterService {
     var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
     var newBrightness = weather.getLight().getAs(KILO_LUX).intValue();
 
-    if (weather.getOuterTemperatur().isBiggerThan(30, DEGREE)) {
+    if (weather.getOuterTemperatur().isBiggerThan(27, DEGREE)) {
       return handleHighTemperature(configs);
     }
 
