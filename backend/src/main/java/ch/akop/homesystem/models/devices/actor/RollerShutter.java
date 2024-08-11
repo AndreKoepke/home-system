@@ -186,6 +186,10 @@ public class RollerShutter extends Actor<RollerShutter> {
   }
 
   private void setCurrentTilt(Integer newValue) {
+    if (newValue == null) {
+      log.warn("Tilt is null, defaulting to 0. It happened for {}", getName());
+      newValue = 0;
+    }
     tilt$.onNext(newValue);
     currentTilt = newValue;
   }
