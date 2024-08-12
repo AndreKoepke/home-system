@@ -31,6 +31,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
@@ -164,9 +165,19 @@ public class DeconzConnector {
       return Optional.empty();
     }
 
+    Consumer<Integer> tiltFunction;
+    if (light.getState().getTilt() != null) {
+      tiltFunction = tilt -> updateLight(id, new State().setTilt(tilt));
+    } else {
+      log.info("RollerShutter {} has no tilt-function", light.getName());
+      tiltFunction = tilt -> {
+      };
+    }
+
     var rollerShutter = new RollerShutter(
         lift -> updateLight(id, new State().setLift(lift)),
-        tilt -> updateLight(id, new State().setTilt(tilt)),
+        tiltFunction,
+        light.getState().getTilt() != null,
         rollerShutterConfigRepository.findByNameLike(light.getName())
             .map(RollerShutterConfig::getCloseWithInterrupt)
             .orElse(false)

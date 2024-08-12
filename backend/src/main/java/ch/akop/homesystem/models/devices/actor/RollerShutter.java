@@ -21,6 +21,7 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @SuppressWarnings("UnusedReturnValue")
 @Slf4j
@@ -45,6 +46,8 @@ public class RollerShutter extends Actor<RollerShutter> {
 
   @Getter(AccessLevel.PRIVATE)
   private final Consumer<Integer> functionToSetTilt;
+
+  private final boolean hasTiltCapability;
 
   /**
    * Some rollerShutters are blocking when closing. To avoid that, these rollerShutters can be closed only half and after that, open a bit and close again.
@@ -88,7 +91,7 @@ public class RollerShutter extends Actor<RollerShutter> {
   public Completable setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt, String reason) {
 
     if (!highWindLock.isGateOpen()) {
-      log.warn("Ignored command because of high wind speed for " + getName());
+      log.warn("Ignored command because of high wind speed for {}", getName());
       return Completable.complete();
     }
 
@@ -105,7 +108,7 @@ public class RollerShutter extends Actor<RollerShutter> {
 
   @NotNull
   private Completable setTiltTo(Integer tilt, String reason) {
-    if (Math.abs(currentTilt - tilt) < TILT_ALLOWED_DIFFERENCE) {
+    if (!hasTiltCapability || Math.abs(currentTilt - tilt) < TILT_ALLOWED_DIFFERENCE) {
       return Completable.complete();
     }
 
@@ -185,10 +188,9 @@ public class RollerShutter extends Actor<RollerShutter> {
     isOpen = newValue;
   }
 
-  private void setCurrentTilt(Integer newValue) {
-    if (newValue == null) {
-      log.warn("Tilt is null, defaulting to 0. It happened for {}", getName());
-      newValue = 0;
+  private void setCurrentTilt(@Nullable Integer newValue) {
+    if (!hasTiltCapability || newValue == null) {
+      return;
     }
     tilt$.onNext(newValue);
     currentTilt = newValue;
