@@ -130,7 +130,7 @@ public class MotionSensorService {
         return true;
       }
 
-      return config.getOnlyTurnOnWhenDarkerAs() < lux;
+      return lux < config.getOnlyTurnOnWhenDarkerAs();
     }
 
     private boolean isMatchingState() {
