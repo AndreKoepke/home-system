@@ -17,6 +17,7 @@ import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.models.devices.sensor.AqaraCube;
 import ch.akop.homesystem.models.devices.sensor.Button;
 import ch.akop.homesystem.models.devices.sensor.CloseContact;
+import ch.akop.homesystem.models.devices.sensor.LightLevel;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.persistence.model.config.DeconzConfig;
@@ -123,7 +124,14 @@ public class DeconzConnector {
 
     newDevice.setId(id);
     newDevice.setName(sensor.getName());
+    newDevice.setUniqueId(sensor.getUniqueid());
     newDevice.consumeUpdate(sensor.getState());
+
+    if (newDevice instanceof LightLevel lightLevel) {
+      linkToLightLevel(lightLevel);
+    } else if (newDevice instanceof MotionSensor motionSensor) {
+      linkToLightLevel(motionSensor);
+    }
 
     deviceService.registerDevice(newDevice);
   }
@@ -133,10 +141,43 @@ public class DeconzConnector {
     return switch (sensor.getType()) {
       case "ZHAOpenClose" -> new CloseContact();
       case "ZHASwitch" -> sensor.getModelid().equals("lumi.sensor_cube.aqgl01") ? new AqaraCube() : new Button();
-      case "ZHAPresence" -> new MotionSensor();
+      case "ZHAPresence" -> new MotionSensor(sensor.getState().getTargetdistance() != null);
       case "ZHAPower" -> new PowerMeter();
+      case "ZHALightLevel" -> new LightLevel();
       default -> null;
     };
+  }
+
+  private void linkToLightLevel(MotionSensor sensor) {
+
+    if (sensor.getLightLevel() != null) {
+      return;
+    }
+
+    var identicalPart = sensor.getUniqueId().substring(0, 23);
+    deviceService.getDevicesOfType(LightLevel.class).stream()
+        .filter(lightLevel -> lightLevel.getUniqueId().startsWith(identicalPart))
+        .findFirst()
+        .ifPresent(lightLevel -> {
+          lightLevel.setMotionSensor(sensor);
+          sensor.setLightLevel(lightLevel);
+        });
+  }
+
+  private void linkToLightLevel(LightLevel sensor) {
+
+    if (sensor.getMotionSensor() != null) {
+      return;
+    }
+
+    var identicalPart = sensor.getUniqueId().substring(0, 23);
+    deviceService.getDevicesOfType(MotionSensor.class).stream()
+        .filter(lightLevel -> lightLevel.getUniqueId().startsWith(identicalPart))
+        .findFirst()
+        .ifPresent(motionSensor -> {
+          motionSensor.setLightLevel(sensor);
+          sensor.setMotionSensor(motionSensor);
+        });
   }
 
   private void registerActor(String id, Light light) {
