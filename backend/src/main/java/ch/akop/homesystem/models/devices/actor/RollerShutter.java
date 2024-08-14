@@ -21,6 +21,7 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @SuppressWarnings("UnusedReturnValue")
 @Slf4j
@@ -45,6 +46,8 @@ public class RollerShutter extends Actor<RollerShutter> {
 
   @Getter(AccessLevel.PRIVATE)
   private final Consumer<Integer> functionToSetTilt;
+
+  private final boolean hasTiltCapability;
 
   /**
    * Some rollerShutters are blocking when closing. To avoid that, these rollerShutters can be closed only half and after that, open a bit and close again.
@@ -85,67 +88,66 @@ public class RollerShutter extends Actor<RollerShutter> {
    * @param lift new lift value
    * @param tilt new tilt value
    */
-  public Completable setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt) {
+  public Completable setLiftAndThenTilt(@Min(0) @Max(100) Integer lift, @Min(0) @Max(100) Integer tilt, String reason) {
 
     if (!highWindLock.isGateOpen()) {
-      log.warn("Ignored command because of high wind speed for " + getName());
+      log.warn("Ignored command because of high wind speed for {}", getName());
       return Completable.complete();
     }
 
-    return setTiltTo(tilt)
+    return setTiltTo(tilt, reason)
         .andThen(Completable.fromRunnable(() -> {
           if (Math.abs(currentLift - lift) > LIFT_ALLOWED_TOLERANCE) {
-            log.info(this.getName() + ": lift (now at " + currentLift + ") is nok, set to " + lift);
+            log.info("{}: lift (now at {}) is nok, set to {} because of {}", getName(), currentLift, lift, reason);
             automaticLiftTarget = lift;
             functionToSetLift.accept(lift);
           }
         }))
-        .observeOn(Schedulers.io())
-        .subscribeOn(Schedulers.io())
         .doFinally(() -> automaticLiftTarget = null);
   }
 
   @NotNull
-  private Completable setTiltTo(Integer tilt) {
-    if (Math.abs(currentTilt - tilt) < TILT_ALLOWED_DIFFERENCE) {
+  private Completable setTiltTo(Integer tilt, String reason) {
+    if (!hasTiltCapability || Math.abs(currentTilt - tilt) < TILT_ALLOWED_DIFFERENCE) {
       return Completable.complete();
     }
 
     return Completable.fromRunnable(() -> {
-          log.info(this.getName() + ": tilt (now at " + currentTilt + ") nok, set to " + tilt);
+          log.info("{}: tilt (now at {}) nok, set to {} because of {}", this.getName(), currentTilt, tilt, reason);
           automaticTiltTarget = tilt;
           functionToSetTilt.accept(tilt);
         })
         .andThen(tilt$
+            .observeOn(Schedulers.io())
             .filter(newTilt -> Math.abs(newTilt - tilt) < TILT_ALLOWED_DIFFERENCE)
-            .timeout(10, TimeUnit.SECONDS)
+            .timeout(10, TimeUnit.SECONDS, Schedulers.io())
             .onErrorResumeNext(throwable -> Observable.just(1))
             .take(1)
-            .flatMapCompletable(integer -> Completable.complete()))
+            .ignoreElements())
         .doFinally(() -> automaticTiltTarget = null);
   }
 
   /**
    * Opens the rollerShutters to maximum value
    */
-  public Completable open() {
-    return setLiftAndThenTilt(100, 100);
+  public Completable open(String reason) {
+    return setLiftAndThenTilt(100, 100, reason);
   }
 
   /**
-   * Coles the rollerShutters to minimum value
+   * Closes the rollerShutters to minimum value
    */
-  public Completable close() {
+  public Completable close(String reason) {
     if (closeWithInterruption && currentLift > 60) {
-      return setLiftAndThenTilt(50, 100)
+      return setLiftAndThenTilt(50, 100, reason)
           .delay(5, TimeUnit.SECONDS)
-          .andThen(setLiftAndThenTilt(0, 0));
+          .andThen(setLiftAndThenTilt(0, 0, reason + " after interruption"));
     }
-    return setLiftAndThenTilt(0, 0);
+    return setLiftAndThenTilt(0, 0, reason);
   }
 
   public void reportHighWind() {
-    open().subscribe();
+    open("high wind").subscribe();
     highWindLock.blockFor(BLOCK_TIME_WHEN_HIGH_WIND);
   }
 
@@ -186,7 +188,10 @@ public class RollerShutter extends Actor<RollerShutter> {
     isOpen = newValue;
   }
 
-  private void setCurrentTilt(Integer newValue) {
+  private void setCurrentTilt(@Nullable Integer newValue) {
+    if (!hasTiltCapability || newValue == null) {
+      return;
+    }
     tilt$.onNext(newValue);
     currentTilt = newValue;
   }

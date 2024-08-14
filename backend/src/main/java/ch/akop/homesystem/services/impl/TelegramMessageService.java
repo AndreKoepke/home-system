@@ -79,7 +79,7 @@ public class TelegramMessageService {
   }
 
   private void setupWebhook(TelegramConfig config) {
-    SetWebhook request = new SetWebhook().url(config.getBotPath());
+    SetWebhook request = new SetWebhook().url(config.getBotPath() + config.getBotToken());
     var response = bot.execute(request);
     if (!response.isOk()) {
       throw new IllegalStateException(response.description());
