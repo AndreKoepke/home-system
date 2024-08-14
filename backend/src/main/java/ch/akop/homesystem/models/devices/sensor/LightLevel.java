@@ -5,7 +5,7 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 @Data
@@ -17,7 +17,8 @@ public class LightLevel extends Sensor<LightLevel> {
   private final Subject<Integer> lightLevel$ = ReplaySubject.createWithSize(1);
   private final Subject<Boolean> dayLight$ = ReplaySubject.createWithSize(1);
 
-  @Setter
+  @EqualsAndHashCode.Exclude
+  @ToString.Exclude
   private MotionSensor motionSensor;
 
   @Override

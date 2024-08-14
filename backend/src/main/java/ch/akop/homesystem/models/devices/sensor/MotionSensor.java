@@ -5,6 +5,7 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -17,6 +18,8 @@ public class MotionSensor extends Sensor<MotionSensor> {
   private final Subject<Integer> targetDistance$ = ReplaySubject.createWithSize(1);
   private final boolean offersDistance;
 
+  @EqualsAndHashCode.Exclude
+  @ToString.Exclude
   private LightLevel lightLevel;
 
   @Override
