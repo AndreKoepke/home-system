@@ -152,7 +152,7 @@ public class MotionSensorService {
     public Observable<Boolean> delayWhenNoMovement(MovementAndLux update) {
       if (Boolean.TRUE.equals(update.isMoving()) || config.getKeepMovingFor() == null) {
         // no delay
-        return Observable.just(true);
+        return Observable.just(update.isMoving);
       }
 
       // but if not movement detected, then wait
