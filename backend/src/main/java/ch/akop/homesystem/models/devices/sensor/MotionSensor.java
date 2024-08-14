@@ -28,7 +28,6 @@ public class MotionSensor extends Sensor<MotionSensor> {
     isDark$.onNext(update.getDark() != null && update.getDark());
     if (update.getTargetdistance() != null) {
       targetDistance$.onNext(update.getTargetdistance());
-      log.info("targetDistance is {} and there is {}movement", update.getTargetdistance(), update.getPresence() ? "" : "no ");
     }
   }
 }

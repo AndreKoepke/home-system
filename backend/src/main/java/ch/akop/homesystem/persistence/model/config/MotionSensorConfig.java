@@ -38,7 +38,7 @@ public class MotionSensorConfig {
   @Column(columnDefinition = "TEXT")
   private List<String> lights;
 
-  @NonNull
+  @Nullable
   private Duration keepMovingFor;
 
   @Nullable

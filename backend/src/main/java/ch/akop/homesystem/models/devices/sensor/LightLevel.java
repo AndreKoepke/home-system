@@ -26,7 +26,5 @@ public class LightLevel extends Sensor<LightLevel> {
     lux$.onNext(update.getLux());
     lightLevel$.onNext(update.getLightlevel());
     dayLight$.onNext(update.getDaylight());
-
-    log.info("Lux is {}", update.getLux());
   }
 }

@@ -71,10 +71,20 @@ public class MotionSensorService {
 
     public void startListing() {
       sensor.getIsMoving$()
+          .withLatestFrom(getBrightnessInLux$(), MovementAndLux::new)
           .filter(this::shouldIgnoreMotionEvent)
           .filter(this::blockMovingWhenNecessary)
           .switchMap(this::delayWhenNoMovement)
           .subscribe(this::handleMotionEvent);
+    }
+
+    public Observable<Integer> getBrightnessInLux$() {
+      if (sensor.getLightLevel() != null) {
+        return sensor.getLightLevel().getLux$();
+      }
+
+      return weatherService.getWeather()
+          .map(weather -> weather.getLight().getAs(KILO_LUX).intValue());
     }
 
     public void turnAllLightsOff() {
@@ -95,36 +105,32 @@ public class MotionSensorService {
       });
     }
 
-    private boolean shouldIgnoreMotionEvent(Boolean isMoving) {
-      if (!isMoving) {
+    private boolean shouldIgnoreMotionEvent(MovementAndLux update) {
+      if (!update.isMoving()) {
         return true;
       }
 
       return config.isTurnLightOnWhenMovement();
     }
 
-    private boolean blockMovingWhenNecessary(boolean isMoving) {
+    private boolean blockMovingWhenNecessary(MovementAndLux update) {
 
-      if (!isMoving) {
+      if (!update.isMoving()) {
         // don't block when movement stops
         return true;
       }
 
       return isMatchingTime()
           && isMatchingState()
-          && isMatchingWeather();
+          && isMatchingWeather(update.lux);
     }
 
-    private boolean isMatchingWeather() {
+    private boolean isMatchingWeather(int lux) {
       if (config.getOnlyTurnOnWhenDarkerAs() == null) {
         return true;
       }
 
-      return weatherService.getWeather()
-          .take(1)
-          .blockingFirst()
-          .getLight()
-          .isSmallerThan(config.getOnlyTurnOnWhenDarkerAs(), KILO_LUX);
+      return config.getOnlyTurnOnWhenDarkerAs() < lux;
     }
 
     private boolean isMatchingState() {
@@ -143,9 +149,9 @@ public class MotionSensorService {
       return config.getNotBefore().isBefore(LocalTime.now());
     }
 
-    public Observable<Boolean> delayWhenNoMovement(Boolean movementDetected) {
-      if (Boolean.TRUE.equals(movementDetected)) {
-        // don't delay, when movement was detected
+    public Observable<Boolean> delayWhenNoMovement(MovementAndLux update) {
+      if (Boolean.TRUE.equals(update.isMoving()) || config.getKeepMovingFor() == null) {
+        // no delay
         return Observable.just(true);
       }
 
@@ -194,6 +200,13 @@ public class MotionSensorService {
         turnAllLightsOff();
         sensorsWithHigherTimeout.remove(config.getName().toLowerCase());
       }
+    }
+
+    public record MovementAndLux(
+        boolean isMoving,
+        int lux
+    ) {
+
     }
   }
 
