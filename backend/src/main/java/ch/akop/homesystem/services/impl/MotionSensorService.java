@@ -208,14 +208,6 @@ public class MotionSensorService {
       }
     }
 
-    private void handleMotionEventLightsTarget(boolean isMoving) {
-      if (isMoving) {
-
-      } else {
-        turnAllLightsOff();
-
-      }
-    }
 
     public record MovementAndLux(
         boolean isMoving,
