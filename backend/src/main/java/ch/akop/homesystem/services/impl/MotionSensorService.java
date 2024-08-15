@@ -80,7 +80,7 @@ public class MotionSensorService {
 
     public Observable<Integer> getBrightnessInLux$() {
       if (sensor.getLightLevel() != null) {
-        return sensor.getLightLevel().getLux$();
+        return sensor.getLightLevel().getLux$().debounce(1, TimeUnit.MINUTES);
       }
 
       return weatherService.getWeather()
@@ -121,8 +121,7 @@ public class MotionSensorService {
       }
 
       return isMatchingTime()
-          && isMatchingState()
-          && isMatchingWeather(update.lux);
+          && isMatchingState();
     }
 
     private boolean isMatchingWeather(int lux) {
@@ -149,10 +148,10 @@ public class MotionSensorService {
       return config.getNotBefore().isBefore(LocalTime.now());
     }
 
-    public Observable<Boolean> delayWhenNoMovement(MovementAndLux update) {
+    public Observable<MovementAndLux> delayWhenNoMovement(MovementAndLux update) {
       if (Boolean.TRUE.equals(update.isMoving()) || config.getKeepMovingFor() == null) {
         // no delay
-        return Observable.just(update.isMoving);
+        return Observable.just(update);
       }
 
       // but if not movement detected, then wait
@@ -166,39 +165,55 @@ public class MotionSensorService {
             if (isHigherTimeoutRequested(config)) {
               // if a timeout requested while waiting for the old timeout,
               // then increase the timeout
-              return Observable.just(false).delay(timeout * 2, TimeUnit.SECONDS);
+              return Observable.just(update).delay(timeout * 2, TimeUnit.SECONDS);
             }
 
-            return Observable.just(false);
+            return Observable.just(update);
           });
     }
 
-    private void handleMotionEvent(boolean isMoving) {
-      if (movementDetected && isMoving) {
+    private void handleMotionEvent(MovementAndLux update) {
+      if (!isMatchingWeather(update.lux) && movementDetected) {
+        turnOff();
         return;
       }
-      movementDetected = isMoving;
-      if (config.getAnimation() == null) {
-        handleMotionEventLightsTarget(isMoving);
+
+      if (movementDetected && update.isMoving) {
+        return;
+      }
+      movementDetected = update.isMoving;
+
+      if (movementDetected) {
+        turnOn();
       } else {
-        handleMotionEventAnimationTarget(isMoving);
+        turnOff();
       }
     }
 
-    private void handleMotionEventAnimationTarget(boolean isMoving) {
-      if (isMoving) {
+
+    private void turnOn() {
+      if (config.getAnimation() != null) {
         eventBus.publish("home/animation/play", config.getAnimation());
       } else {
+        turnAllLightsOn();
+      }
+    }
+
+    private void turnOff() {
+      if (config.getAnimation() != null) {
         eventBus.publish("home/animation/turn-off", config.getAnimation());
+      } else {
+        turnAllLightsOff();
+        sensorsWithHigherTimeout.remove(config.getName().toLowerCase());
       }
     }
 
     private void handleMotionEventLightsTarget(boolean isMoving) {
       if (isMoving) {
-        turnAllLightsOn();
+
       } else {
         turnAllLightsOff();
-        sensorsWithHigherTimeout.remove(config.getName().toLowerCase());
+
       }
     }
 
