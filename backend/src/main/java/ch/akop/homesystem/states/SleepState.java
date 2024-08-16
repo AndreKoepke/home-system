@@ -21,7 +21,10 @@ import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.vertx.core.Vertx;
+import io.vertx.rxjava3.RxHelper;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -38,7 +41,6 @@ import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.microprofile.context.ManagedExecutor;
 
 @Slf4j
 @Startup
@@ -66,12 +68,15 @@ public class SleepState implements State {
   private final BasicConfigRepository basicConfigRepository;
   private final ImageCreatorService imageCreatorService;
   private final OpenAIService openAIService;
-  private final ManagedExecutor executor;
+  private final Vertx vertx;
+
+  private final Scheduler rxScheduler = RxHelper.blockingScheduler(vertx, false);
 
   private Disposable timerDoorOpen;
   private Map<String, Boolean> presenceAtBeginning;
   private boolean sleepButtonState;
   private String nightSceneName;
+
 
   void registerState(@Observes StartupEvent startupEvent) {
     stateService.registerState(SleepState.class, this);
@@ -108,6 +113,7 @@ public class SleepState implements State {
 
     disposeWhenLeaveState.add(messageService.getMessages()
         .filter(message -> message.startsWith("/aufwachen"))
+        .subscribeOn(rxScheduler)
         .subscribe(ignored -> stateService.switchState(NormalState.class)));
 
     userService.getPresenceMap$()
@@ -130,6 +136,7 @@ public class SleepState implements State {
 
 
   @Override
+  @Transactional
   public void leave() {
     messageService.sendMessageToMainChannel(pickRandomElement(POSSIBLE_MORNING_TEXTS));
 
@@ -150,8 +157,8 @@ public class SleepState implements State {
     stopDoorOpenTimer();
     checkPresenceMapWhenLeave();
 
-    executor.runAsync(this::tellJoke);
-    executor.runAsync(imageCreatorService::generateAndSendDailyImage);
+    tellJoke();
+    imageCreatorService.generateAndSendDailyImage();
   }
 
   private void tellJoke() {
