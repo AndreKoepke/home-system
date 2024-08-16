@@ -10,6 +10,7 @@ import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigReposi
 import ch.akop.homesystem.states.NormalState;
 import ch.akop.homesystem.states.SleepState;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.vertx.core.eventbus.EventBus;
 import java.time.Duration;
 import java.time.LocalTime;
@@ -71,9 +72,11 @@ public class MotionSensorService {
 
     public void startListing() {
       sensor.getIsMoving$()
+          .subscribeOn(Schedulers.io())
           .withLatestFrom(getBrightnessInLux$(), MovementAndLux::new)
           .filter(this::shouldIgnoreMotionEvent)
           .filter(this::blockMovingWhenNecessary)
+          .distinctUntilChanged()
           .switchMap(this::delayWhenNoMovement)
           .subscribe(this::handleMotionEvent);
     }
