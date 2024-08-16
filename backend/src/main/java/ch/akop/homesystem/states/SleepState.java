@@ -70,8 +70,7 @@ public class SleepState implements State {
   private final OpenAIService openAIService;
   private final Vertx vertx;
 
-  private final Scheduler rxScheduler = RxHelper.blockingScheduler(vertx, false);
-
+  private Scheduler rxScheduler;
   private Disposable timerDoorOpen;
   private Map<String, Boolean> presenceAtBeginning;
   private boolean sleepButtonState;
@@ -85,6 +84,8 @@ public class SleepState implements State {
   @PostConstruct
   @Transactional
   void loadNightSceneName() {
+    rxScheduler = RxHelper.blockingScheduler(vertx, false);
+
     basicConfigRepository.findByOrderByModifiedDesc()
         .map(BasicConfig::getNightSceneName)
         .ifPresentOrElse(
