@@ -110,6 +110,7 @@ public class SleepState implements State {
     }
 
     disposeWhenLeaveState.add(Observable.timer(getDurationToWakeupAsSeconds(), TimeUnit.SECONDS)
+        .subscribeOn(rxScheduler)
         .subscribe(a -> stateService.switchState(NormalState.class)));
 
     disposeWhenLeaveState.add(messageService.getMessages()
