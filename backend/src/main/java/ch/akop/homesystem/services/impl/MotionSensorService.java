@@ -83,7 +83,7 @@ public class MotionSensorService {
 
     public Observable<Integer> getBrightnessInLux$() {
       if (sensor.getLightLevel() != null) {
-        return sensor.getLightLevel().getLux$().debounce(1, TimeUnit.MINUTES);
+        return sensor.getLightLevel().getLux$().throttleFirst(1, TimeUnit.MINUTES);
       }
 
       return weatherService.getWeather()
@@ -91,21 +91,25 @@ public class MotionSensorService {
     }
 
     public void turnAllLightsOff() {
-      referencedLights.forEach(SimpleLight::turnOff);
+      referencedLights
+          .stream().filter(SimpleLight::isCurrentStateIsOn)
+          .forEach(SimpleLight::turnOff);
     }
 
     private void turnAllLightsOn() {
-      referencedLights.forEach(light -> {
-        if (light instanceof DimmableLight dimmable) {
-          if (stateService.getCurrentState() instanceof SleepState) {
-            dimmable.setBrightness(10, Duration.of(10, ChronoUnit.SECONDS));
-          } else {
-            dimmable.setBrightness(100, Duration.of(10, ChronoUnit.SECONDS));
-          }
-        } else {
-          light.turnOn();
-        }
-      });
+      referencedLights.stream()
+          .filter(simpleLight -> !simpleLight.isCurrentStateIsOn())
+          .forEach(light -> {
+            if (light instanceof DimmableLight dimmable) {
+              if (stateService.getCurrentState() instanceof SleepState) {
+                dimmable.setBrightness(10, Duration.of(10, ChronoUnit.SECONDS));
+              } else {
+                dimmable.setBrightness(100, Duration.of(10, ChronoUnit.SECONDS));
+              }
+            } else {
+              light.turnOn();
+            }
+          });
     }
 
     private boolean shouldIgnoreMotionEvent(MovementAndLux update) {
