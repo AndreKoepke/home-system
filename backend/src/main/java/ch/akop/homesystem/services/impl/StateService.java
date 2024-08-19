@@ -68,6 +68,8 @@ public class StateService {
     var className = toState.getSimpleName();
     leaveCurrentState();
 
+    log.info("Switching state to {}", className);
+
     currentState = states.get(toState.getSimpleName());
     stateRepository.save(new ch.akop.homesystem.persistence.model.State().setClassName(className));
 
