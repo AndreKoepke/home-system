@@ -47,6 +47,9 @@ public class MotionSensorConfig {
   @Nullable
   private Boolean onlyAtNormalState;
 
+  @Nullable
+  private Integer selfLightNoise;
+
   private boolean turnLightOnWhenMovement;
 
   private LocalTime notBefore;

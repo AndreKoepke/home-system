@@ -136,6 +136,10 @@ public class MotionSensorService {
         return true;
       }
 
+      if (config.getSelfLightNoise() != null && referencedLights.stream().anyMatch(SimpleLight::isCurrentStateIsOn)) {
+        lux -= config.getSelfLightNoise();
+      }
+
       return lux < config.getOnlyTurnOnWhenDarkerAs();
     }
 
