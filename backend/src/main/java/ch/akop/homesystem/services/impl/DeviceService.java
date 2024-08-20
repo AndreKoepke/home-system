@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
@@ -39,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 public class DeviceService {
 
   private final List<Device<?>> devices = new ArrayList<>();
-  private final Map<Animation, Disposable> runningAnimations = new ConcurrentHashMap<>();
+  private final Map<UUID, Disposable> runningAnimations = new ConcurrentHashMap<>();
   private final BasicConfigRepository basicConfigRepository;
   private final AnimationRepository animationRepository;
   private final Vertx vertx;
@@ -122,9 +123,14 @@ public class DeviceService {
     var freshAnimation = animationRepository.getOne(animation.getId());
     var animationSteps = freshAnimation.materializeSteps();
 
-    runningAnimations.put(animation, Observable.fromRunnable(() -> animationSteps.forEach(step -> step.play(this)))
+    runningAnimations.put(animation.getId(), Observable.fromRunnable(() -> animationSteps
+            .forEach(step -> {
+              if (runningAnimations.containsKey(animation.getId())) {
+                step.play(this);
+              }
+            }))
         .subscribeOn(RxHelper.blockingScheduler(vertx))
-        .subscribe(ignore -> runningAnimations.remove(animation)));
+        .subscribe(ignore -> runningAnimations.remove(animation.getId())));
   }
 
   @Transactional
@@ -132,9 +138,9 @@ public class DeviceService {
   public void turnAnimationOff(Animation animation) {
     log.info("Stop animation {}", animation.getId());
 
-    if (runningAnimations.containsKey(animation)) {
-      runningAnimations.get(animation).dispose();
-      runningAnimations.remove(animation);
+    if (runningAnimations.containsKey(animation.getId())) {
+      runningAnimations.get(animation.getId()).dispose();
+      runningAnimations.remove(animation.getId());
     }
 
     var lights = animationRepository.getOne(animation.getId()).getLights();
