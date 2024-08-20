@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
+import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
@@ -68,7 +69,7 @@ public class NormalState extends Activatable implements State {
   private Map<String, Boolean> lastPresenceMap;
 
 
-  void registerState(@Observes StartupEvent startupEvent) {
+  void registerState(@Observes @Priority(100) StartupEvent startupEvent) {
     stateService.registerState(NormalState.class, this);
   }
 

@@ -6,6 +6,7 @@ import ch.akop.homesystem.persistence.repository.StateRepository;
 import ch.akop.homesystem.states.NormalState;
 import ch.akop.homesystem.states.State;
 import io.quarkus.runtime.Startup;
+import io.reactivex.rxjava3.subjects.ReplaySubject;
 import java.util.HashMap;
 import java.util.Map;
 import javax.enterprise.context.ApplicationScoped;
@@ -29,6 +30,9 @@ public class StateService {
   @Getter
   private State currentState;
 
+  @Getter
+  private ReplaySubject<String> currrentState$ = ReplaySubject.createWithSize(1);
+
 
   @Transactional
   public synchronized void registerState(Class<?> clazz, State state) {
@@ -48,6 +52,7 @@ public class StateService {
   }
 
   public void activateStateQuietly(Class<?> clazz) {
+    log.info("Quietly switched to {}", clazz.getSimpleName());
     leaveCurrentState();
 
     var newState = states.get(clazz.getSimpleName());
@@ -80,6 +85,8 @@ public class StateService {
         log.error("There was an exception in the 'entered'-method of {}", className, e);
       }
     }
+
+    currrentState$.onNext(className);
   }
 
   private void leaveCurrentState() {

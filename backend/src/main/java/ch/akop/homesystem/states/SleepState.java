@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
+import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
@@ -77,7 +78,7 @@ public class SleepState implements State {
   private String nightSceneName;
 
 
-  void registerState(@Observes StartupEvent startupEvent) {
+  void registerState(@Observes @Priority(100) StartupEvent startupEvent) {
     stateService.registerState(SleepState.class, this);
   }
 

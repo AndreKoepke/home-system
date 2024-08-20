@@ -64,9 +64,10 @@ public class DimmLightStep implements Step {
           .orElseThrow(() -> new EntityNotFoundException("Colored light with name " + nameOfLight + " was not found"))
           .setColorAndBrightness(color, dimmDuration, dimmLightTo);
     } else {
-      deviceService.findDeviceByName(nameOfLight, DimmableLight.class)
-          .orElseThrow(() -> new EntityNotFoundException("Light with name " + nameOfLight + " was not found"))
-          .setBrightness(dimmLightTo, getDimmDuration());
+      var light = deviceService.findDeviceByName(nameOfLight, DimmableLight.class)
+          .orElseThrow(() -> new EntityNotFoundException("Light with name " + nameOfLight + " was not found"));
+      light.setBrightness(0, Duration.ZERO);
+      light.setBrightness(dimmLightTo, getDimmDuration());
     }
   }
 

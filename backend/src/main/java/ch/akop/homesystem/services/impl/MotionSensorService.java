@@ -11,7 +11,9 @@ import ch.akop.homesystem.states.NormalState;
 import ch.akop.homesystem.states.SleepState;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.rxjava3.RxHelper;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -20,13 +22,14 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
+import javax.annotation.Priority;
+import javax.enterprise.context.Dependent;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
-@ApplicationScoped
 @RequiredArgsConstructor
+@Priority(500)
+@Dependent
 public class MotionSensorService {
 
   private final MotionSensorConfigRepository motionSensorConfigRepository;
@@ -35,8 +38,8 @@ public class MotionSensorService {
   private final WeatherService weatherService;
   private final EventBus eventBus;
   private final Set<String> sensorsWithHigherTimeout = new HashSet<>();
+  private final Vertx vertx;
 
-  @PostConstruct
   @Transactional
   public void init() {
     // TODO restart when config changes
@@ -58,19 +61,30 @@ public class MotionSensorService {
 
     private final MotionSensor sensor;
     private final MotionSensorConfig config;
-    private final List<SimpleLight> referencedLights;
+    private List<SimpleLight> referencedLights;
     private boolean movementDetected = false;
 
     public ConfigWithLights(MotionSensorConfig config) {
       this.config = config;
-      this.referencedLights = config.getAffectedLightNames().stream()
-          .flatMap(lightName -> MotionSensorService.this.deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
-          .toList();
+      this.referencedLights = resolveLights();
       this.sensor = MotionSensorService.this.deviceService.findDeviceByName(config.getName(), MotionSensor.class)
           .orElseThrow(() -> new NoSuchElementException("MotionSensor '" + config.getName() + "' not found"));
     }
 
+    private List<SimpleLight> resolveLights() {
+      return config.getAffectedLightNames(stateService.isState(SleepState.class))
+          .stream()
+          .flatMap(lightName -> MotionSensorService.this.deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
+          .toList();
+    }
+
     public void startListing() {
+      stateService.getCurrrentState$()
+          .subscribeOn(RxHelper.blockingScheduler(vertx, false))
+          .subscribe(newState -> {
+            this.referencedLights = resolveLights();
+          });
+
       sensor.getIsMoving$()
           .subscribeOn(Schedulers.io())
           .withLatestFrom(getBrightnessInLux$(), MovementAndLux::new)
@@ -203,7 +217,9 @@ public class MotionSensorService {
 
 
     private void turnOn() {
-      if (config.getAnimation() != null) {
+      if (stateService.isState(SleepState.class) && config.getAnimationNight() != null) {
+        eventBus.publish("home/animation/play", config.getAnimationNight());
+      } else if (!stateService.isState(SleepState.class) && config.getAnimation() != null) {
         eventBus.publish("home/animation/play", config.getAnimation());
       } else {
         turnAllLightsOn();
@@ -211,7 +227,9 @@ public class MotionSensorService {
     }
 
     private void turnOff() {
-      if (config.getAnimation() != null) {
+      if (stateService.isState(SleepState.class) && config.getAnimationNight() != null) {
+        eventBus.publish("home/animation/turn-off", config.getAnimationNight());
+      } else if (!stateService.isState(SleepState.class) && config.getAnimation() != null) {
         eventBus.publish("home/animation/turn-off", config.getAnimation());
       } else {
         turnAllLightsOff();

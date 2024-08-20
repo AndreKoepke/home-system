@@ -27,13 +27,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import javax.enterprise.context.ApplicationScoped;
+import javax.annotation.Priority;
+import javax.enterprise.context.Dependent;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-@ApplicationScoped
+@Dependent
+@Priority(500)
 public class AutomationService {
 
   private static final int MARCEL_CONSTANT_SECONDS = 30;

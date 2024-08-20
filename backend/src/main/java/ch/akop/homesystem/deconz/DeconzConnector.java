@@ -33,6 +33,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
@@ -62,7 +63,7 @@ public class DeconzConnector {
 
 
   @Transactional
-  void tryToStart(@Observes StartupEvent event) {
+  void tryToStart(@Observes @Priority(500) StartupEvent event) {
     // TODO restart when config changes
     var config = deconzConfigRepository.getFirstByOrderByModifiedDesc();
 
