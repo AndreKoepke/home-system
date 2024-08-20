@@ -4,7 +4,6 @@ import ch.akop.homesystem.persistence.model.animation.steps.DimmLightStep;
 import ch.akop.homesystem.persistence.model.animation.steps.OnOffStep;
 import ch.akop.homesystem.persistence.model.animation.steps.PauseStep;
 import ch.akop.homesystem.persistence.model.animation.steps.Step;
-import ch.akop.homesystem.services.impl.DeviceService;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -46,14 +45,11 @@ public class Animation {
   @OneToMany(cascade = CascadeType.ALL, mappedBy = "animation")
   private List<DimmLightStep> dimmLightSteps = new ArrayList<>();
 
-  /**
-   * Call in an async-context, this method can run for a while (blocking)
-   */
-  public void play(DeviceService deviceService) {
-    Stream.of(pauseSteps.stream(), onOffSteps.stream(), dimmLightSteps.stream())
+  public List<? extends Step> materializeSteps() {
+    return Stream.of(pauseSteps.stream(), onOffSteps.stream(), dimmLightSteps.stream())
         .flatMap(stream -> stream)
         .sorted(Comparator.comparingInt(Step::getSortOrder))
-        .forEachOrdered(step -> step.play(deviceService));
+        .toList();
   }
 
   public Set<String> getLights() {

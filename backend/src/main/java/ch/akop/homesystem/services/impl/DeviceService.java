@@ -14,14 +14,18 @@ import ch.akop.homesystem.persistence.repository.config.AnimationRepository;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.util.SleepUtil;
 import io.quarkus.vertx.ConsumeEvent;
-import io.vertx.core.impl.ConcurrentHashSet;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.vertx.core.Vertx;
+import io.vertx.rxjava3.RxHelper;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
@@ -35,9 +39,10 @@ import lombok.extern.slf4j.Slf4j;
 public class DeviceService {
 
   private final List<Device<?>> devices = new ArrayList<>();
-  private final Set<Animation> runningAnimations = new ConcurrentHashSet<>();
+  private final Map<Animation, Disposable> runningAnimations = new ConcurrentHashMap<>();
   private final BasicConfigRepository basicConfigRepository;
   private final AnimationRepository animationRepository;
+  private final Vertx vertx;
 
 
   public <T extends Device<?>> Optional<T> findDeviceByName(String name, Class<T> clazz) {
@@ -109,19 +114,29 @@ public class DeviceService {
   @Transactional
   @ConsumeEvent(value = "home/animation/play", blocking = true)
   public void playAnimation(Animation animation) {
-    if (runningAnimations.contains(animation)) {
+    if (runningAnimations.containsKey(animation)) {
       return;
     }
 
-    runningAnimations.add(animation);
+    log.info("Start animation {}", animation.getId());
     var freshAnimation = animationRepository.getOne(animation.getId());
-    freshAnimation.play(this);
-    runningAnimations.remove(animation);
+    var animationSteps = freshAnimation.materializeSteps();
+
+    runningAnimations.put(animation, Observable.fromRunnable(() -> animationSteps.forEach(step -> step.play(this)))
+        .subscribeOn(RxHelper.blockingScheduler(vertx))
+        .subscribe(ignore -> runningAnimations.remove(animation)));
   }
 
   @Transactional
   @ConsumeEvent(value = "home/animation/turn-off", blocking = true)
   public void turnAnimationOff(Animation animation) {
+    log.info("Stop animation {}", animation.getId());
+
+    if (runningAnimations.containsKey(animation)) {
+      runningAnimations.get(animation).dispose();
+      runningAnimations.remove(animation);
+    }
+
     var lights = animationRepository.getOne(animation.getId()).getLights();
     getDevicesOfType(SimpleLight.class)
         .stream()

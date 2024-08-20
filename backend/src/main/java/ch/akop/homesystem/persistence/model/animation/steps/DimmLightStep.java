@@ -66,7 +66,6 @@ public class DimmLightStep implements Step {
     } else {
       var light = deviceService.findDeviceByName(nameOfLight, DimmableLight.class)
           .orElseThrow(() -> new EntityNotFoundException("Light with name " + nameOfLight + " was not found"));
-      light.setBrightness(0, Duration.ZERO);
       light.setBrightness(dimmLightTo, getDimmDuration());
     }
   }
