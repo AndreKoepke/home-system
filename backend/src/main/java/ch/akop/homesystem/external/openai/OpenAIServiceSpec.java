@@ -15,7 +15,7 @@ public interface OpenAIServiceSpec {
   ImageGenerationResponse requestImage(ImageRequest request);
 
   @POST
-  @Path("completions")
+  @Path("chat/completions")
   TextGenerationResponse textCompletion(TextGenerationParameter request);
 
 }
