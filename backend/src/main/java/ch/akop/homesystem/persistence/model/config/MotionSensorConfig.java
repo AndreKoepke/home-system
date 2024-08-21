@@ -72,7 +72,7 @@ public class MotionSensorConfig {
   private Animation animationNight;
 
   public Set<String> getAffectedLightNames(boolean nightState) {
-    if (nightState) {
+    if (nightState && (!getLightsAtNight().isEmpty() || getAnimationNight() != null)) {
       var allRelatedLights = new HashSet<>(getLightsAtNight());
       Optional.ofNullable(getAnimationNight()).ifPresent(animation -> allRelatedLights.addAll(animation.getLights()));
       return allRelatedLights;

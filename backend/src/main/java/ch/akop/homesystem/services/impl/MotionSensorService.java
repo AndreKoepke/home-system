@@ -11,9 +11,7 @@ import ch.akop.homesystem.states.NormalState;
 import ch.akop.homesystem.states.SleepState;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
-import io.vertx.rxjava3.RxHelper;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -38,7 +36,6 @@ public class MotionSensorService {
   private final WeatherService weatherService;
   private final EventBus eventBus;
   private final Set<String> sensorsWithHigherTimeout = new HashSet<>();
-  private final Vertx vertx;
 
   @Transactional
   public void init() {
@@ -80,10 +77,7 @@ public class MotionSensorService {
 
     public void startListing() {
       stateService.getCurrrentState$()
-          .subscribeOn(RxHelper.blockingScheduler(vertx, false))
-          .subscribe(newState -> {
-            this.referencedLights = resolveLights();
-          });
+          .subscribe(newState -> this.referencedLights = resolveLights());
 
       sensor.getIsMoving$()
           .subscribeOn(Schedulers.io())
