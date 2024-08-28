@@ -81,21 +81,24 @@ public class MotionSensorService {
 
       sensor.getIsMoving$()
           .subscribeOn(Schedulers.io())
-          .withLatestFrom(getBrightnessInLux$(), MovementAndLux::new)
+          .withLatestFrom(getIsBright$(), MovementAndLux::new)
+          .distinctUntilChanged()
           .filter(this::shouldIgnoreMotionEvent)
           .filter(this::blockMovingWhenNecessary)
-          .distinctUntilChanged()
           .switchMap(this::delayWhenNoMovement)
           .subscribe(this::handleMotionEvent);
     }
 
-    public Observable<Integer> getBrightnessInLux$() {
+    public Observable<Boolean> getIsBright$() {
       if (sensor.getLightLevel() != null) {
-        return sensor.getLightLevel().getLux$().throttleFirst(1, TimeUnit.MINUTES);
+        return sensor.getLightLevel().getLux$()
+            .map(this::isMatchingWeather)
+            .throttleFirst(1, TimeUnit.MINUTES);
       }
 
       return weatherService.getWeather()
-          .map(weather -> weather.getLight().getAs(KILO_LUX).intValue());
+          .map(weather -> weather.getLight().getAs(KILO_LUX).intValue())
+          .map(this::isMatchingWeather);
     }
 
     public void turnAllLightsOff() {
@@ -192,7 +195,7 @@ public class MotionSensorService {
     }
 
     private void handleMotionEvent(MovementAndLux update) {
-      if (!isMatchingWeather(update.lux) && movementDetected) {
+      if (!update.isBright && movementDetected) {
         turnOff();
         return;
       }
@@ -234,7 +237,7 @@ public class MotionSensorService {
 
     public record MovementAndLux(
         boolean isMoving,
-        int lux
+        boolean isBright
     ) {
 
     }
