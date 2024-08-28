@@ -195,8 +195,11 @@ public class MotionSensorService {
     }
 
     private void handleMotionEvent(MovementAndLux update) {
-      if (!update.isBright && movementDetected) {
+      if (!update.shouldBeOnBecauseOfBrightness && movementDetected) {
         turnOff();
+        movementDetected = false;
+        return;
+      } else if (!update.shouldBeOnBecauseOfBrightness) {
         return;
       }
 
@@ -237,7 +240,7 @@ public class MotionSensorService {
 
     public record MovementAndLux(
         boolean isMoving,
-        boolean isBright
+        boolean shouldBeOnBecauseOfBrightness
     ) {
 
     }
