@@ -124,8 +124,9 @@ public class UserService {
 
   public Flowable<Boolean> isAnyoneAtHome$() {
     return presenceMap$
+        .subscribeOn(rxScheduler)
         .map(presenceMapUpdate -> presenceMapUpdate.values().stream().anyMatch(isAtHome -> isAtHome))
-        .toFlowable(BackpressureStrategy.DROP);
+        .toFlowable(BackpressureStrategy.ERROR);
   }
 
   public boolean isAnyoneAtHome() {
