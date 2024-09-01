@@ -5,7 +5,7 @@ import javax.ws.rs.Path;
 import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-@Path("/v1")
+@Path("v1")
 @RegisterRestClient
 @RegisterClientHeaders(OpenAIHeader.class)
 public interface OpenAIServiceSpec {
@@ -15,7 +15,7 @@ public interface OpenAIServiceSpec {
   ImageGenerationResponse requestImage(ImageRequest request);
 
   @POST
-  @Path("chat/completions")
+  @Path("completions")
   TextGenerationResponse textCompletion(TextGenerationParameter request);
 
 }

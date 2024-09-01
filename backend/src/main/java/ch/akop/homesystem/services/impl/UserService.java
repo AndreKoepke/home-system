@@ -48,7 +48,6 @@ public class UserService {
   private final Vertx vertx;
   private final ManagedExecutor executor;
   private final UserConfigRepository userConfigRepository;
-  private final TelegramMessageService telegramMessageService;
 
   private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
   private ConcurrentMap<String, Boolean> presenceMap = new ConcurrentHashMap<>();
@@ -61,12 +60,14 @@ public class UserService {
   }
 
   @PostConstruct
-  void listenForRecheckMessage() {
-    // runs forever, no need for returning anything
-    //noinspection ResultOfMethodCallIgnored
-    telegramMessageService.getMessages()
-        .filter(message -> message.startsWith("/anyoneHome"))
-        .subscribe(message -> gotEvent(Event.DOOR_CLOSED));
+  @Transactional
+  void setupPresenceMap() {
+    presenceMap = userConfigRepository.findAll()
+        .stream()
+        .collect(Collectors.toConcurrentMap(
+            UserConfig::getName,
+            user -> user.getFailedPings() < ALLOWED_FAILS
+        ));
   }
 
   @Transactional
@@ -93,21 +94,44 @@ public class UserService {
   }
 
   private void updatePresence() {
-    var newPresenceMap = userConfigRepository.findAll()
-        .parallelStream()
+    userConfigRepository.findAll().stream()
         .filter(user -> !StringUtil.isNullOrEmpty(user.getDeviceIp()))
-        .map(user -> user.setFailedPings(canPingIp(user) ? 0 : user.getFailedPings() + 1))
-        .peek(user -> executor.runAsync(() -> userConfigRepository.save(user)))
-        .collect(Collectors.toConcurrentMap(
-            UserConfig::getName,
-            user -> user.getFailedPings() < ALLOWED_FAILS
-        ));
+        .parallel()
+        .forEach(user -> {
+          if (canPingIp(user)) {
+            reportUserIsAtHome(user);
+          } else {
+            reportUserIsNotAtHome(user);
+          }
+        });
+  }
 
-    var hasChanges = !newPresenceMap.equals(presenceMap);
-    if (hasChanges) {
-      presenceMap = newPresenceMap;
-      presenceMap$.onNext(newPresenceMap);
+  private void reportUserIsNotAtHome(UserConfig user) {
+    user.increaseFailedPings();
+    executor.runAsync(() -> userConfigRepository.save(user));
+
+    var userAppearsAsAwayAtHome = user.getFailedPings() < ALLOWED_FAILS;
+    if (presenceMap.get(user.getName()) && !userAppearsAsAwayAtHome) {
+      presenceMap.put(user.getName(), false);
+      notifyPresenceMapChanged();
     }
+  }
+
+  private void reportUserIsAtHome(UserConfig user) {
+    if (user.getFailedPings() == 0) {
+      return;
+    }
+    user.setFailedPings(0);
+    executor.runAsync(() -> userConfigRepository.save(user));
+
+    if (!presenceMap.get(user.getName())) {
+      presenceMap.put(user.getName(), true);
+      notifyPresenceMapChanged();
+    }
+  }
+
+  private void notifyPresenceMapChanged() {
+    executor.runAsync(() -> presenceMap$.onNext(presenceMap));
   }
 
   private boolean canPingIp(UserConfig userConfig) {

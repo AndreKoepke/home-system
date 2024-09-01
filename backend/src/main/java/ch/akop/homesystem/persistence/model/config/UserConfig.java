@@ -32,4 +32,7 @@ public class UserConfig {
 
   private boolean dev = false;
 
+  public void increaseFailedPings() {
+    failedPings++;
+  }
 }

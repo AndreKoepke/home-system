@@ -1,8 +1,11 @@
 package ch.akop.homesystem.external.openai;
 
+import ch.akop.homesystem.external.openai.TextGenerationParameter.Message;
 import ch.akop.homesystem.persistence.repository.config.OpenAIConfigRepository;
 import java.net.URI;
 import java.util.Base64;
+import java.util.List;
+import javax.annotation.Nullable;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,7 @@ public class OpenAIService {
       .build(OpenAIServiceSpec.class);
 
   @Transactional
+  @Nullable
   public byte[] requestImage(String text) {
     var config = openAIConfigRepository.findFirstByOrderByModifiedDesc()
         .orElse(null);
@@ -52,9 +56,9 @@ public class OpenAIService {
     }
 
     var requestBody = new TextGenerationParameter()
-        .setPrompt(prompt);
+        .setMessages(List.of(new Message("user", prompt)));
 
-    return apiWebClient.textCompletion(requestBody).getChoices().get(0).getText();
+    return apiWebClient.textCompletion(requestBody).getChoices().get(0).getMessage().getContent();
   }
 
 }

@@ -6,12 +6,18 @@ import lombok.Data;
 @Data
 public class TextGenerationResponse {
 
-  private List<ResponseData> choices;
+  private List<Choice> choices;
 
   @Data
-  public static class ResponseData {
+  public static class Choice {
 
-    private String text;
+    private Message message;
+  }
+
+  @Data
+  public static class Message {
+
+    private String content;
   }
 
 }
