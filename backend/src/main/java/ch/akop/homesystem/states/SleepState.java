@@ -159,14 +159,6 @@ public class SleepState implements State {
 
     stopDoorOpenTimer();
     checkPresenceMapWhenLeave();
-
-    tellJoke();
-    imageCreatorService.generateAndSendDailyImage();
-  }
-
-  private void tellJoke() {
-    var joke = openAIService.requestText("Erzähle einen lustigen Witz.");
-    messageService.sendMessageToMainChannel("Witz des Tages: \n" + joke);
   }
 
   public void checkPresenceMapWhenLeave() {
