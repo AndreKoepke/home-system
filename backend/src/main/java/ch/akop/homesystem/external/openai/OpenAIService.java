@@ -56,7 +56,9 @@ public class OpenAIService {
     }
 
     var requestBody = new TextGenerationParameter()
-        .setMessages(List.of(new Message("user", prompt)));
+        .setMessages(List.of(
+            new Message("system", "Du bist ein irrer Wissenschaftler und liebst es kurze und verrückte Antworten zu geben."),
+            new Message("user", prompt)));
 
     return apiWebClient.textCompletion(requestBody).getChoices().get(0).getMessage().getContent();
   }

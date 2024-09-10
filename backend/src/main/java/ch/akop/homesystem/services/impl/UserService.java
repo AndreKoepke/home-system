@@ -7,13 +7,10 @@ import ch.akop.homesystem.persistence.model.config.UserConfig;
 import ch.akop.homesystem.persistence.repository.config.UserConfigRepository;
 import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
-import io.quarkus.runtime.util.StringUtil;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import io.vertx.core.Vertx;
@@ -26,12 +23,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.context.ManagedExecutor;
 
@@ -50,10 +49,11 @@ public class UserService {
   private final UserConfigRepository userConfigRepository;
 
   private final Subject<Map<String, Boolean>> presenceMap$ = ReplaySubject.createWithSize(1);
+  private final AtomicInteger runningCheckers = new AtomicInteger();
   private ConcurrentMap<String, Boolean> presenceMap = new ConcurrentHashMap<>();
 
-  private Disposable checkPresenceSubscription;
   private Scheduler rxScheduler;
+  private LocalDateTime discoverUntil;
 
   void onStart(@Observes StartupEvent ev) {
     rxScheduler = RxHelper.blockingScheduler(vertx);
@@ -70,40 +70,34 @@ public class UserService {
         ));
   }
 
-  @Transactional
   @ConsumeEvent(value = GENERAL, blocking = true)
+  @Transactional
   public void gotEvent(Event event) {
-    if (event == Event.DOOR_CLOSED && (checkPresenceSubscription == null || checkPresenceSubscription.isDisposed())) {
+    if (event == Event.DOOR_CLOSED && runningCheckers.get() == 0) {
       log.info("Start discovering users ...");
-      vertx.setTimer(DELAY.toMillis(), timerId -> executor.runAsync(() -> checkPresence(LocalDateTime.now().plus(KEEP_CHECKING_FOR))));
+      startCheckPresence();
+    } else {
+      discoverUntil = LocalDateTime.now().plus(KEEP_CHECKING_FOR);
     }
   }
 
-  private void checkPresence(LocalDateTime discoverUntil) {
-    checkPresenceSubscription = Observable.fromCallable(() -> {
-          updatePresence();
-          return LocalDateTime.now().isAfter(discoverUntil);
-        })
-        .subscribeOn(rxScheduler)
-        .singleOrError()
-        .subscribe(finished -> {
-          if (!finished) {
-            vertx.setTimer(DELAY.toMillis(), timerId -> executor.runAsync(() -> checkPresence(discoverUntil)));
-          }
-        });
+  private void startCheckPresence() {
+    userConfigRepository.findAll().forEach(user -> executor.runAsync(() -> updatePresence(user)));
   }
 
-  private void updatePresence() {
-    userConfigRepository.findAll().stream()
-        .filter(user -> !StringUtil.isNullOrEmpty(user.getDeviceIp()))
-        .parallel()
-        .forEach(user -> {
-          if (canPingIp(user)) {
-            reportUserIsAtHome(user);
-          } else {
-            reportUserIsNotAtHome(user);
-          }
-        });
+  @SneakyThrows
+  private void updatePresence(UserConfig user) {
+    runningCheckers.incrementAndGet();
+    do {
+      if (canPingIp(user)) {
+        reportUserIsAtHome(user);
+      } else {
+        reportUserIsNotAtHome(user);
+      }
+      Thread.sleep(10000);
+    } while (discoverUntil.isBefore(LocalDateTime.now()));
+
+    runningCheckers.decrementAndGet();
   }
 
   private void reportUserIsNotAtHome(UserConfig user) {

@@ -141,7 +141,7 @@ public class SleepState implements State {
   @Override
   @Transactional
   public void leave() {
-    messageService.sendMessageToMainChannel(pickRandomElement(POSSIBLE_MORNING_TEXTS));
+    messageService.sendMessageToMainChannel(openAIService.requestText("Schreibe in eigenen Worten: " + pickRandomElement(POSSIBLE_MORNING_TEXTS)));
 
     if (weatherService.isActive()) {
       //noinspection ResultOfMethodCallIgnored

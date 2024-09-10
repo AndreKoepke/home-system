@@ -7,7 +7,7 @@ import lombok.Data;
 public class TextGenerationParameter {
 
   private List<Message> messages;
-  private String model = "text-davinci-003";
+  private String model = "gpt-4";
 
   public record Message(
       String role,
