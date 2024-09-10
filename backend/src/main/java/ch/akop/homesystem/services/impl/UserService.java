@@ -9,6 +9,7 @@ import io.quarkus.runtime.Startup;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import io.vertx.core.Vertx;
@@ -93,7 +94,7 @@ public class UserService {
 
   private void reportUserIsNotAtHome(UserConfig user) {
     user.increaseFailedPings();
-    executor.runAsync(() -> userConfigRepository.save(user));
+    Observable.fromRunnable(() -> userConfigRepository.save(user)).subscribeOn(RxHelper.blockingScheduler(vertx));
 
     var userAppearsAsAwayAtHome = user.getFailedPings() < ALLOWED_FAILS;
     if (presenceMap.get(user.getName()) && !userAppearsAsAwayAtHome) {
@@ -107,7 +108,7 @@ public class UserService {
       return;
     }
     user.setFailedPings(0);
-    executor.runAsync(() -> userConfigRepository.save(user));
+    Observable.fromRunnable(() -> userConfigRepository.save(user)).subscribeOn(RxHelper.blockingScheduler(vertx));
 
     if (!presenceMap.get(user.getName())) {
       presenceMap.put(user.getName(), true);
@@ -116,7 +117,7 @@ public class UserService {
   }
 
   private void notifyPresenceMapChanged() {
-    executor.runAsync(() -> presenceMap$.onNext(presenceMap));
+    Observable.fromRunnable(() -> presenceMap$.onNext(presenceMap));
   }
 
   private boolean canPingIp(UserConfig userConfig) {
