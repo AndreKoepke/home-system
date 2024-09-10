@@ -44,7 +44,7 @@ public class SunriseReactor extends Activatable {
 
     requestContextController.activate();
     if (basicConfigRepository.findByOrderByModifiedDesc().orElseThrow().isSendMessageWhenTurnLightsOff()) {
-      messageService.sendMessageToMainChannel("Es wird hell, ich mach mal die Lichter aus.");
+      messageService.sendFunnyMessageToMainChannel("Es wird hell, ich mach mal die Lichter aus.");
     }
     deviceService.turnAllLightsOff();
     requestContextController.deactivate();

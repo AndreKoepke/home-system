@@ -85,7 +85,7 @@ public class NormalState extends Activatable implements State {
   private void gotNewPresenceMap(Map<String, Boolean> presenceMap) {
     presenceMap.forEach((user, isAtHome) -> {
       if (!lastPresenceMap.get(user).equals(isAtHome)) {
-        messageService.sendMessageToMainChannel("%s ist %s".formatted(user,
+        messageService.sendFunnyMessageToMainChannel("%s ist %s".formatted(user,
             Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen"));
       }
     });
@@ -108,7 +108,7 @@ public class NormalState extends Activatable implements State {
     super.disposeWhenClosed(sunsetReactor.start());
 
     if (!quiet && rainDetectorService.noRainFor().toDays() > 1) {
-      messageService.sendMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
+      messageService.sendFunnyMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
           .formatted(rainDetectorService.noRainFor().toDays()));
     }
 
@@ -131,7 +131,7 @@ public class NormalState extends Activatable implements State {
         .filter(message -> message.startsWith("/sleep"))
         .take(1)
         .subscribe(message -> {
-          messageService.sendMessageToMainChannel("Ok, gute Nacht.");
+          messageService.sendFunnyMessageToMainChannel("Ok, gute Nacht.");
           stateService.activateStateQuietly(SleepState.class);
         }));
 
@@ -225,7 +225,7 @@ public class NormalState extends Activatable implements State {
 
   private void startMainDoorOpenAnimation() {
     log.info("MAIN-DOOR IS OPENED!");
-    messageService.sendMessageToMainChannel("Wohnungstür wurde geöffnet.");
+    messageService.sendFunnyMessageToMainChannel("Wohnungstür wurde geöffnet.");
 
     if (!canStartMainDoorAnimation.isGateOpen() || deviceService.isAnyLightOn()) {
       return;
