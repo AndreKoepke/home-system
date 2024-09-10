@@ -6,11 +6,9 @@ import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.model.config.UserConfig;
 import ch.akop.homesystem.persistence.repository.config.UserConfigRepository;
 import io.quarkus.runtime.Startup;
-import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import io.vertx.core.Vertx;
@@ -27,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -40,7 +37,6 @@ import org.eclipse.microprofile.context.ManagedExecutor;
 @RequiredArgsConstructor
 public class UserService {
 
-  private static final Duration DELAY = Duration.of(15, ChronoUnit.SECONDS);
   public static final Duration KEEP_CHECKING_FOR = Duration.of(15, ChronoUnit.MINUTES);
   public static final int ALLOWED_FAILS = 3;
 
@@ -52,12 +48,7 @@ public class UserService {
   private final AtomicInteger runningCheckers = new AtomicInteger();
   private ConcurrentMap<String, Boolean> presenceMap = new ConcurrentHashMap<>();
 
-  private Scheduler rxScheduler;
   private LocalDateTime discoverUntil;
-
-  void onStart(@Observes StartupEvent ev) {
-    rxScheduler = RxHelper.blockingScheduler(vertx);
-  }
 
   @PostConstruct
   @Transactional
@@ -142,7 +133,7 @@ public class UserService {
 
   public Flowable<Boolean> isAnyoneAtHome$() {
     return presenceMap$
-        .subscribeOn(rxScheduler)
+        .subscribeOn(RxHelper.blockingScheduler(vertx))
         .map(presenceMapUpdate -> presenceMapUpdate.values().stream().anyMatch(isAtHome -> isAtHome))
         .toFlowable(BackpressureStrategy.ERROR);
   }
