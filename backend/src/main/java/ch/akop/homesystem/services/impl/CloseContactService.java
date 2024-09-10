@@ -42,7 +42,7 @@ public class CloseContactService {
     var config = configOpt.get();
 
     if (!StringUtils.isEmpty(config.getMessageWhenTrigger())) {
-      telegramMessageService.sendMessageToMainChannel(config.getMessageWhenTrigger());
+      telegramMessageService.sendFunnyMessageToMainChannel(config.getMessageWhenTrigger());
     }
 
     if (config.getAnimationWhenTrigger() != null) {

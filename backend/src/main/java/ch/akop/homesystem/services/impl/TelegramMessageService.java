@@ -2,6 +2,7 @@ package ch.akop.homesystem.services.impl;
 
 import static java.util.Optional.ofNullable;
 
+import ch.akop.homesystem.external.openai.OpenAIService;
 import ch.akop.homesystem.persistence.model.config.TelegramConfig;
 import ch.akop.homesystem.persistence.repository.config.TelegramConfigRepository;
 import com.pengrad.telegrambot.TelegramBot;
@@ -33,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 public class TelegramMessageService {
 
   private final TelegramConfigRepository telegramConfigRepository;
+  private final OpenAIService openAIService;
 
   @Setter(AccessLevel.NONE)
   private TelegramBot bot;
@@ -101,6 +103,11 @@ public class TelegramMessageService {
     ofNullable(telegramConfigRepository.getFirstByOrderByModifiedDesc())
         .ifPresent(config -> sendMessageToUser(message, config.getMainChannel()));
 
+    return this;
+  }
+
+  public TelegramMessageService sendFunnyMessageToMainChannel(@Nullable String message) {
+    sendMessageToMainChannel(openAIService.requestText(message));
     return this;
   }
 

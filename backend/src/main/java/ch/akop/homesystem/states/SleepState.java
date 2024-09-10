@@ -105,8 +105,8 @@ public class SleepState implements State {
       disposeWhenLeaveState.add(Observable.timer(DURATION_UNTIL_SWITCH_LIGHTS_OFF.toMinutes(), TimeUnit.MINUTES)
           .doOnNext(t -> deviceService.activeSceneForAllGroups(nightSceneName))
           .doOnNext(duration -> messageService
-              .sendMessageToMainChannel("Schlaft gut. Die Lichter gehen jetzt aus. :)")
-              .sendMessageToMainChannel("Ich lege mich auch hin und stehe um %s wieder auf.".formatted(WAKEUP_TIME)))
+              .sendFunnyMessageToMainChannel("Schlaft gut. Die Lichter gehen jetzt aus. :)")
+              .sendFunnyMessageToMainChannel("Ich lege mich auch hin und stehe um %s wieder auf.".formatted(WAKEUP_TIME)))
           .subscribe());
     }
 
@@ -141,7 +141,7 @@ public class SleepState implements State {
   @Override
   @Transactional
   public void leave() {
-    messageService.sendMessageToMainChannel(openAIService.requestText("Schreibe in eigenen Worten: " + pickRandomElement(POSSIBLE_MORNING_TEXTS)));
+    messageService.sendFunnyMessageToMainChannel("Schreibe in eigenen Worten: " + pickRandomElement(POSSIBLE_MORNING_TEXTS));
 
     if (weatherService.isActive()) {
       //noinspection ResultOfMethodCallIgnored
@@ -175,7 +175,7 @@ public class SleepState implements State {
     if (!currentPresence.equals(presenceAtBeginning)) {
       currentPresence.forEach((user, isAtHome) -> {
         if (!presenceAtBeginning.get(user).equals(isAtHome)) {
-          messageService.sendMessageToMainChannel("In der Nacht ist %s %s".formatted(user,
+          messageService.sendFunnyMessageToMainChannel("In der Nacht ist %s %s".formatted(user,
               Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen."));
         }
       });
@@ -226,7 +226,7 @@ public class SleepState implements State {
   private void startDoorOpenTimer() {
     if (timerDoorOpen == null || timerDoorOpen.isDisposed()) {
       timerDoorOpen = Observable.timer(1, TimeUnit.MINUTES)
-          .subscribe(a -> messageService.sendMessageToMainChannel("Die Tür ist jetzt schon länger auf ..."));
+          .subscribe(a -> messageService.sendFunnyMessageToMainChannel("Die Tür ist jetzt schon länger auf ..."));
     }
   }
 }
