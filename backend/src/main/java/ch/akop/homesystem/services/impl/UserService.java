@@ -94,7 +94,7 @@ public class UserService {
 
   private void reportUserIsNotAtHome(UserConfig user) {
     user.increaseFailedPings();
-    Observable.fromRunnable(() -> userConfigRepository.save(user)).subscribeOn(RxHelper.blockingScheduler(vertx));
+    Observable.fromRunnable(() -> userConfigRepository.save(user)).subscribeOn(RxHelper.blockingScheduler(vertx)).subscribe();
 
     var userAppearsAsAwayAtHome = user.getFailedPings() < ALLOWED_FAILS;
     if (presenceMap.get(user.getName()) && !userAppearsAsAwayAtHome) {
@@ -108,7 +108,7 @@ public class UserService {
       return;
     }
     user.setFailedPings(0);
-    Observable.fromRunnable(() -> userConfigRepository.save(user)).subscribeOn(RxHelper.blockingScheduler(vertx));
+    Observable.fromRunnable(() -> userConfigRepository.save(user)).subscribeOn(RxHelper.blockingScheduler(vertx)).subscribe();
 
     if (!presenceMap.get(user.getName())) {
       presenceMap.put(user.getName(), true);
@@ -117,7 +117,7 @@ public class UserService {
   }
 
   private void notifyPresenceMapChanged() {
-    Observable.fromRunnable(() -> presenceMap$.onNext(presenceMap));
+    Observable.fromRunnable(() -> presenceMap$.onNext(presenceMap)).subscribeOn(RxHelper.blockingScheduler(vertx)).subscribe();
   }
 
   private boolean canPingIp(UserConfig userConfig) {

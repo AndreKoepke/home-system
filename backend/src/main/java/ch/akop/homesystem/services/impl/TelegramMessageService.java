@@ -107,6 +107,10 @@ public class TelegramMessageService {
   }
 
   public TelegramMessageService sendFunnyMessageToMainChannel(@Nullable String message) {
+    if (message == null) {
+      return this;
+    }
+
     sendMessageToMainChannel(openAIService.requestText(message));
     return this;
   }
