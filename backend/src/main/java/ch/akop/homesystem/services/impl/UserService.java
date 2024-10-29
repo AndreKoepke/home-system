@@ -19,6 +19,7 @@ import java.net.InetAddress;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -121,7 +122,9 @@ public class UserService {
   }
 
   private void notifyPresenceMapChanged() {
-    Observable.fromRunnable(() -> presenceMap$.onNext(presenceMap)).subscribeOn(RxHelper.blockingScheduler(vertx)).subscribe();
+    Observable.fromRunnable(() -> presenceMap$.onNext(new HashMap<>(presenceMap)))
+        .subscribeOn(RxHelper.blockingScheduler(vertx))
+        .subscribe();
   }
 
   private boolean canPingIp(UserConfig userConfig) {
