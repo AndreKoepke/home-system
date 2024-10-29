@@ -70,7 +70,7 @@ public class TelegramMessageService {
           },
           exception -> {
             if (exception.response() != null) {
-              log.error("Telegram an∆swered with an error. Code: " + exception.response().errorCode()
+              log.error("Telegram answered with an error. Code: " + exception.response().errorCode()
                   + " \n"
                   + exception.response().description());
             } else {

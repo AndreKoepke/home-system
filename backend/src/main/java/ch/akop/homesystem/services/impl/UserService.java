@@ -79,6 +79,8 @@ public class UserService {
   @SneakyThrows
   private void updatePresence(UserConfig user) {
     runningCheckers.incrementAndGet();
+
+    log.info("Checking presence for user {}", user.getName());
     do {
       if (canPingIp(user)) {
         reportUserIsAtHome(user);
@@ -86,7 +88,8 @@ public class UserService {
         reportUserIsNotAtHome(user);
       }
       Thread.sleep(10000);
-    } while (discoverUntil.isBefore(LocalDateTime.now()));
+    } while (discoverUntil.isAfter(LocalDateTime.now()));
+    log.info("Finished presence check for user {}", user.getName());
 
     runningCheckers.decrementAndGet();
   }

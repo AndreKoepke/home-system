@@ -146,7 +146,6 @@ public class NormalState extends Activatable implements State {
     super.dispose();
   }
 
-  @Transactional
   @ConsumeEvent(value = GENERAL, blocking = true)
   public void event(Event event) {
 

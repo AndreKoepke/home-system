@@ -5,14 +5,12 @@ import static ch.akop.homesystem.util.RandomUtil.pickRandomElement;
 import static ch.akop.weathercloud.rain.RainUnit.MILLIMETER_PER_HOUR;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
-import ch.akop.homesystem.external.openai.OpenAIService;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.model.config.BasicConfig;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.services.impl.DeviceService;
-import ch.akop.homesystem.services.impl.ImageCreatorService;
 import ch.akop.homesystem.services.impl.StateService;
 import ch.akop.homesystem.services.impl.TelegramMessageService;
 import ch.akop.homesystem.services.impl.UserService;
@@ -67,8 +65,6 @@ public class SleepState implements State {
   private final WeatherService weatherService;
   private final UserService userService;
   private final BasicConfigRepository basicConfigRepository;
-  private final ImageCreatorService imageCreatorService;
-  private final OpenAIService openAIService;
   private final Vertx vertx;
 
   private Scheduler rxScheduler;
@@ -162,24 +158,24 @@ public class SleepState implements State {
   }
 
   public void checkPresenceMapWhenLeave() {
-    var currentPresence = userService.getPresenceMap$().blockingFirst();
-
-    if (!currentPresence.equals(presenceAtBeginning)) {
-      currentPresence.forEach((user, isAtHome) -> {
-        if (!presenceAtBeginning.get(user).equals(isAtHome)) {
-          messageService.sendFunnyMessageToMainChannel("In der Nacht ist %s %s".formatted(user,
-              Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen."));
-        }
-      });
-    }
+    userService.getPresenceMap$()
+        .take(1)
+        .subscribeOn(rxScheduler)
+        .filter(currentPresence -> !currentPresence.equals(presenceAtBeginning))
+        .subscribe(currentPresence -> {
+          currentPresence.forEach((user, isAtHome) -> {
+            if (!presenceAtBeginning.get(user).equals(isAtHome)) {
+              messageService.sendFunnyMessageToMainChannel("In der Nacht ist %s %s".formatted(user,
+                  Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen."));
+            }
+          });
+        });
 
     presenceAtBeginning = null;
   }
 
-  @Transactional
   @ConsumeEvent(value = GENERAL, blocking = true)
   public void event(Event event) {
-
     if (!(stateService.getCurrentState() instanceof SleepState)) {
       return;
     }
