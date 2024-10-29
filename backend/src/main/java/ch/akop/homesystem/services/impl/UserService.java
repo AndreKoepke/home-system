@@ -98,8 +98,9 @@ public class UserService {
     user.increaseFailedPings();
     Observable.fromRunnable(() -> userConfigRepository.save(user)).subscribeOn(RxHelper.blockingScheduler(vertx)).subscribe();
 
-    var userAppearsAsAwayAtHome = user.getFailedPings() < ALLOWED_FAILS;
-    if (presenceMap.get(user.getName()) && !userAppearsAsAwayAtHome) {
+    var userAppearsToNotBeAtHome = user.getFailedPings() > ALLOWED_FAILS;
+    if (presenceMap.get(user.getName()) && userAppearsToNotBeAtHome) {
+      log.info("{} is not at home anymore", user.getName());
       presenceMap.put(user.getName(), false);
       notifyPresenceMapChanged();
     }
@@ -113,6 +114,7 @@ public class UserService {
     Observable.fromRunnable(() -> userConfigRepository.save(user)).subscribeOn(RxHelper.blockingScheduler(vertx)).subscribe();
 
     if (!presenceMap.get(user.getName())) {
+      log.info("{} is now at home", user.getName());
       presenceMap.put(user.getName(), true);
       notifyPresenceMapChanged();
     }

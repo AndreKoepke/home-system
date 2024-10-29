@@ -169,9 +169,9 @@ public class SleepState implements State {
                   Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen."));
             }
           });
-        });
 
-    presenceAtBeginning = null;
+          presenceAtBeginning = null;
+        });
   }
 
   @ConsumeEvent(value = GENERAL, blocking = true)
