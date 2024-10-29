@@ -41,7 +41,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.e175.klaus.solarpositioning.AzimuthZenithAngle;
+import net.e175.klaus.solarpositioning.SolarPosition;
 import org.jetbrains.annotations.NotNull;
 
 @Slf4j
@@ -132,8 +132,8 @@ public class RollerShutterService {
     var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
     var compassDirection = resolveCompassDirection(sunDirection);
 
-    log.info("Sun angles. Zenith %5.0f Azimuth %5.0f (%s)".formatted(sunDirection.getZenithAngle(),
-        sunDirection.getAzimuth(),
+    log.info("Sun angles. Zenith %5.0f Azimuth %5.0f (%s)".formatted(sunDirection.zenithAngle(),
+        sunDirection.azimuth(),
         compassDirection));
 
     return configs.stream()
@@ -158,7 +158,7 @@ public class RollerShutterService {
 
   @NotNull
   private Completable handleWeatherUpdate(RollerShutterConfig config,
-      AzimuthZenithAngle sunDirection,
+      SolarPosition sunDirection,
       CompassDirection compassDirection,
       Weather weather) {
     var rollerShutter = getRollerShutter(config);
@@ -172,7 +172,7 @@ public class RollerShutterService {
       if (!config.getCompassDirection().contains(compassDirection)) {
         return rollerShutter.open("wrong compass direction");
       }
-      return openBasedOnZenithAngle(config, rollerShutter, sunDirection.getZenithAngle());
+      return openBasedOnZenithAngle(config, rollerShutter, sunDirection.zenithAngle());
     } else if (light.isBiggerThan(10, KILO_LUX) && highSunLock.isGateOpen()) {
       return rollerShutter.open("not much light outside");
     } else if (isOkToClose(config) && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
@@ -263,9 +263,9 @@ public class RollerShutterService {
     disposables.forEach(Disposable::dispose);
   }
 
-  private CompassDirection resolveCompassDirection(AzimuthZenithAngle sunDirection) {
+  private CompassDirection resolveCompassDirection(SolarPosition sunDirection) {
     return Arrays.stream(CompassDirection.values())
-        .min(Comparator.comparing(value -> Math.abs(value.getDirection() - sunDirection.getAzimuth())))
+        .min(Comparator.comparing(value -> Math.abs(value.getDirection() - sunDirection.azimuth())))
         .orElseThrow(() -> new NoSuchElementException("Can't resolve direction for %s".formatted(sunDirection)));
   }
 
