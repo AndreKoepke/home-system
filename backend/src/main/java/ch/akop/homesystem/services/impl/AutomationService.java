@@ -20,6 +20,7 @@ import ch.akop.homesystem.models.events.Event;
 import ch.akop.homesystem.persistence.model.config.BasicConfig;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.persistence.repository.config.OffButtonConfigRepository;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;
 import java.util.ArrayList;
@@ -83,7 +84,7 @@ public class AutomationService {
               .skip(1)
               .distinctUntilChanged()
               .throttleLatest(MARCEL_CONSTANT_SECONDS, TimeUnit.SECONDS)
-              .subscribe(this::mainDoorStateChanged));
+              .subscribe(state -> QuarkusTransaction.requiringNew().run(() -> mainDoorStateChanged(state))));
 
       //noinspection ResultOfMethodCallIgnored
       closeContact.getState$()

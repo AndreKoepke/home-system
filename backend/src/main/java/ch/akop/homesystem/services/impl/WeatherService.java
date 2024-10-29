@@ -102,7 +102,15 @@ public class WeatherService {
   @Transactional
   public SolarPosition getCurrentSunDirection() {
     return basicConfigRepository.findByOrderByModifiedDesc()
-        .map(config -> Grena3.calculateSolarPosition(ZonedDateTime.now(), config.getLatitude(), config.getLongitude(), 68))
+        .map(config -> {
+
+          if (config.getLatitude() == null || config.getLongitude() == null) {
+            log.warn("Latitude or longitude is not set");
+            return null;
+          }
+
+          return Grena3.calculateSolarPosition(ZonedDateTime.now(), config.getLatitude(), config.getLongitude(), 68);
+        })
         .orElseThrow(() -> new RuntimeException("No basic config"));
   }
 

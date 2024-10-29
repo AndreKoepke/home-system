@@ -63,7 +63,6 @@ public class UserService {
   }
 
   @ConsumeEvent(value = GENERAL, blocking = true)
-  @Transactional
   public void gotEvent(Event event) {
     if (event == Event.DOOR_CLOSED && runningCheckers.get() == 0) {
       log.info("Start discovering users ...");
