@@ -61,6 +61,7 @@ public class UserService {
             UserConfig::getName,
             user -> user.getFailedPings() < ALLOWED_FAILS
         ));
+    presenceMap$.onNext(presenceMap);
   }
 
   @ConsumeEvent(value = GENERAL, blocking = true)
@@ -141,6 +142,7 @@ public class UserService {
 
   public Flowable<Boolean> isAnyoneAtHome$() {
     return presenceMap$
+        .distinctUntilChanged()
         .subscribeOn(RxHelper.blockingScheduler(vertx))
         .map(presenceMapUpdate -> presenceMapUpdate.values().stream().anyMatch(isAtHome -> isAtHome))
         .toFlowable(BackpressureStrategy.ERROR);

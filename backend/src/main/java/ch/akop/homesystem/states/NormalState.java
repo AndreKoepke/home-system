@@ -120,7 +120,6 @@ public class NormalState extends Activatable implements State {
 
     super.disposeWhenClosed(userService.isAnyoneAtHome$()
         .skip(1)
-        .distinctUntilChanged()
         .filter(anyOneAtHome -> deviceService.isAnyLightOn())
         .delay(10, TimeUnit.MINUTES)
         .switchMap(this::shouldLightsTurnedOff)
