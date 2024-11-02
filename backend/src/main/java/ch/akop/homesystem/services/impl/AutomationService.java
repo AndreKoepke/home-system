@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
@@ -52,7 +53,6 @@ public class AutomationService {
 
   @SuppressWarnings("rawtypes")
   private final Map<Class<? extends Device>, List<Device<?>>> knownDevices = new HashMap<>();
-
 
   @SneakyThrows
   public void discoverNewDevices() {
@@ -101,7 +101,13 @@ public class AutomationService {
       //noinspection ResultOfMethodCallIgnored
       cube.getActiveSide$()
           .skip(1)
-          .subscribe(activeSide -> eventPublisher.publish(CUBE, new CubeEvent(cube.getName(), determineFlippedSide(activeSide))));
+          .filter(Objects::nonNull)
+          .subscribe(activeSide -> {
+            var eventType = determineFlippedSide(activeSide);
+            if (eventType != null) {
+              eventPublisher.publish(CUBE, new CubeEvent(cube.getName(), eventType));
+            }
+          });
       //noinspection ResultOfMethodCallIgnored
       cube.getShacked$()
           .subscribe(empty -> eventPublisher.publish(CUBE, new CubeEvent(cube.getName(), CubeEventType.SHAKED)));
@@ -116,13 +122,14 @@ public class AutomationService {
       case 4 -> CubeEventType.FLIPPED_TO_SIDE_4;
       case 5 -> CubeEventType.FLIPPED_TO_SIDE_5;
       case 6 -> CubeEventType.FLIPPED_TO_SIDE_6;
-      default -> throw new IllegalArgumentException("Cube-Side %d not existing".formatted(side));
+      default -> null;
     };
   }
 
   @ConsumeEvent(value = BUTTON_INTERNAL, blocking = true)
   public void buttonWasPressed(ButtonPressInternalEvent internalEvent) {
     if (wasCentralOffPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
+      deviceService.turnAllLightsOff();
       eventPublisher.publish(GENERAL, Event.CENTRAL_OFF_PRESSED);
     } else if (wasGoodNightButtonPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
       eventPublisher.publish(GENERAL, Event.GOOD_NIGHT_PRESSED);

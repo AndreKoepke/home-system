@@ -40,7 +40,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
@@ -126,17 +125,13 @@ public class NormalState extends Activatable implements State {
         .filter(canTurnOff -> canTurnOff)
         .subscribe(canTurnOff -> deviceService.turnAllLightsOff()));
 
-    super.disposeWhenClosed(messageService.getMessages()
-        .filter(message -> message.startsWith("/sleep"))
-        .take(1)
+    super.disposeWhenClosed(messageService.waitForMessageOnce("sleep")
         .subscribe(message -> {
           messageService.sendFunnyMessageToMainChannel("Ok, gute Nacht.");
           stateService.activateStateQuietly(SleepState.class);
         }));
 
-    super.disposeWhenClosed(messageService.getMessages()
-        .filter(message -> message.startsWith("/holiday"))
-        .take(1)
+    super.disposeWhenClosed(messageService.waitForMessageOnce("holiday")
         .subscribe(ignored -> stateService.switchState(HolidayState.class)));
   }
 
@@ -156,7 +151,7 @@ public class NormalState extends Activatable implements State {
       case DOOR_OPENED -> startMainDoorOpenAnimation();
       case DOOR_CLOSED -> log.info("MAIN-DOOR IS CLOSED!");
       case GOOD_NIGHT_PRESSED -> stateService.switchState(SleepState.class);
-      case CENTRAL_OFF_PRESSED -> doCentralOff();
+      case CENTRAL_OFF_PRESSED -> canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
     }
   }
 
@@ -196,12 +191,6 @@ public class NormalState extends Activatable implements State {
     }
   }
 
-  @SneakyThrows
-  private void doCentralOff() {
-    canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
-    deviceService.turnAllLightsOff();
-  }
-
   private Flowable<Boolean> shouldLightsTurnedOff(boolean anyOneAtHome) {
 
     if (anyOneAtHome) {
@@ -211,10 +200,7 @@ public class NormalState extends Activatable implements State {
     messageService.sendMessageToMainChannel("Es niemand zu Hause, deswegen mache ich gleich die Lichter aus." +
         "Es sei denn, /lassAn");
 
-    return messageService.getMessages()
-        .map(String::trim)
-        .filter(message -> message.startsWith("/lassAn"))
-        .take(1)
+    return messageService.waitForMessageOnce("lassAn")
         .map(s -> false)
         .timeout(5, TimeUnit.MINUTES)
         .onErrorReturn(throwable -> true)

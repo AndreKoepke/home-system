@@ -110,8 +110,7 @@ public class SleepState implements State {
         .subscribeOn(rxScheduler)
         .subscribe(a -> stateService.switchState(NormalState.class)));
 
-    disposeWhenLeaveState.add(messageService.getMessages()
-        .filter(message -> message.startsWith("/aufwachen"))
+    disposeWhenLeaveState.add(messageService.waitForMessageOnce("aufwachen")
         .subscribeOn(rxScheduler)
         .subscribe(ignored -> stateService.switchState(NormalState.class)));
 

@@ -64,15 +64,18 @@ public class RollerShutterService {
   private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
   private final TimedGateKeeper highSunLock = new TimedGateKeeper();
 
+  private Boolean blockedByUser = false;
+
   @Transactional
   public void init() {
     var rxScheduler = RxHelper.blockingScheduler(vertx, false);
     disposables.add(weatherService.getWeather()
         .subscribeOn(rxScheduler)
         .doOnNext(this::checkWindSpeed)
-        .mergeWith(telegramMessageService.getMessages()
-            .filter(message -> message.startsWith("/calcRollerShutter"))
-            .switchMap(message -> weatherService.getWeather().take(1)))
+        .mergeWith(telegramMessageService.waitForMessageOnce("calcRollerShutter")
+            .repeat()
+            .switchMap(message -> weatherService.getWeather().take(1))
+        )
         .debounce(10, SECONDS)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
         .retryWhen(origin -> origin
@@ -80,8 +83,7 @@ public class RollerShutterService {
             .delay(5, TimeUnit.MINUTES))
         .subscribe());
 
-    disposables.add(telegramMessageService.getMessages()
-        .filter(message -> message.startsWith("/noAutomaticsForRollerShutter"))
+    disposables.add(telegramMessageService.waitForMessageOnce("noAutomaticsForRollerShutter")
         .subscribeOn(rxScheduler)
         .doOnNext(message -> telegramMessageService.sendMessageToMainChannel("Ok, welche Störe soll ich eine Zeit in Ruhe lassen?"))
         .doOnNext(message -> deviceService.getDevicesOfType(RollerShutter.class)
@@ -104,7 +106,15 @@ public class RollerShutterService {
                 }))
                 .take(1)
             ))
+        .repeat()
         .subscribe());
+
+    disposables.add(telegramMessageService.waitForMessageOnce("lassDieStörenMal")
+        .repeat()
+        .subscribe(message -> {
+          telegramMessageService.sendFunnyMessageToMainChannel("Ok ok, ich lasse die Stören bis zum Abend in Ruhe");
+          blockedByUser = true;
+        }));
 
     initTimer();
   }
@@ -132,7 +142,7 @@ public class RollerShutterService {
     var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
     var compassDirection = resolveCompassDirection(sunDirection);
 
-    log.info("Sun angles. Zenith %5.0f Azimuth %5.0f (%s)".formatted(sunDirection.zenithAngle(),
+    log.info("Sun angles. Zenith %3.0f Azimuth %3.0f (%s)".formatted(sunDirection.zenithAngle(),
         sunDirection.azimuth(),
         compassDirection));
 
@@ -176,6 +186,7 @@ public class RollerShutterService {
     } else if (light.isBiggerThan(10, KILO_LUX) && highSunLock.isGateOpen()) {
       return rollerShutter.open("not much light outside");
     } else if (isOkToClose(config) && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
+      blockedByUser = false;
       return rollerShutter.close("night");
     }
 
@@ -192,9 +203,10 @@ public class RollerShutterService {
     return Completable.complete();
   }
 
-  private static boolean isOkToOpen(RollerShutterConfig config) {
+  private boolean isOkToOpen(RollerShutterConfig config) {
     return (config.getOpenAt() == null || config.getOpenAt().isBefore(LocalTime.now()))
-        && (config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now()));
+        && (config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now()))
+        && !blockedByUser;
   }
 
   private static boolean isOkToClose(RollerShutterConfig config) {

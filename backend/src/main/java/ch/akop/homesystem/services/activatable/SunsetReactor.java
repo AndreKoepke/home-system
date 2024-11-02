@@ -65,9 +65,7 @@ public class SunsetReactor extends Activatable {
       }
 
       messageService.sendMessageToMainChannel("Es wird dunkel ... ich mach mal etwas Licht. Es sei denn ... /keinlicht");
-      super.disposeWhenClosed(messageService.getMessages()
-          .filter(message -> message.startsWith("/keinlicht"))
-          .take(1)
+      super.disposeWhenClosed(messageService.waitForMessageOnce("keinLicht")
           .timeout(5, TimeUnit.MINUTES)
           .subscribe(s -> {
           }, ignored -> activeSunsetScenes()));
