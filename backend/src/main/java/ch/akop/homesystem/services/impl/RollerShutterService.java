@@ -109,7 +109,7 @@ public class RollerShutterService {
         .repeat()
         .subscribe());
 
-    disposables.add(telegramMessageService.waitForMessageOnce("lassDieStörenMal")
+    disposables.add(telegramMessageService.waitForMessageOnce("keineSonne")
         .repeat()
         .subscribe(message -> {
           telegramMessageService.sendFunnyMessageToMainChannel("Ok ok, ich lasse die Stören bis zum Abend in Ruhe");
