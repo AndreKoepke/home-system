@@ -22,4 +22,4 @@ spec:
   tls:
     - hosts:
         - {{ .Values.frontend.host }}
-      secretName: home-system
+      secretName: home-system-frontend
