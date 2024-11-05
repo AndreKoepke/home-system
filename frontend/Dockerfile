@@ -8,6 +8,7 @@ RUN yarn install --frozen-lockfile
 COPY . ./
 RUN npm run build
 
+# use SSR, so a running node is necessary
 FROM node:20-alpine
 WORKDIR /usr/app
 COPY --from=build /usr/src/app/dist/home-system ./
