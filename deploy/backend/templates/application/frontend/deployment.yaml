@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels:
+    product: home-system
+    component: frontend
+
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      product: home-system
+      component: frontend
+
+  template:
+    metadata:
+      labels:
+        product: home-system
+        component: frontend
+
+      annotations:
+        # enforce k8s to restart the pod
+        rollme: {{ randAlphaNum 5 | quote }}
+
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: backend
+          image: {{ .Values.frontend.image.base }}:{{ .Values.frontend.image.tag }}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4000
+              name: http
+              protocol: TCP

@@ -1,2 +1,6 @@
-<app-navigation></app-navigation>
 <router-outlet></router-outlet>
+<div class="navbar">
+  <a [class.active]="activeRoute() == '/'" href="#">Home</a>
+  <a [class.active]="activeRoute() == '/train'" href="/train">Zug</a>
+</div>
+

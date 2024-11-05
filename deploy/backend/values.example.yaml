@@ -3,6 +3,12 @@ image:
   tag: latest
 
 host: host-which-will-be-used-for-telegram.webhook.com
+frontend:
+  image:
+    base: akop/home-system-frontend
+    tag: latest
+  host: host-which-will-be-used-for-frontend.webhook.com
+
 timezone: Europe/Berlin
 
 database:

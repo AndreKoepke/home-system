@@ -1,0 +1,50 @@
+name: Publish backend to DockerHub
+on:
+  push:
+    branches: [ master, feature/* ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/publish-frontend.yml'
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: frontend/
+          file: frontend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          pull: true
+          tags: akop/home-system-frontend:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: publish
+    steps:
+      - run: sudo apt install wireguard
+      - run: echo "${{ secrets.WIREGUARD_CLIENT_PRIVATE_KEY }}" > privatekey
+      - run: sudo ip link add dev wg0 type wireguard
+      - run: sudo ip address add dev wg0 ${{ secrets.WIREGUARD_CLIENT_IP }} peer ${{ secrets.WIREGUARD_ALLOWED_IPS }}
+      - run: sudo wg set wg0 private-key privatekey peer ${{ secrets.WIREGUARD_SERVER_PUBLIC_KEY }} allowed-ips ${{ secrets.WIREGUARD_ALLOWED_IPS }} endpoint ${{ secrets.WIREGUARD_ENDPOINT }}
+      - run: sudo ip link set up dev wg0
+
+      - uses: actions/checkout@v3
+      - name: Deploy
+        uses: WyriHaximus/github-action-helm3@v3
+        with:
+          exec: echo '${{ secrets.VALUES_YAML_HOME_SYSTEM }}' | helm upgrade akops-home ./deploy/backend --install --wait --atomic --values -
+          kubeconfig: '${{ secrets.K8S_CONF_AKOP_ONLINE }}'
+
