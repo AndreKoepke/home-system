@@ -24,10 +24,12 @@ import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Priority(500)
 @Dependent
+@Slf4j
 public class MotionSensorService {
 
   private final MotionSensorConfigRepository motionSensorConfigRepository;
@@ -41,6 +43,14 @@ public class MotionSensorService {
   public void init() {
     // TODO restart when config changes
     motionSensorConfigRepository.findAll().stream()
+        .filter(config -> {
+          var foundMovementSensor = deviceService.findDeviceByName(config.getName(), MotionSensor.class).isPresent();
+          if (!foundMovementSensor) {
+            log.warn("MotionSensor with name {} not found", config.getName());
+            return false;
+          }
+          return true;
+        })
         .map(ConfigWithLights::new)
         .forEach(ConfigWithLights::startListing);
   }
