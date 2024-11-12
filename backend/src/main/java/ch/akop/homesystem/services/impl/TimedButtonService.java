@@ -37,7 +37,9 @@ public class TimedButtonService {
   }
 
   private void handleButtonPressed(TimedButtonConfig config) {
-    if (runningJobs.containsKey(config.getButtonName())) {
+    var isAlreadyRunning = runningJobs.containsKey(config.getButtonName());
+    log.info("Timed button {} was pressed and is {}", config.getButtonName(), isAlreadyRunning ? "already running" : "not running");
+    if (isAlreadyRunning) {
       runningJobs.get(config.getButtonName()).dispose();
       runningJobs.put(config.getButtonName(), turnLightOffAfterConfiguratedTime(config));
     } else {
