@@ -142,9 +142,9 @@ public class UserService {
 
   public Flowable<Boolean> isAnyoneAtHome$() {
     return presenceMap$
-        .distinctUntilChanged()
         .subscribeOn(RxHelper.blockingScheduler(vertx))
         .map(presenceMapUpdate -> presenceMapUpdate.values().stream().anyMatch(isAtHome -> isAtHome))
+        .distinctUntilChanged()
         .toFlowable(BackpressureStrategy.ERROR);
   }
 

@@ -118,8 +118,6 @@ public class NormalState extends Activatable implements State {
         .subscribe(this::gotNewPresenceMap));
 
     super.disposeWhenClosed(userService.isAnyoneAtHome$()
-        .skip(1)
-        .filter(anyOneAtHome -> deviceService.isAnyLightOn())
         .delay(10, TimeUnit.MINUTES)
         .switchMap(this::shouldLightsTurnedOff)
         .filter(canTurnOff -> canTurnOff)
@@ -193,7 +191,7 @@ public class NormalState extends Activatable implements State {
 
   private Flowable<Boolean> shouldLightsTurnedOff(boolean anyOneAtHome) {
 
-    if (anyOneAtHome) {
+    if (anyOneAtHome || !deviceService.isAnyLightOn()) {
       return Flowable.just(false);
     }
 
@@ -201,9 +199,10 @@ public class NormalState extends Activatable implements State {
         "Es sei denn, /lassAn");
 
     return messageService.waitForMessageOnce("lassAn")
+        .doOnNext(message -> messageService.sendMessageToMainChannel("Ok, ich lasse die Lichter an."))
         .map(s -> false)
         .timeout(5, TimeUnit.MINUTES)
-        .onErrorReturn(throwable -> true)
+        .onErrorReturn(throwable -> !userService.isAnyoneAtHome())
         .toFlowable(BackpressureStrategy.LATEST);
   }
 

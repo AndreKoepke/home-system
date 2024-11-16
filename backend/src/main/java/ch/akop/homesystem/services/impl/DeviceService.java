@@ -25,9 +25,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +46,17 @@ public class DeviceService {
   private final BasicConfigRepository basicConfigRepository;
   private final AnimationRepository animationRepository;
   private final Vertx vertx;
+
+  private Set<String> notLights;
+
+
+  @PostConstruct
+  @Transactional
+  void setNotLights() {
+    notLights = basicConfigRepository.findByOrderByModifiedDesc()
+        .map(BasicConfig::getNotLights)
+        .orElse(new HashSet<>());
+  }
 
 
   public <T extends Device<?>> Optional<T> findDeviceByName(String name, Class<T> clazz) {
@@ -99,12 +112,7 @@ public class DeviceService {
         });
   }
 
-  @Transactional
   public boolean isAnyLightOn() {
-    var notLights = basicConfigRepository.findByOrderByModifiedDesc()
-        .map(BasicConfig::getNotLights)
-        .orElse(new HashSet<>());
-
     return getDevicesOfType(SimpleLight.class)
         .stream()
         .filter(Device::isReachable)
@@ -115,7 +123,7 @@ public class DeviceService {
   @Transactional
   @ConsumeEvent(value = "home/animation/play", blocking = true)
   public void playAnimation(Animation animation) {
-    if (runningAnimations.containsKey(animation)) {
+    if (runningAnimations.containsKey(animation.getId())) {
       return;
     }
 
