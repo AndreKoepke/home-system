@@ -42,7 +42,7 @@ jobs:
         with:
           client-private-key: ${{ secrets.WIREGUARD_CLIENT_PRIVATE_KEY }}
           client-ip: ${{ secrets.WIREGUARD_CLIENT_IP }}
-          allowed-ips: ${{ WIREGUARD_ALLOWED_IPS }}
+          allowed-ips: ${{ secretsWIREGUARD_ALLOWED_IPS }}
           server-public-key: ${{ secrets.WIREGUARD_SERVER_PUBLIC_KEY }}
           endpoint: ${{ secrets.WIREGUARD_ENDPOINT }}
       - name: Deploy
