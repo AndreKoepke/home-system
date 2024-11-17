@@ -30,7 +30,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: backend
-          image: {{ .Values.frontend.image.base }}:{{ .Values.frontend.image.tag }}
+          image: {{ .Values.image.base }}:{{ .Values.image.tag }}
           imagePullPolicy: Always
           ports:
             - containerPort: 4000
