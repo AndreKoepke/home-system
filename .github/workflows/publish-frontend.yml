@@ -50,4 +50,3 @@ jobs:
         with:
           exec: echo '${{ secrets.VALUES_YAML_HOME_SYSTEM_FRONTEND }}' | helm upgrade akops-home-frontend ./deploy/frontend --install --wait --atomic --values -
           kubeconfig: '${{ secrets.K8S_CONF_AKOP_ONLINE }}'
-
