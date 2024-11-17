@@ -2,7 +2,7 @@ name: Connect to wireguard
 # Schema: https://json.schemastore.org/github-action.json
 
 runs:
-  using: 'composite'
+  using: composite
   steps:
     - run: sudo apt install wireguard
     - run: echo "${{ secrets.WIREGUARD_CLIENT_PRIVATE_KEY }}" > privatekey
