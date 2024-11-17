@@ -6,19 +6,19 @@ defaults:
     shell: bash
 
 inputs:
-  WIREGUARD_CLIENT_PRIVATE_KEY:
+  client-private-key:
     description: 'Private Client Key'
     required: true
-  WIREGUARD_CLIENT_IP:
+  client-ip:
     description: 'IP for the client'
     required: true
-  WIREGUARD_ALLOWED_IPS:
+  allowed-ips:
     description: 'Allowed IPs'
     required: true
-  WIREGUARD_SERVER_PUBLIC_KEY:
+  server-public-key:
     description: 'Public key of the server'
     required: true
-  WIREGUARD_ENDPOINT:
+  endpoint:
     description: 'Endpoint of the server'
     required: true
 
@@ -27,9 +27,9 @@ runs:
   using: composite
   steps:
     - run: sudo apt install wireguard
-    - run: echo "${{ inputs.WIREGUARD_CLIENT_PRIVATE_KEY }}" > privatekey
+    - run: echo "${{ inputs.client-private-key }}" > privatekey
     - run: sudo ip link add dev wg0 type wireguard
-    - run: sudo ip address add dev wg0 ${{ inputs.WIREGUARD_CLIENT_IP }} peer ${{ inputs.WIREGUARD_ALLOWED_IPS }}
-    - run: sudo wg set wg0 private-key privatekey peer ${{ inputs.WIREGUARD_SERVER_PUBLIC_KEY }} allowed-ips ${{ inputs.WIREGUARD_ALLOWED_IPS }} endpoint ${{ inputs.WIREGUARD_ENDPOINT }}
+    - run: sudo ip address add dev wg0 ${{ inputs.client-ip }} peer ${{ inputs.allowed-ips }}
+    - run: sudo wg set wg0 private-key privatekey peer ${{ inputs.server-public-key }} allowed-ips ${{ inputs.allowed-ips }} endpoint ${{ inputs.endpoint }}
     - run: sudo ip link set up dev wg0
 

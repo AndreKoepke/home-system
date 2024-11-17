@@ -37,13 +37,14 @@ jobs:
     needs: publish
     steps:
       - uses: actions/checkout@v4
-      - uses: ./deploy/connect-with-wireguard
+      - id: wireguard
+        uses: ./deploy/connect-with-wireguard
         with:
-          WIREGUARD_CLIENT_PRIVATE_KEY: ${{ secrets.WIREGUARD_CLIENT_PRIVATE_KEY }}
-          WIREGUARD_CLIENT_IP: ${{ secrets.WIREGUARD_CLIENT_IP }}
-          WIREGUARD_ALLOWED_IPS: ${{ WIREGUARD_ALLOWED_IPS }}
-          WIREGUARD_SERVER_PUBLIC_KEY: ${{ secrets.WIREGUARD_SERVER_PUBLIC_KEY }}
-          WIREGUARD_ENDPOINT: ${{ secrets.WIREGUARD_ENDPOINT }}
+          client-private-key: ${{ secrets.WIREGUARD_CLIENT_PRIVATE_KEY }}
+          client-ip: ${{ secrets.WIREGUARD_CLIENT_IP }}
+          allowed-ips: ${{ WIREGUARD_ALLOWED_IPS }}
+          server-public-key: ${{ secrets.WIREGUARD_SERVER_PUBLIC_KEY }}
+          endpoint: ${{ secrets.WIREGUARD_ENDPOINT }}
       - name: Deploy
         uses: WyriHaximus/github-action-helm3@v3
         with:
