@@ -37,7 +37,7 @@ jobs:
     needs: publish
     steps:
       - uses: actions/checkout@v4
-      - uses: ./deploy/connect-to-wireguard.yml
+      - uses: ./deploy/connect-with-wireguard
       - name: Deploy
         uses: WyriHaximus/github-action-helm3@v3
         with:
