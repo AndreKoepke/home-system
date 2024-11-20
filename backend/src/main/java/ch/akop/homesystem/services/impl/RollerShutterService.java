@@ -1,6 +1,8 @@
 package ch.akop.homesystem.services.impl;
 
+import static ch.akop.homesystem.models.devices.actor.RollerShutter.BLOCK_TIME_WHEN_HIGH_WIND;
 import static ch.akop.homesystem.util.Comparer.is;
+import static ch.akop.homesystem.util.TimeUtil.getLocalDateTimeForTodayOrTomorrow;
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 import static ch.akop.weathercloud.wind.WindSpeedUnit.METERS_PER_SECOND;
@@ -122,8 +124,22 @@ public class RollerShutterService {
   private void checkWindSpeed(Weather weather) {
     if (weather.getWind().isBiggerThan(10, METERS_PER_SECOND)) {
       telegramMessageService.sendMessageToMainChannel("Hui das ist sehr winding. Ich mach die Stören hoch.");
+      var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
       deviceService.getDevicesOfType(RollerShutter.class)
-          .forEach(RollerShutter::reportHighWind);
+          .forEach(restoreAfter -> {
+            var openAfterWindAlert = configs.stream()
+                .filter(config -> config.getCloseAt() != null && config.getOpenAt() != null)
+                .filter(config -> {
+                  var windAlertEndsAt = LocalDateTime.now().plus(BLOCK_TIME_WHEN_HIGH_WIND);
+
+                  return windAlertEndsAt.isBefore(getLocalDateTimeForTodayOrTomorrow(config.getOpenAt()))
+                      && windAlertEndsAt.isAfter(getLocalDateTimeForTodayOrTomorrow(config.getCloseAt()));
+                })
+                .map(config -> true)
+                .findFirst()
+                .orElse(false);
+            restoreAfter.reportHighWind(openAfterWindAlert);
+          });
     }
   }
 
