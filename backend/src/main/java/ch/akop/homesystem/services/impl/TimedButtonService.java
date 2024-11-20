@@ -39,13 +39,11 @@ public class TimedButtonService {
   private void handleButtonPressed(TimedButtonConfig config) {
     var isAlreadyRunning = runningJobs.containsKey(config.getButtonName());
     log.info("Timed button {} was pressed and is {}", config.getButtonName(), isAlreadyRunning ? "already running" : "not running");
+    forEveryLight(config, SimpleLight::turnOn);
     if (isAlreadyRunning) {
       runningJobs.get(config.getButtonName()).dispose();
-      runningJobs.put(config.getButtonName(), turnLightOffAfterConfiguratedTime(config));
-    } else {
-      forEveryLight(config, SimpleLight::turnOn);
-      runningJobs.put(config.getButtonName(), turnLightOffAfterConfiguratedTime(config));
     }
+    runningJobs.put(config.getButtonName(), turnLightOffAfterConfiguratedTime(config));
   }
 
   @NotNull
