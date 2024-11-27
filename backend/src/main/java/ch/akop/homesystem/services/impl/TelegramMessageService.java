@@ -5,6 +5,7 @@ import static java.util.Optional.ofNullable;
 import ch.akop.homesystem.external.openai.OpenAIService;
 import ch.akop.homesystem.persistence.model.config.TelegramConfig;
 import ch.akop.homesystem.persistence.repository.config.TelegramConfigRepository;
+import ch.akop.homesystem.util.RandomUtil;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.BotCommand;
@@ -115,7 +116,11 @@ public class TelegramMessageService {
       return this;
     }
 
-    sendMessageToMainChannel(openAIService.requestText(message));
+    if (RandomUtil.yesOrNo(0.1)) {
+      message = openAIService.requestText(message).orElse(message);
+    }
+    sendMessageToMainChannel(message);
+
     return this;
   }
 
