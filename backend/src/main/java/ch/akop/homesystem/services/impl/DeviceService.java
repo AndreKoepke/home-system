@@ -49,12 +49,12 @@ public class DeviceService {
 
   private Set<String> notLights;
 
-
   @PostConstruct
   @Transactional
   void setNotLights() {
     notLights = basicConfigRepository.findByOrderByModifiedDesc()
         .map(BasicConfig::getNotLights)
+            .map(HashSet::new)
         .orElse(new HashSet<>());
   }
 
