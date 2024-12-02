@@ -9,6 +9,7 @@ import ch.akop.homesystem.persistence.model.config.MotionSensorConfig;
 import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigRepository;
 import ch.akop.homesystem.states.NormalState;
 import ch.akop.homesystem.states.SleepState;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.vertx.core.Vertx;
@@ -91,8 +92,9 @@ public class MotionSensorService {
 
     public void startListing() {
       stateService.getCurrrentState$()
+          .skip(1)
           .subscribeOn(RxHelper.blockingScheduler(vertx, false))
-          .subscribe(newState -> this.referencedLights = resolveLights());
+          .subscribe(newState -> QuarkusTransaction.requiringNew().run(() -> this.referencedLights = resolveLights()));
 
       sensor.getIsMoving$()
           .subscribeOn(Schedulers.io())
