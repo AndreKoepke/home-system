@@ -30,6 +30,10 @@ public class LightnessControlledDeviceService {
         .map(Weather::getLight)
         .subscribeOn(rxScheduler)
         .subscribe(this::handleWeatherUpdate);
+
+    configRepository.findAll().stream()
+        .flatMap(config -> deviceService.findDeviceByName(config.getName(), SimpleLight.class).stream())
+        .forEach(deviceService::registerAControlledLight);
   }
 
   private void handleWeatherUpdate(Light lightOutside) {

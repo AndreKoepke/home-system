@@ -58,6 +58,9 @@ public class DeviceService {
         .orElse(new HashSet<>());
   }
 
+  public void registerAControlledLight(Device<?> device) {
+    notLights.add(device.getId());
+  }
 
   public <T extends Device<?>> Optional<T> findDeviceByName(String name, Class<T> clazz) {
     return getDevicesOfType(clazz)
