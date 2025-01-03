@@ -2,18 +2,26 @@ package ch.akop.homesystem.services.impl;
 
 import static java.util.Optional.ofNullable;
 
+import ch.akop.homesystem.external.openai.OpenAIService;
 import ch.akop.homesystem.persistence.model.config.TelegramConfig;
 import ch.akop.homesystem.persistence.repository.config.TelegramConfigRepository;
+import ch.akop.homesystem.util.RandomUtil;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
+import com.pengrad.telegrambot.model.BotCommand;
 import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.botcommandscope.BotCommandsScopeChat;
 import com.pengrad.telegrambot.request.DeleteWebhook;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.request.SetMyCommands;
 import com.pengrad.telegrambot.request.SetWebhook;
 import io.quarkus.runtime.Startup;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
@@ -33,12 +41,15 @@ import org.jetbrains.annotations.Nullable;
 public class TelegramMessageService {
 
   private final TelegramConfigRepository telegramConfigRepository;
+  private final OpenAIService openAIService;
 
   @Setter(AccessLevel.NONE)
   private TelegramBot bot;
 
   @Getter
   private final Subject<String> messages = PublishSubject.create();
+
+  private String mainChannelChatId;
 
   @PostConstruct
   @Transactional
@@ -50,6 +61,7 @@ public class TelegramMessageService {
       return;
     }
     var config = configOpt.get();
+    mainChannelChatId = config.getMainChannel();
 
     bot = new TelegramBot.Builder(config.getBotToken())
         .updateListenerSleep(5000)
@@ -68,7 +80,7 @@ public class TelegramMessageService {
           },
           exception -> {
             if (exception.response() != null) {
-              log.error("Telegram an∆swered with an error. Code: " + exception.response().errorCode()
+              log.error("Telegram answered with an error. Code: " + exception.response().errorCode()
                   + " \n"
                   + exception.response().description());
             } else {
@@ -91,29 +103,35 @@ public class TelegramMessageService {
     bot.execute(request);
   }
 
-  @Transactional
-  public TelegramMessageService sendMessageToMainChannel(@Nullable String message) {
+  public void sendMessageToMainChannel(@Nullable String message) {
 
+    if (message == null) {
+      return;
+    }
+    sendMessageToUser(message, mainChannelChatId);
+  }
+
+  public TelegramMessageService sendFunnyMessageToMainChannel(@Nullable String message) {
     if (message == null) {
       return this;
     }
 
-    ofNullable(telegramConfigRepository.getFirstByOrderByModifiedDesc())
-        .ifPresent(config -> sendMessageToUser(message, config.getMainChannel()));
+    if (RandomUtil.yesOrNo(0.1)) {
+      message = openAIService.requestText(message).orElse(message);
+    }
+    sendMessageToMainChannel(message);
 
     return this;
   }
 
-  public TelegramMessageService sendMessageToUser(@Nullable String message, @NonNull String chatId) {
-    return sendMessageToUser(message, List.of(chatId));
+  public void sendMessageToUser(@Nullable String message, @NonNull String chatId) {
+    sendMessageToUser(message, List.of(chatId));
   }
 
-  public TelegramMessageService sendMessageToUser(@Nullable String message, @NonNull List<String> chatIds) {
+  public void sendMessageToUser(@Nullable String message, @NonNull List<String> chatIds) {
     if (bot != null) {
       chatIds.forEach(chatId -> bot.execute(new SendMessage(chatId, message)));
     }
-
-    return this;
   }
 
   @Transactional
@@ -122,6 +140,31 @@ public class TelegramMessageService {
         .filter(telegramConfig -> telegramConfig.getBotPath() != null)
         .filter(telegramConfig -> telegramConfig.getBotToken().equals(transferredApiKey))
         .ifPresent(config -> consumeUpdate(update, config));
+  }
+
+
+  private final Set<BotCommand> availableCommands = new HashSet<>();
+
+
+  public Observable<String> waitForMessageOnce(String slashCommand) {
+    var toLower = slashCommand.toLowerCase();
+    var newCommand = new BotCommand(toLower, slashCommand);
+    availableCommands.add(newCommand);
+
+    updateBotCommands();
+
+    return getMessages()
+        .filter(message -> message.startsWith("/" + toLower))
+        .take(1)
+        .doFinally(() -> {
+          availableCommands.remove(newCommand);
+          updateBotCommands();
+        });
+  }
+
+  private void updateBotCommands() {
+    bot.execute(new SetMyCommands(availableCommands.toArray(new BotCommand[0]))
+        .scope(new BotCommandsScopeChat(mainChannelChatId)));
   }
 
   private void consumeUpdate(@Nullable Update update, @NonNull TelegramConfig config) {

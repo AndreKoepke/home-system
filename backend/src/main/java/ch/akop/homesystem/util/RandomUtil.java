@@ -15,4 +15,7 @@ public class RandomUtil {
     return elements.get(RANDOM.nextInt(elements.size()));
   }
 
+  public static boolean yesOrNo(double changeForYes) {
+    return RANDOM.nextDouble() < changeForYes;
+  }
 }

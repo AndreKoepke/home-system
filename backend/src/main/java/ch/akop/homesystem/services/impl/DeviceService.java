@@ -14,15 +14,22 @@ import ch.akop.homesystem.persistence.repository.config.AnimationRepository;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.util.SleepUtil;
 import io.quarkus.vertx.ConsumeEvent;
-import io.vertx.core.impl.ConcurrentHashSet;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.vertx.core.Vertx;
+import io.vertx.rxjava3.RxHelper;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -35,10 +42,25 @@ import lombok.extern.slf4j.Slf4j;
 public class DeviceService {
 
   private final List<Device<?>> devices = new ArrayList<>();
-  private final Set<Animation> runningAnimations = new ConcurrentHashSet<>();
+  private final Map<UUID, Disposable> runningAnimations = new ConcurrentHashMap<>();
   private final BasicConfigRepository basicConfigRepository;
   private final AnimationRepository animationRepository;
+  private final Vertx vertx;
 
+  private Set<String> notLights;
+
+  @PostConstruct
+  @Transactional
+  void setNotLights() {
+    notLights = basicConfigRepository.findByOrderByModifiedDesc()
+        .map(BasicConfig::getNotLights)
+            .map(HashSet::new)
+        .orElse(new HashSet<>());
+  }
+
+  public void registerAControlledLight(Device<?> device) {
+    notLights.add(device.getId());
+  }
 
   public <T extends Device<?>> Optional<T> findDeviceByName(String name, Class<T> clazz) {
     return getDevicesOfType(clazz)
@@ -93,12 +115,7 @@ public class DeviceService {
         });
   }
 
-  @Transactional
   public boolean isAnyLightOn() {
-    var notLights = basicConfigRepository.findByOrderByModifiedDesc()
-        .map(BasicConfig::getNotLights)
-        .orElse(new HashSet<>());
-
     return getDevicesOfType(SimpleLight.class)
         .stream()
         .filter(Device::isReachable)
@@ -109,19 +126,34 @@ public class DeviceService {
   @Transactional
   @ConsumeEvent(value = "home/animation/play", blocking = true)
   public void playAnimation(Animation animation) {
-    if (runningAnimations.contains(animation)) {
+    if (runningAnimations.containsKey(animation.getId())) {
       return;
     }
 
-    runningAnimations.add(animation);
+    log.info("Start animation {}", animation.getId());
     var freshAnimation = animationRepository.getOne(animation.getId());
-    freshAnimation.play(this);
-    runningAnimations.remove(animation);
+    var animationSteps = freshAnimation.materializeSteps();
+
+    runningAnimations.put(animation.getId(), Observable.fromRunnable(() -> animationSteps
+            .forEach(step -> {
+              if (runningAnimations.containsKey(animation.getId())) {
+                step.play(this);
+              }
+            }))
+        .subscribeOn(RxHelper.blockingScheduler(vertx))
+        .subscribe(ignore -> runningAnimations.remove(animation.getId())));
   }
 
   @Transactional
   @ConsumeEvent(value = "home/animation/turn-off", blocking = true)
   public void turnAnimationOff(Animation animation) {
+    log.info("Stop animation {}", animation.getId());
+
+    if (runningAnimations.containsKey(animation.getId())) {
+      runningAnimations.get(animation.getId()).dispose();
+      runningAnimations.remove(animation.getId());
+    }
+
     var lights = animationRepository.getOne(animation.getId()).getLights();
     getDevicesOfType(SimpleLight.class)
         .stream()

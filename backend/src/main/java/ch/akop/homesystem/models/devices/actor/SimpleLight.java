@@ -43,10 +43,6 @@ public class SimpleLight extends Actor<SimpleLight> {
     this.getFunctionToTurnOnOrOff().accept(nextState);
   }
 
-  public boolean isCurrentlyOff() {
-    return !this.currentStateIsOn;
-  }
-
   @Override
   protected void consumeInternalUpdate(State update) {
     currentStateIsOn = update.getOn();

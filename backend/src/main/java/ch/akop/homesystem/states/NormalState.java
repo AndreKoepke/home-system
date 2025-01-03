@@ -35,11 +35,11 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
+import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
@@ -68,7 +68,7 @@ public class NormalState extends Activatable implements State {
   private Map<String, Boolean> lastPresenceMap;
 
 
-  void registerState(@Observes StartupEvent startupEvent) {
+  void registerState(@Observes @Priority(100) StartupEvent startupEvent) {
     stateService.registerState(NormalState.class, this);
   }
 
@@ -84,7 +84,7 @@ public class NormalState extends Activatable implements State {
   private void gotNewPresenceMap(Map<String, Boolean> presenceMap) {
     presenceMap.forEach((user, isAtHome) -> {
       if (!lastPresenceMap.get(user).equals(isAtHome)) {
-        messageService.sendMessageToMainChannel("%s ist %s".formatted(user,
+        messageService.sendFunnyMessageToMainChannel("%s ist %s".formatted(user,
             Boolean.TRUE.equals(isAtHome) ? "nach Hause gekommen." : "weggegangen"));
       }
     });
@@ -107,7 +107,7 @@ public class NormalState extends Activatable implements State {
     super.disposeWhenClosed(sunsetReactor.start());
 
     if (!quiet && rainDetectorService.noRainFor().toDays() > 1) {
-      messageService.sendMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
+      messageService.sendFunnyMessageToMainChannel("Es hat seit %s Tagen nicht geregnet. Giessen nicht vergessen."
           .formatted(rainDetectorService.noRainFor().toDays()));
     }
 
@@ -118,25 +118,18 @@ public class NormalState extends Activatable implements State {
         .subscribe(this::gotNewPresenceMap));
 
     super.disposeWhenClosed(userService.isAnyoneAtHome$()
-        .skip(1)
-        .distinctUntilChanged()
-        .filter(anyOneAtHome -> deviceService.isAnyLightOn())
         .delay(10, TimeUnit.MINUTES)
         .switchMap(this::shouldLightsTurnedOff)
         .filter(canTurnOff -> canTurnOff)
         .subscribe(canTurnOff -> deviceService.turnAllLightsOff()));
 
-    super.disposeWhenClosed(messageService.getMessages()
-        .filter(message -> message.startsWith("/sleep"))
-        .take(1)
+    super.disposeWhenClosed(messageService.waitForMessageOnce("sleep")
         .subscribe(message -> {
-          messageService.sendMessageToMainChannel("Ok, gute Nacht.");
+          messageService.sendFunnyMessageToMainChannel("Ok, gute Nacht.");
           stateService.activateStateQuietly(SleepState.class);
         }));
 
-    super.disposeWhenClosed(messageService.getMessages()
-        .filter(message -> message.startsWith("/holiday"))
-        .take(1)
+    super.disposeWhenClosed(messageService.waitForMessageOnce("holiday")
         .subscribe(ignored -> stateService.switchState(HolidayState.class)));
   }
 
@@ -145,7 +138,6 @@ public class NormalState extends Activatable implements State {
     super.dispose();
   }
 
-  @Transactional
   @ConsumeEvent(value = GENERAL, blocking = true)
   public void event(Event event) {
 
@@ -157,7 +149,7 @@ public class NormalState extends Activatable implements State {
       case DOOR_OPENED -> startMainDoorOpenAnimation();
       case DOOR_CLOSED -> log.info("MAIN-DOOR IS CLOSED!");
       case GOOD_NIGHT_PRESSED -> stateService.switchState(SleepState.class);
-      case CENTRAL_OFF_PRESSED -> doCentralOff();
+      case CENTRAL_OFF_PRESSED -> canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
     }
   }
 
@@ -197,34 +189,26 @@ public class NormalState extends Activatable implements State {
     }
   }
 
-  @SneakyThrows
-  private void doCentralOff() {
-    canStartMainDoorAnimation.blockFor(DEFAULT_DURATION_ANIMATION_BLOCKER);
-    deviceService.turnAllLightsOff();
-  }
-
   private Flowable<Boolean> shouldLightsTurnedOff(boolean anyOneAtHome) {
 
-    if (anyOneAtHome) {
+    if (anyOneAtHome || !deviceService.isAnyLightOn()) {
       return Flowable.just(false);
     }
 
     messageService.sendMessageToMainChannel("Es niemand zu Hause, deswegen mache ich gleich die Lichter aus." +
         "Es sei denn, /lassAn");
 
-    return messageService.getMessages()
-        .map(String::trim)
-        .filter(message -> message.startsWith("/lassAn"))
-        .take(1)
+    return messageService.waitForMessageOnce("lassAn")
+        .doOnNext(message -> messageService.sendMessageToMainChannel("Ok, ich lasse die Lichter an."))
         .map(s -> false)
         .timeout(5, TimeUnit.MINUTES)
-        .onErrorReturn(throwable -> true)
+        .onErrorReturn(throwable -> !userService.isAnyoneAtHome())
         .toFlowable(BackpressureStrategy.LATEST);
   }
 
   private void startMainDoorOpenAnimation() {
     log.info("MAIN-DOOR IS OPENED!");
-    messageService.sendMessageToMainChannel("Wohnungstür wurde geöffnet.");
+    messageService.sendFunnyMessageToMainChannel("Wohnungstür wurde geöffnet.");
 
     if (!canStartMainDoorAnimation.isGateOpen() || deviceService.isAnyLightOn()) {
       return;

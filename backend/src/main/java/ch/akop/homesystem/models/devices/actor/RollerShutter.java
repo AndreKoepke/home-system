@@ -146,9 +146,19 @@ public class RollerShutter extends Actor<RollerShutter> {
     return setLiftAndThenTilt(0, 0, reason);
   }
 
-  public void reportHighWind() {
+  public void reportHighWind(boolean restoreAfter) {
+    var previousLift = currentLift;
+    var previousTilt = currentTilt;
     open("high wind").subscribe();
     highWindLock.blockFor(BLOCK_TIME_WHEN_HIGH_WIND);
+
+    if (restoreAfter) {
+      Observable.timer(BLOCK_TIME_WHEN_HIGH_WIND.getSeconds(), TimeUnit.SECONDS)
+          .take(1)
+          .filter(__ -> highWindLock.isGateOpen())
+          .switchMapCompletable(__ -> setLiftAndThenTilt(previousLift, previousTilt, "restore after high wind"))
+          .subscribe();
+    }
   }
 
   @Override

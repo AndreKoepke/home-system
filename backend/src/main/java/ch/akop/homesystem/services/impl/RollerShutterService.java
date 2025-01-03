@@ -1,6 +1,8 @@
 package ch.akop.homesystem.services.impl;
 
+import static ch.akop.homesystem.models.devices.actor.RollerShutter.BLOCK_TIME_WHEN_HIGH_WIND;
 import static ch.akop.homesystem.util.Comparer.is;
+import static ch.akop.homesystem.util.TimeUtil.getLocalDateTimeForTodayOrTomorrow;
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 import static ch.akop.weathercloud.wind.WindSpeedUnit.METERS_PER_SECOND;
@@ -41,7 +43,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.e175.klaus.solarpositioning.AzimuthZenithAngle;
+import net.e175.klaus.solarpositioning.SolarPosition;
 import org.jetbrains.annotations.NotNull;
 
 @Slf4j
@@ -64,15 +66,18 @@ public class RollerShutterService {
   private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
   private final TimedGateKeeper highSunLock = new TimedGateKeeper();
 
+  private Boolean blockedByUser = false;
+
   @Transactional
   public void init() {
     var rxScheduler = RxHelper.blockingScheduler(vertx, false);
     disposables.add(weatherService.getWeather()
         .subscribeOn(rxScheduler)
         .doOnNext(this::checkWindSpeed)
-        .mergeWith(telegramMessageService.getMessages()
-            .filter(message -> message.startsWith("/calcRollerShutter"))
-            .switchMap(message -> weatherService.getWeather().take(1)))
+        .mergeWith(telegramMessageService.waitForMessageOnce("calcRollerShutter")
+            .repeat()
+            .switchMap(message -> weatherService.getWeather().take(1))
+        )
         .debounce(10, SECONDS)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
         .retryWhen(origin -> origin
@@ -80,8 +85,7 @@ public class RollerShutterService {
             .delay(5, TimeUnit.MINUTES))
         .subscribe());
 
-    disposables.add(telegramMessageService.getMessages()
-        .filter(message -> message.startsWith("/noAutomaticsForRollerShutter"))
+    disposables.add(telegramMessageService.waitForMessageOnce("noAutomaticsForRollerShutter")
         .subscribeOn(rxScheduler)
         .doOnNext(message -> telegramMessageService.sendMessageToMainChannel("Ok, welche Störe soll ich eine Zeit in Ruhe lassen?"))
         .doOnNext(message -> deviceService.getDevicesOfType(RollerShutter.class)
@@ -104,7 +108,15 @@ public class RollerShutterService {
                 }))
                 .take(1)
             ))
+        .repeat()
         .subscribe());
+
+    disposables.add(telegramMessageService.waitForMessageOnce("keineSonne")
+        .repeat()
+        .subscribe(message -> {
+          telegramMessageService.sendFunnyMessageToMainChannel("Ok ok, ich lasse die Stören bis zum Abend in Ruhe");
+          blockedByUser = true;
+        }));
 
     initTimer();
   }
@@ -112,8 +124,22 @@ public class RollerShutterService {
   private void checkWindSpeed(Weather weather) {
     if (weather.getWind().isBiggerThan(10, METERS_PER_SECOND)) {
       telegramMessageService.sendMessageToMainChannel("Hui das ist sehr winding. Ich mach die Stören hoch.");
+      var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
       deviceService.getDevicesOfType(RollerShutter.class)
-          .forEach(RollerShutter::reportHighWind);
+          .forEach(restoreAfter -> {
+            var openAfterWindAlert = configs.stream()
+                .filter(config -> config.getCloseAt() != null && config.getOpenAt() != null)
+                .filter(config -> {
+                  var windAlertEndsAt = LocalDateTime.now().plus(BLOCK_TIME_WHEN_HIGH_WIND);
+
+                  return windAlertEndsAt.isBefore(getLocalDateTimeForTodayOrTomorrow(config.getOpenAt()))
+                      && windAlertEndsAt.isAfter(getLocalDateTimeForTodayOrTomorrow(config.getCloseAt()));
+                })
+                .map(config -> true)
+                .findFirst()
+                .orElse(false);
+            restoreAfter.reportHighWind(openAfterWindAlert);
+          });
     }
   }
 
@@ -132,8 +158,8 @@ public class RollerShutterService {
     var sunDirection = QuarkusTransaction.requiringNew().call(weatherService::getCurrentSunDirection);
     var compassDirection = resolveCompassDirection(sunDirection);
 
-    log.info("Sun angles. Zenith %5.0f Azimuth %5.0f (%s)".formatted(sunDirection.getZenithAngle(),
-        sunDirection.getAzimuth(),
+    log.info("Sun angles. Zenith %3.0f Azimuth %3.0f (%s)".formatted(sunDirection.zenithAngle(),
+        sunDirection.azimuth(),
         compassDirection));
 
     return configs.stream()
@@ -158,7 +184,7 @@ public class RollerShutterService {
 
   @NotNull
   private Completable handleWeatherUpdate(RollerShutterConfig config,
-      AzimuthZenithAngle sunDirection,
+      SolarPosition sunDirection,
       CompassDirection compassDirection,
       Weather weather) {
     var rollerShutter = getRollerShutter(config);
@@ -172,10 +198,11 @@ public class RollerShutterService {
       if (!config.getCompassDirection().contains(compassDirection)) {
         return rollerShutter.open("wrong compass direction");
       }
-      return openBasedOnZenithAngle(config, rollerShutter, sunDirection.getZenithAngle());
+      return openBasedOnZenithAngle(config, rollerShutter, sunDirection.zenithAngle());
     } else if (light.isBiggerThan(10, KILO_LUX) && highSunLock.isGateOpen()) {
       return rollerShutter.open("not much light outside");
     } else if (isOkToClose(config) && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
+      blockedByUser = false;
       return rollerShutter.close("night");
     }
 
@@ -192,9 +219,10 @@ public class RollerShutterService {
     return Completable.complete();
   }
 
-  private static boolean isOkToOpen(RollerShutterConfig config) {
+  private boolean isOkToOpen(RollerShutterConfig config) {
     return (config.getOpenAt() == null || config.getOpenAt().isBefore(LocalTime.now()))
-        && (config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now()));
+        && (config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now()))
+        && !blockedByUser;
   }
 
   private static boolean isOkToClose(RollerShutterConfig config) {
@@ -263,9 +291,9 @@ public class RollerShutterService {
     disposables.forEach(Disposable::dispose);
   }
 
-  private CompassDirection resolveCompassDirection(AzimuthZenithAngle sunDirection) {
+  private CompassDirection resolveCompassDirection(SolarPosition sunDirection) {
     return Arrays.stream(CompassDirection.values())
-        .min(Comparator.comparing(value -> Math.abs(value.getDirection() - sunDirection.getAzimuth())))
+        .min(Comparator.comparing(value -> Math.abs(value.getDirection() - sunDirection.azimuth())))
         .orElseThrow(() -> new NoSuchElementException("Can't resolve direction for %s".formatted(sunDirection)));
   }
 

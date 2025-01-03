@@ -1,8 +1,14 @@
 package ch.akop.homesystem.external.openai;
 
+import static java.util.Optional.empty;
+
+import ch.akop.homesystem.external.openai.TextGenerationParameter.Message;
 import ch.akop.homesystem.persistence.repository.config.OpenAIConfigRepository;
 import java.net.URI;
 import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +27,7 @@ public class OpenAIService {
       .build(OpenAIServiceSpec.class);
 
   @Transactional
+  @Nullable
   public byte[] requestImage(String text) {
     var config = openAIConfigRepository.findFirstByOrderByModifiedDesc()
         .orElse(null);
@@ -42,19 +49,18 @@ public class OpenAIService {
   }
 
   @Transactional
-  public String requestText(String prompt) {
-    var config = openAIConfigRepository.findFirstByOrderByModifiedDesc()
-        .orElse(null);
+  public Optional<String> requestText(String prompt) {
+    return openAIConfigRepository.findFirstByOrderByModifiedDesc()
+        .map(config -> {
+          var requestBody = new TextGenerationParameter()
+              .setMessages(List.of(
+                  new Message("system", "Du bist ein irrer Wissenschaftler und liebst es verrückte Antworten zu geben. Antworte in wenigen Sätzen, am besten nur mit einem Satz."),
+                  new Message("system", "Du sollst folgende Nachricht dem User überbringen: " + prompt)));
 
-    if (config == null) {
-      log.warn("Text requested, but openAI is not configured. Ignoring.");
-      return null;
-    }
-
-    var requestBody = new TextGenerationParameter()
-        .setPrompt(prompt);
-
-    return apiWebClient.textCompletion(requestBody).getChoices().get(0).getText();
+          return apiWebClient.textCompletion(requestBody).getChoices().get(0).getMessage().getContent();
+        }).or(() -> {
+          log.warn("Text requested, but openAI is not configured. Ignoring.");
+          return empty();
+        });
   }
-
 }

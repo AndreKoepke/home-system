@@ -62,6 +62,10 @@ public class ImageCreatorService {
     var prompt = generatePrompt();
     var image = openAIService.requestImage(prompt);
 
+    if (image == null) {
+      return;
+    }
+
     // TelegramBot is broken, because of different version of OkHttp3 from Quarkus
     //messageService.sendImageToMainChannel(image, prompt);
     imageRepository.save(new ImageOfOpenAI().setPrompt(prompt).setImage(image));

@@ -11,7 +11,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.transaction.Transactional;
@@ -37,13 +37,13 @@ public class TimedButtonService {
   }
 
   private void handleButtonPressed(TimedButtonConfig config) {
-    if (runningJobs.containsKey(config.getButtonName())) {
+    var isAlreadyRunning = runningJobs.containsKey(config.getButtonName());
+    log.info("Timed button {} was pressed and is {}", config.getButtonName(), isAlreadyRunning ? "already running" : "not running");
+    forEveryLight(config, SimpleLight::turnOn);
+    if (isAlreadyRunning) {
       runningJobs.get(config.getButtonName()).dispose();
-      runningJobs.put(config.getButtonName(), turnLightOffAfterConfiguratedTime(config));
-    } else {
-      forEveryLight(config, SimpleLight::turnOn);
-      runningJobs.put(config.getButtonName(), turnLightOffAfterConfiguratedTime(config));
     }
+    runningJobs.put(config.getButtonName(), turnLightOffAfterConfiguratedTime(config));
   }
 
   @NotNull
@@ -51,6 +51,7 @@ public class TimedButtonService {
     return Observable.timer(config.getKeepOnFor().getSeconds(), TimeUnit.SECONDS)
         .take(1)
         .subscribe(aLong -> {
+          log.info("Turning timed lights off (buttonName={})", config.getButtonName());
           runningJobs.remove(config.getButtonName());
           forEveryLight(config, SimpleLight::turnOff);
         });
@@ -58,8 +59,12 @@ public class TimedButtonService {
 
   private void forEveryLight(TimedButtonConfig config, Consumer<SimpleLight> action) {
     config.getLights().stream()
-        .map(name -> deviceService.findDeviceByName(name, SimpleLight.class)
-            .orElseThrow(() -> new NoSuchElementException("Light " + name + " not found")))
+        .flatMap(name -> deviceService.findDeviceByName(name, SimpleLight.class)
+            .or(() -> {
+              log.warn("No light found for TimedButtonConfig (buttonName={},light={})", config.getButtonName(), name);
+              return Optional.empty();
+            })
+            .stream())
         .forEach(action);
   }
 }

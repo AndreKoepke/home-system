@@ -3,7 +3,6 @@ package ch.akop.homesystem.persistence.model.config;
 import ch.akop.homesystem.persistence.conveter.ListOfStringsConverter;
 import java.time.Duration;
 import java.util.List;
-import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -32,8 +31,4 @@ public class TimedButtonConfig {
   @Convert(converter = ListOfStringsConverter.class)
   private List<String> lights;
 
-
-  public boolean eventMatches(String buttonName, int buttonEvent) {
-    return Objects.equals(this.buttonName, buttonName) && Objects.equals(this.buttonEvent, buttonEvent);
-  }
 }

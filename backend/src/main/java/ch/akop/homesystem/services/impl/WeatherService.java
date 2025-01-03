@@ -12,6 +12,7 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -19,8 +20,8 @@ import javax.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.e175.klaus.solarpositioning.AzimuthZenithAngle;
 import net.e175.klaus.solarpositioning.Grena3;
+import net.e175.klaus.solarpositioning.SolarPosition;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
 @RequiredArgsConstructor
@@ -55,6 +56,12 @@ public class WeatherService {
     active = true;
     new Scraper()
         .scrape$(nearestWeatherCloudStation, Duration.of(5, MINUTES))
+        .doOnError(throwable -> log.error("There was an error while scraping data from weather cloud", throwable))
+        .retryWhen(errors$ ->
+            errors$
+                .scan(0, (numberOfTotalErrors, lastError) -> numberOfTotalErrors + 1)
+                .map(numberOfTotalErrors -> Observable.timer((long) Math.min(Math.pow(4, numberOfTotalErrors), 180), TimeUnit.SECONDS))
+        )
         .subscribe(weather::onNext);
 
     weather.subscribe(weatherUpdate -> {
@@ -93,9 +100,17 @@ public class WeatherService {
   }
 
   @Transactional
-  public AzimuthZenithAngle getCurrentSunDirection() {
+  public SolarPosition getCurrentSunDirection() {
     return basicConfigRepository.findByOrderByModifiedDesc()
-        .map(config -> Grena3.calculateSolarPosition(ZonedDateTime.now(), config.getLatitude(), config.getLongitude(), 68))
+        .map(config -> {
+
+          if (config.getLatitude() == null || config.getLongitude() == null) {
+            log.warn("Latitude or longitude is not set");
+            return null;
+          }
+
+          return Grena3.calculateSolarPosition(ZonedDateTime.now(), config.getLatitude(), config.getLongitude(), 68);
+        })
         .orElseThrow(() -> new RuntimeException("No basic config"));
   }
 

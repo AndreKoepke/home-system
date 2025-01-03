@@ -67,8 +67,7 @@ public class HolidayState extends Activatable implements State {
         .filter(anyOneAtHome -> anyOneAtHome)
         .subscribe(ignore -> stateService.switchState(NormalState.class)));
 
-    disposeWhenClosed(messageService.getMessages()
-        .filter(message -> message.startsWith("/back"))
+    disposeWhenClosed(messageService.waitForMessageOnce("back")
         .subscribe(ignore -> stateService.switchState(NormalState.class)));
   }
 
@@ -84,14 +83,14 @@ public class HolidayState extends Activatable implements State {
 
   @Override
   public void leave() {
-    messageService.sendMessageToMainChannel("Willkommen zurück. 👋");
+    messageService.sendFunnyMessageToMainChannel("Willkommen zurück. 👋");
     super.dispose();
   }
 
   @ConsumeEvent(value = GENERAL, blocking = true)
   public void event(Event event) {
     if (event == Event.DOOR_OPENED && stateService.isState(HolidayState.class)) {
-      messageService.sendMessageToMainChannel("Irgendwer ist grade in die Wohnung gegangen");
+      messageService.sendFunnyMessageToMainChannel("Irgendwer ist grade in die Wohnung gegangen");
     }
   }
 }

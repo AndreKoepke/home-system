@@ -60,14 +60,12 @@ public class SunsetReactor extends Activatable {
     if (stateService.isState(NormalState.class)) {
 
       if (!userService.isAnyoneAtHome()) {
-        messageService.sendMessageToMainChannel("Es wird dunkel ... aber weil keiner Zuhause ist, mache ich mal nichts.");
+        messageService.sendFunnyMessageToMainChannel("Es wird dunkel ... aber weil keiner Zuhause ist, mache ich mal nichts.");
         return;
       }
 
       messageService.sendMessageToMainChannel("Es wird dunkel ... ich mach mal etwas Licht. Es sei denn ... /keinlicht");
-      super.disposeWhenClosed(messageService.getMessages()
-          .filter(message -> message.startsWith("/keinlicht"))
-          .take(1)
+      super.disposeWhenClosed(messageService.waitForMessageOnce("keinLicht")
           .timeout(5, TimeUnit.MINUTES)
           .subscribe(s -> {
           }, ignored -> activeSunsetScenes()));

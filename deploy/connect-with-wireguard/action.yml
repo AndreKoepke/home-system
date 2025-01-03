@@ -1,0 +1,37 @@
+name: Connect to wireguard
+# Schema: https://json.schemastore.org/github-action.json
+
+inputs:
+  client-private-key:
+    description: 'Private Client Key'
+    required: true
+  client-ip:
+    description: 'IP for the client'
+    required: true
+  allowed-ips:
+    description: 'Allowed IPs'
+    required: true
+  server-public-key:
+    description: 'Public key of the server'
+    required: true
+  endpoint:
+    description: 'Endpoint of the server'
+    required: true
+
+
+runs:
+  using: composite
+  steps:
+    - run: sudo apt install wireguard
+      shell: bash
+    - run: echo "${{ inputs.client-private-key }}" > privatekey
+      shell: bash
+    - run: sudo ip link add dev wg0 type wireguard
+      shell: bash
+    - run: sudo ip address add dev wg0 ${{ inputs.client-ip }} peer ${{ inputs.allowed-ips }}
+      shell: bash
+    - run: sudo wg set wg0 private-key privatekey peer ${{ inputs.server-public-key }} allowed-ips ${{ inputs.allowed-ips }} endpoint ${{ inputs.endpoint }}
+      shell: bash
+    - run: sudo ip link set up dev wg0
+      shell: bash
+

@@ -102,10 +102,10 @@ public class PowerMeterService {
 
   private void stateSwitched(PowerMeterConfig powerMeterConfig, boolean isRunning) {
     if (isRunning) {
-      messageService.sendMessageToMainChannel(powerMeterConfig.getMessageWhenSwitchOn());
+      messageService.sendFunnyMessageToMainChannel(powerMeterConfig.getMessageWhenSwitchOn());
       fanService.startFan(powerMeterConfig.getLinkedFan());
     } else {
-      messageService.sendMessageToMainChannel(powerMeterConfig.getMessageWhenSwitchOff());
+      messageService.sendFunnyMessageToMainChannel(powerMeterConfig.getMessageWhenSwitchOff());
       fanService.stopFan(powerMeterConfig.getLinkedFan());
     }
   }

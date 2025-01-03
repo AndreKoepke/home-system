@@ -9,6 +9,7 @@ public abstract class Device<T extends Device<?>> {
 
   private String name;
   private String id;
+  private String uniqueId;
   private boolean reachable;
 
   protected abstract void consumeInternalUpdate(State update);
@@ -27,6 +28,11 @@ public abstract class Device<T extends Device<?>> {
 
   public T setId(String id) {
     this.id = id;
+    return (T) this;
+  }
+
+  public T setUniqueId(String uniqueId) {
+    this.uniqueId = uniqueId;
     return (T) this;
   }
   //</editor-fold>

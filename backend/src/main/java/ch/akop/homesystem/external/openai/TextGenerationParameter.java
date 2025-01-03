@@ -1,16 +1,18 @@
 package ch.akop.homesystem.external.openai;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import lombok.Data;
 
 @Data
 public class TextGenerationParameter {
 
-  private String prompt;
-  private String model = "text-davinci-003";
-  private double temperature = 1.1;
+  private List<Message> messages;
+  private String model = "gpt-4";
 
-  @JsonProperty("max_tokens")
-  private int maxTokens = 100;
+  public record Message(
+      String role,
+      String content
+  ) {
 
+  }
 }

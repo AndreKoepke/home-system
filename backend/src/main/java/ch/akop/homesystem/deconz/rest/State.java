@@ -49,8 +49,12 @@ public class State {
 
   private Integer buttonevent;
   private Boolean presence;
+  private Integer targetdistance;
   private Boolean dark;
 
+  private Integer lightlevel;
+  private Integer lux;
+  private Boolean daylight;
 
   private String lastupdated;
 }
