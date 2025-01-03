@@ -79,6 +79,7 @@ public class MotionSensorService {
     public ConfigWithLights(MotionSensorConfig config) {
       this.config = config;
       this.referencedLights = resolveLights();
+      this.referencedLights.forEach( deviceService::registerAControlledLight);
       this.sensor = MotionSensorService.this.deviceService.findDeviceByName(config.getName(), MotionSensor.class)
           .orElseThrow(() -> new NoSuchElementException("MotionSensor '" + config.getName() + "' not found"));
     }
