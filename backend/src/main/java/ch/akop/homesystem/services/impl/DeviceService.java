@@ -47,19 +47,19 @@ public class DeviceService {
   private final AnimationRepository animationRepository;
   private final Vertx vertx;
 
-  private Set<String> ignoreLightIdsForCentralFunctions;
+  private Set<String> ignoreLightIdsOrNamesForCentralFunctions;
 
   @PostConstruct
   @Transactional
-  void setIgnoreLightIdsForCentralFunctions() {
-    ignoreLightIdsForCentralFunctions = basicConfigRepository.findByOrderByModifiedDesc()
+  void setIgnoreLightIdsOrNamesForCentralFunctions() {
+    ignoreLightIdsOrNamesForCentralFunctions = basicConfigRepository.findByOrderByModifiedDesc()
         .map(BasicConfig::getNotLights)
         .map(HashSet::new)
         .orElse(new HashSet<>());
   }
 
   public void registerAControlledLight(Device<?> device) {
-    ignoreLightIdsForCentralFunctions.add(device.getId());
+    ignoreLightIdsOrNamesForCentralFunctions.add(device.getId());
   }
 
   public <T extends Device<?>> Optional<T> findDeviceByName(String name, Class<T> clazz) {
@@ -95,7 +95,7 @@ public class DeviceService {
 
   public void turnAllLightsOff() {
     getDevicesOfType(SimpleLight.class).stream()
-        .filter(light -> !ignoreLightIdsForCentralFunctions.contains(light.getId()))
+        .filter(this::isLightUsableForCentralFunctions)
         .filter(Device::isReachable)
         .forEach(light -> {
           // see #74, if the commands are cumming to fast, then maybe lights are not correctly off
@@ -114,7 +114,7 @@ public class DeviceService {
     return getDevicesOfType(SimpleLight.class)
         .stream()
         .filter(Device::isReachable)
-        .filter(light -> !ignoreLightIdsForCentralFunctions.contains(light.getId()))
+        .filter(this::isLightUsableForCentralFunctions)
         .anyMatch(SimpleLight::isCurrentStateIsOn);
   }
 
@@ -162,5 +162,10 @@ public class DeviceService {
         .flatMap(group -> group.getScenes().stream())
         .filter(scene -> scene.getName().equals(sceneName))
         .forEach(Scene::activate);
+  }
+
+  private boolean isLightUsableForCentralFunctions(SimpleLight light) {
+    return !ignoreLightIdsOrNamesForCentralFunctions.contains(light.getId())
+        && !ignoreLightIdsOrNamesForCentralFunctions.contains(light.getName());
   }
 }
