@@ -47,19 +47,19 @@ public class DeviceService {
   private final AnimationRepository animationRepository;
   private final Vertx vertx;
 
-  private Set<String> notLights;
+  private Set<String> ignoreLightIdsOrNamesForCentralFunctions;
 
   @PostConstruct
   @Transactional
-  void setNotLights() {
-    notLights = basicConfigRepository.findByOrderByModifiedDesc()
+  void setIgnoreLightIdsOrNamesForCentralFunctions() {
+    ignoreLightIdsOrNamesForCentralFunctions = basicConfigRepository.findByOrderByModifiedDesc()
         .map(BasicConfig::getNotLights)
-            .map(HashSet::new)
+        .map(HashSet::new)
         .orElse(new HashSet<>());
   }
 
   public void registerAControlledLight(Device<?> device) {
-    notLights.add(device.getId());
+    ignoreLightIdsOrNamesForCentralFunctions.add(device.getId());
   }
 
   public <T extends Device<?>> Optional<T> findDeviceByName(String name, Class<T> clazz) {
@@ -93,14 +93,9 @@ public class DeviceService {
         .collect(Collectors.toSet());
   }
 
-  @Transactional
   public void turnAllLightsOff() {
-    var notLights = basicConfigRepository.findByOrderByModifiedDesc()
-        .map(BasicConfig::getNotLights)
-        .orElse(new HashSet<>());
-
     getDevicesOfType(SimpleLight.class).stream()
-        .filter(light -> !notLights.contains(light.getName()))
+        .filter(this::isLightUsableForCentralFunctions)
         .filter(Device::isReachable)
         .forEach(light -> {
           // see #74, if the commands are cumming to fast, then maybe lights are not correctly off
@@ -119,7 +114,7 @@ public class DeviceService {
     return getDevicesOfType(SimpleLight.class)
         .stream()
         .filter(Device::isReachable)
-        .filter(light -> !notLights.contains(light.getName()))
+        .filter(this::isLightUsableForCentralFunctions)
         .anyMatch(SimpleLight::isCurrentStateIsOn);
   }
 
@@ -167,5 +162,10 @@ public class DeviceService {
         .flatMap(group -> group.getScenes().stream())
         .filter(scene -> scene.getName().equals(sceneName))
         .forEach(Scene::activate);
+  }
+
+  private boolean isLightUsableForCentralFunctions(SimpleLight light) {
+    return !ignoreLightIdsOrNamesForCentralFunctions.contains(light.getId())
+        && !ignoreLightIdsOrNamesForCentralFunctions.contains(light.getName());
   }
 }
