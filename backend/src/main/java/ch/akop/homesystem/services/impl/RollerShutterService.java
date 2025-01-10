@@ -60,13 +60,14 @@ public class RollerShutterService {
   private final WeatherService weatherService;
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
   private final TelegramMessageService telegramMessageService;
+  private final UserService userService;
   private final Vertx vertx;
 
   private final List<Disposable> disposables = new ArrayList<>();
   private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
   private final TimedGateKeeper highSunLock = new TimedGateKeeper();
 
-  private Boolean blockedByUser = false;
+  private boolean blockedByUser = false;
 
   @Transactional
   public void init() {
@@ -114,9 +115,28 @@ public class RollerShutterService {
     disposables.add(telegramMessageService.waitForMessageOnce("keineSonne")
         .repeat()
         .subscribe(message -> {
-          telegramMessageService.sendFunnyMessageToMainChannel("Ok ok, ich lasse die Stören bis zum Abend in Ruhe");
+          telegramMessageService.sendFunnyMessageToMainChannel("Ok ok, ich lasse die Stören bis zum Abend in Ruhe. "
+              + "Oder soll ich wieder? /dochWiederSonne");
           blockedByUser = true;
         }));
+
+    disposables.add(telegramMessageService.waitForMessageOnce("dochWiederSonne")
+        .repeat()
+        .subscribe(message -> {
+          if (blockedByUser) {
+            telegramMessageService.sendFunnyMessageToMainChannel("Ok, ich spiele wieder mit den Stören. Yay.");
+            blockedByUser = false;
+          } else {
+            telegramMessageService.sendFunnyMessageToMainChannel("Aber ... ich ignoriere sie doch eh schon nicht. :O");
+          }
+        }));
+
+    disposables.add(userService.isAnyoneAtHome$()
+        .distinctUntilChanged()
+        .filter(anyoneAtHome -> !anyoneAtHome && blockedByUser)
+        .subscribe(anyoneAtHome -> telegramMessageService.sendFunnyMessageToMainChannel("Jetzt wo alle weg sind ... "
+            + "soll ich /dochWiederSonne machen?"))
+    );
 
     initTimer();
   }
@@ -194,15 +214,20 @@ public class RollerShutterService {
       return Completable.complete();
     }
 
-    if (light.isBiggerThan(config.getHighSunLevel(), KILO_LUX)) {
+    if (light.isBiggerThan(config.getHighSunLevel(), KILO_LUX) && !blockedByUser) {
       if (!config.getCompassDirection().contains(compassDirection)) {
         return rollerShutter.open("wrong compass direction");
       }
       return openBasedOnZenithAngle(config, rollerShutter, sunDirection.zenithAngle());
-    } else if (light.isBiggerThan(10, KILO_LUX) && highSunLock.isGateOpen()) {
+    } else if (light.isBiggerThan(10, KILO_LUX) && highSunLock.isGateOpen() && !blockedByUser) {
       return rollerShutter.open("not much light outside");
     } else if (isOkToClose(config) && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
-      blockedByUser = false;
+
+      if (blockedByUser) {
+        telegramMessageService.sendFunnyMessageToMainChannel("Jetzt ist Nacht, deswegen steuere die Stören wieder wie üblich.");
+        blockedByUser = false;
+      }
+
       return rollerShutter.close("night");
     }
 
@@ -221,8 +246,7 @@ public class RollerShutterService {
 
   private boolean isOkToOpen(RollerShutterConfig config) {
     return (config.getOpenAt() == null || config.getOpenAt().isBefore(LocalTime.now()))
-        && (config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now()))
-        && !blockedByUser;
+        && (config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now()));
   }
 
   private static boolean isOkToClose(RollerShutterConfig config) {
