@@ -9,7 +9,6 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.persistence.model.animation.Animation;
-import ch.akop.homesystem.persistence.model.config.BasicConfig;
 import ch.akop.homesystem.persistence.repository.config.AnimationRepository;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.util.SleepUtil;
@@ -53,13 +52,14 @@ public class DeviceService {
   @Transactional
   void setIgnoreLightIdsOrNamesForCentralFunctions() {
     ignoreLightIdsOrNamesForCentralFunctions = basicConfigRepository.findByOrderByModifiedDesc()
-        .map(BasicConfig::getNotLights)
-        .map(HashSet::new)
+        .map(basicConfig -> basicConfig.getNotLights().stream()
+            .map(String::toLowerCase)
+            .collect(Collectors.toSet()))
         .orElse(new HashSet<>());
   }
 
   public void registerAControlledLight(Device<?> device) {
-    ignoreLightIdsOrNamesForCentralFunctions.add(device.getId());
+    ignoreLightIdsOrNamesForCentralFunctions.add(device.getId().toLowerCase());
   }
 
   public <T extends Device<?>> Optional<T> findDeviceByName(String name, Class<T> clazz) {
@@ -165,7 +165,7 @@ public class DeviceService {
   }
 
   private boolean isLightUsableForCentralFunctions(SimpleLight light) {
-    return !ignoreLightIdsOrNamesForCentralFunctions.contains(light.getId())
-        && !ignoreLightIdsOrNamesForCentralFunctions.contains(light.getName());
+    return !ignoreLightIdsOrNamesForCentralFunctions.contains(light.getId().toLowerCase())
+        && !ignoreLightIdsOrNamesForCentralFunctions.contains(light.getName().toLowerCase());
   }
 }
