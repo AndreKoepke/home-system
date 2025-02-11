@@ -9,6 +9,7 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.persistence.model.animation.Animation;
+import ch.akop.homesystem.persistence.model.animation.steps.Step;
 import ch.akop.homesystem.persistence.repository.config.AnimationRepository;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.util.SleepUtil;
@@ -85,7 +86,6 @@ public class DeviceService {
     return new ArrayList<>(devices);
   }
 
-
   public <T extends Device<?>> Collection<T> getDevicesOfType(Class<T> clazz) {
     return devices.stream()
         .filter(clazz::isInstance)
@@ -129,14 +129,21 @@ public class DeviceService {
     var freshAnimation = animationRepository.getOne(animation.getId());
     var animationSteps = freshAnimation.materializeSteps();
 
-    runningAnimations.put(animation.getId(), Observable.fromRunnable(() -> animationSteps
-            .forEach(step -> {
-              if (runningAnimations.containsKey(animation.getId())) {
-                step.play(this);
-              }
-            }))
+    runningAnimations.put(animation.getId(), Observable.fromRunnable(() -> playAllAnimation(animation, animationSteps))
         .subscribeOn(RxHelper.blockingScheduler(vertx))
-        .subscribe(ignore -> runningAnimations.remove(animation.getId())));
+        .subscribe(o -> {}));
+  }
+
+  private void playAllAnimation(Animation animation, List<? extends Step> steps) {
+    try {
+      steps.stream()
+          .filter(step -> runningAnimations.containsKey(animation.getId()))
+          .forEach(step -> step.play(this));
+    } catch (Exception e) {
+      log.error("Error playing animation {}", animation.getId(), e);
+    } finally {
+      runningAnimations.remove(animation.getId());
+    }
   }
 
   @Transactional
