@@ -34,7 +34,7 @@ public class AuthenticationService {
             .setToken(UUID.randomUUID().toString())))
         .subscribe(savedAuth -> telegramMessageService
             .sendMessageToMainChannel("Ok, der neue Token wurde erstellt. Du kannst jetzt mit folgender Url verwenden: "
-                + baseUrl + "?apikey=" + savedAuth.getToken()));
+                + baseUrl + "?api-key=" + savedAuth.getToken()));
   }
 
   public boolean isAuthenticated(String token) {
