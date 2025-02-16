@@ -9,21 +9,23 @@ export class AuthService {
 
   public apiKey: string | undefined;
 
-  constructor(route: ActivatedRoute, @Inject(PLATFORM_ID) platformId: Object) {
+  constructor(private route: ActivatedRoute, @Inject(PLATFORM_ID) platformId: Object) {
     if (isPlatformBrowser(platformId)) {
-
-      let fromLocalStorage = localStorage.getItem('api-key') || undefined;
-
-      console.log(`>>>> look up api-key from localStorage`, fromLocalStorage);
-
-      if (fromLocalStorage === undefined || fromLocalStorage === '' || fromLocalStorage === 'undefined') {
-        const newKey = route.snapshot.params['api-key'];
-        localStorage.setItem('api-key', newKey);
-        fromLocalStorage = newKey;
-      }
-
-      this.apiKey = fromLocalStorage!;
+      this.tryToFindApiKey();
     }
+  }
+
+  private tryToFindApiKey() {
+    let fromLocalStorage = localStorage.getItem('api-key') || undefined;
+
+    console.log(`>>>> look up api-key from localStorage`, fromLocalStorage);
+    if (fromLocalStorage === undefined || fromLocalStorage === '' || fromLocalStorage === 'undefined') {
+      const newKey = this.route.snapshot.params['api-key'];
+      localStorage.setItem('api-key', newKey);
+      fromLocalStorage = newKey;
+    }
+
+    this.apiKey = fromLocalStorage!;
   }
 
   public setKey(newKey: string): void {
@@ -37,6 +39,10 @@ export class AuthService {
   }
 
   public isAuthorized(): boolean {
+    if (this.apiKey === undefined) {
+      this.tryToFindApiKey()
+    }
+
     return this.apiKey !== undefined;
   }
 }
