@@ -12,7 +12,7 @@ export class AuthService {
   constructor(route: ActivatedRoute, @Inject(PLATFORM_ID) platformId: Object) {
     if (isPlatformBrowser(platformId)) {
 
-      let fromLocalStorage = localStorage.getItem('api-key');
+      let fromLocalStorage = localStorage.getItem('api-key') || undefined;
 
       console.log(`>>>> look up api-key from localStorage`, fromLocalStorage);
 
