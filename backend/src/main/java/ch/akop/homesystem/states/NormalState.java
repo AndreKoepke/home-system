@@ -211,6 +211,7 @@ public class NormalState extends Activatable implements State {
     messageService.sendFunnyMessageToMainChannel("Wohnungstür wurde geöffnet.");
 
     if (!canStartMainDoorAnimation.isGateOpen() || deviceService.isAnyLightOn()) {
+      log.info("Ignoring main door open. Gate is {} {}", canStartMainDoorAnimation.isGateOpen(), deviceService.isAnyLightOn() ? "and there at least one light on" : "");
       return;
     }
 
