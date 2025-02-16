@@ -28,6 +28,7 @@ public class AuthenticationService {
   @PostConstruct
   public void init() {
     telegramMessageService.waitForMessageOnce("registerNewWebUrl")
+        .repeat()
         .map(registration -> authenticationRepository.save(new AuthenticationToken()
             .setId(UUID.randomUUID())
             .setToken(UUID.randomUUID().toString())))
