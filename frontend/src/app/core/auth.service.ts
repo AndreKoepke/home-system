@@ -19,7 +19,7 @@ export class AuthService {
     let fromLocalStorage = localStorage.getItem('api-key') || undefined;
 
     console.log(`>>>> look up api-key from localStorage`, fromLocalStorage);
-    if (fromLocalStorage === undefined || fromLocalStorage === '' || fromLocalStorage === 'undefined') {
+    if (this.isApiKeySet(fromLocalStorage)) {
       const newKey = this.route.snapshot.params['api-key'];
       localStorage.setItem('api-key', newKey);
       fromLocalStorage = newKey;
@@ -39,11 +39,15 @@ export class AuthService {
   }
 
   public isAuthorized(): boolean {
-    if (this.apiKey === undefined) {
+    if (this.isApiKeySet(this.apiKey)) {
       this.tryToFindApiKey()
     }
 
-    return this.apiKey !== undefined;
+    return this.isApiKeySet(this.apiKey);
+  }
+
+  private isApiKeySet(key: string | undefined): boolean {
+    return key !== undefined && key !== '' && key !== 'undefined'
   }
 }
 
