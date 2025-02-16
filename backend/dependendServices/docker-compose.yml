@@ -1,0 +1,23 @@
+services:
+
+  database:
+    container_name: database
+    image: postgres:15.3
+    restart: always
+    volumes:
+      - database-data:/var/lib/postgresql/data
+    ports:
+      - "5555:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    environment:
+      PGPORT: 5432
+      POSTGRES_PASSWORD: super_long_and_very_secure_password_should_be_fine_okay?
+      POSTGRES_USER: postgres
+
+volumes:
+  database-data:
+    driver: local

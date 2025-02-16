@@ -1,4 +1,4 @@
-import {Component, HostListener, Signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, HostListener, Signal} from '@angular/core';
 import {NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {toSignal} from "@angular/core/rxjs-interop";
 import {filter, map} from "rxjs";
@@ -8,7 +8,8 @@ import {filter, map} from "rxjs";
   standalone: true,
   imports: [RouterOutlet],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  styleUrl: './app.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppComponent {
   title = 'home-system';

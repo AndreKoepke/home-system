@@ -11,7 +11,7 @@ spec:
     - host: {{ .Values.host }}
       http:
         paths:
-          - path: /
+          - path: /backend
             pathType: ImplementationSpecific
             backend:
               service:

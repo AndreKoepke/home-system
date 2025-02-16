@@ -28,6 +28,7 @@ import ch.akop.homesystem.services.impl.AutomationService;
 import ch.akop.homesystem.services.impl.DeviceService;
 import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
+import io.vertx.core.eventbus.EventBus;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Optional;
@@ -55,9 +56,10 @@ public class DeconzConnector {
   private final AutomationService automationService;
   private final DeconzConfigRepository deconzConfigRepository;
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
+  private final EventBus eventBus;
 
   @Getter
-  private AtomicBoolean isConnected = new AtomicBoolean(false);
+  private final AtomicBoolean isConnected = new AtomicBoolean(false);
 
   DeconzService deconzService;
 
@@ -302,12 +304,18 @@ public class DeconzConnector {
 
       deviceService.findDeviceById(update.getId(), ch.akop.homesystem.models.devices.sensor.Sensor.class)
           .ifPresent(device -> device.consumeUpdate(update.getState()));
+
+      eventBus.publish("devices/sensors/update", update.getId());
     } else if (update.getR().equals("lights")
         && update.getE().equals("changed")
         && update.getState() != null) {
 
       deviceService.findDeviceById(update.getId(), Actor.class)
           .ifPresent(device -> device.consumeUpdate(update.getState()));
+
+      eventBus.publish("devices/lights/update", update.getId());
     }
+
+
   }
 }

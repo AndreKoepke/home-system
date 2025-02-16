@@ -50,6 +50,8 @@ spec:
                 secretKeyRef:
                   key: db_pass
                   name: {{ .Release.Name }}-backend
+            - name: BASE_URL
+              value: "https://{{ .Values.host }}/"
           ports:
             - containerPort: 8080
               name: http
