@@ -12,7 +12,7 @@ spec:
       http:
         paths:
           - path: /backend
-            pathType: ImplementationSpecific
+            pathType: Prefix
             backend:
               service:
                 name: {{ .Release.Name }}-backend

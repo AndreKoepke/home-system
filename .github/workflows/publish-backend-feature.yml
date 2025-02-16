@@ -5,6 +5,7 @@ on:
     paths:
       - 'backend/src/**'
       - 'backend/build.gradle'
+      - 'deploy/backend/**'
       - '.github/workflows/publish-backend-feature.yml'
 jobs:
   publish:
