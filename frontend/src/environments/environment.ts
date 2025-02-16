@@ -4,6 +4,6 @@ export const environment = {
     // TODO inject host
     host: 'homesystem.akop.online',
     path: 'backend/',
-    webSocketProtocol: 'wss'
+    webSocketProtocol: 'wss://'
   },
 };
