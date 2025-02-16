@@ -55,8 +55,12 @@ public class DeviceChangedSocket {
 
   @SneakyThrows
   private void broadcast(Object message) {
-    var payload = objectMapper.writeValueAsString(message);
 
+    if (sessions.isEmpty()) {
+      return;
+    }
+
+    var payload = objectMapper.writeValueAsString(message);
     log.info("Sending message {}", payload);
 
     sessions.values().forEach(s -> s.getAsyncRemote().sendObject(payload, result -> {
