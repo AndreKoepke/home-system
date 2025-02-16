@@ -16,7 +16,7 @@ export class AuthService {
 
       console.log(`>>>> look up api-key from localStorage`, fromLocalStorage);
 
-      if (fromLocalStorage === undefined || fromLocalStorage === '') {
+      if (fromLocalStorage === undefined || fromLocalStorage === '' || fromLocalStorage === 'undefined') {
         const newKey = route.snapshot.params['api-key'];
         localStorage.setItem('api-key', newKey);
         fromLocalStorage = newKey;
