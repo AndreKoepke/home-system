@@ -1,7 +1,7 @@
 name: Publish frontend
 on:
   push:
-    branches: [ master ]
+    branches: [ feature/* ]
     paths:
       - 'frontend/**'
       - '.github/workflows/publish-frontend.yml'
@@ -29,7 +29,7 @@ jobs:
           platforms: linux/amd64
           push: true
           pull: true
-          tags: akop/home-system-frontend:latest
+          tags: akop/home-system-frontend:unstable
 
   deploy:
     name: Deploy frontend
@@ -48,5 +48,5 @@ jobs:
       - name: Deploy
         uses: WyriHaximus/github-action-helm3@v3
         with:
-          exec: echo '${{ secrets.VALUES_YAML_HOME_SYSTEM_FRONTEND }}' | helm upgrade akops-home-frontend ./deploy/frontend --install --wait --atomic --values -
+          exec: echo '${{ secrets.VALUES_YAML_HOME_SYSTEM_FRONTEND_FEATURE }}' | helm upgrade akops-home-frontend ./deploy/frontend --install --wait --atomic --values -
           kubeconfig: '${{ secrets.K8S_CONF_AKOP_ONLINE }}'
