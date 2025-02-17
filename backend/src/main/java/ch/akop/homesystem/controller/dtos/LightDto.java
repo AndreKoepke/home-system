@@ -15,12 +15,14 @@ public class LightDto {
   private int brightness;
   private Color color;
   private boolean on;
+  private boolean reachable;
 
 
   public static LightDto from(Device<?> light) {
     return new LightDto()
         .setId(light.getId())
-        .setName(light.getName());
+        .setName(light.getName())
+        .setReachable(light.isReachable());
   }
 
   public static LightDto from(SimpleLight light) {

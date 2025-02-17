@@ -1,11 +1,17 @@
-<p>Hallo und Willkommen zum HeimSystem</p>
-<span>Derzeit hast du {{ devices().length }} Lampen.</span>
+<div>
+  <p>Hallo und Willkommen zum HeimSystem</p>
+  <span>Derzeit hast du {{ devices().length }} Lampen.</span>
 
-@if (devicesThatAreOn().length > 0) {
-  <span>Diese Lampen sind derzeit an:</span>
-  <ul>
-    @for (lamp of devicesThatAreOn(); track lamp.id) {
-      <li>{{ lamp.name }}</li>
-    }
-  </ul>
-}
+  @if (devicesThatAreOn().length > 0) {
+    <span>Diese Lampen sind derzeit an:</span>
+    <ul>
+      @for (lamp of devicesThatAreOn(); track lamp.id) {
+        <li>{{ lamp.name }}</li>
+      }
+    </ul>
+  }
+</div>
+<div>
+  <div>{{ weather().outerTemperatur }}°C</div>
+  <div>{{ weather().light }}kLux</div>
+</div>
