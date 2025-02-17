@@ -1,5 +1,6 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
+import ch.akop.homesystem.controller.dtos.WeatherDto;
 import ch.akop.homesystem.services.impl.WeatherService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
@@ -32,6 +33,7 @@ public class WeatherChangedSocket {
   @PostConstruct
   void listenForWeatherChanges() {
     weatherService.getWeather()
+        .map(WeatherDto::from)
         .map(objectMapper::writeValueAsString)
         .subscribe(weather -> {
           currentWeatherJsonPayload = weather;
