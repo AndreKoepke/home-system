@@ -12,6 +12,7 @@
   }
 </div>
 <div>
-  <div>{{ weather().outerTemperatur }}°C</div>
-  <div>{{ weather().light }}kLux</div>
+  <div>{{ weather().outerTemperature | weatherValue }}</div>
+  <div>{{ weather().outerLight | weatherValue }}</div>
+  <div class="weatherUpdated">{{ weather().recordedAt | dateAgo | async }}</div>
 </div>

@@ -45,7 +45,7 @@ public class WeatherChangedSocket {
   public void onOpen(Session session) {
     log.info("Opening session: {} @ {}", session.getId());
     sessions.put(session.getId(), session);
-    sendWeahterToSession(session.getAsyncRemote());
+    sendWeatherToSession(session.getAsyncRemote());
   }
 
   @OnClose
@@ -65,10 +65,10 @@ public class WeatherChangedSocket {
     sessions.values()
         .stream()
         .map(Session::getAsyncRemote)
-        .forEach(this::sendWeahterToSession);
+        .forEach(this::sendWeatherToSession);
   }
 
-  private void sendWeahterToSession(RemoteEndpoint.Async target) {
+  private void sendWeatherToSession(RemoteEndpoint.Async target) {
     if (currentWeatherJsonPayload != null) {
       target.sendText(currentWeatherJsonPayload, result -> {
         if (result.getException() != null) {
