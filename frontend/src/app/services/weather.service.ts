@@ -19,7 +19,8 @@ export class WeatherService {
   private webSocketSubject = webSocket<Weather>({
     url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/weather`,
     openObserver: {
-      next: () => console.log('Waiting for weather'),
+      next: () => {
+      },
       error: err => console.error('WebSocketConnection threw error', err),
       complete: () => console.warn('WebSocketConnection was closed')
     }

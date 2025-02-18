@@ -15,10 +15,7 @@ export class AuthService {
 
   private tryToFindApiKey(route: ActivatedRouteSnapshot) {
     let fromLocalStorage = localStorage.getItem('api-key') || undefined;
-    console.log(`>>>> look up api-key from localStorage`, fromLocalStorage);
-
     const apiKeyFromRoute = this.getApiKeyFromRoute(route);
-    console.log(`>>>> got this from route`, apiKeyFromRoute);
     if (apiKeyFromRoute) {
       this.clearApiKeyFromRoute();
       localStorage.setItem('api-key', apiKeyFromRoute);
@@ -51,7 +48,6 @@ export class AuthService {
   }
 
   private getApiKeyFromRoute(route: ActivatedRouteSnapshot): string | undefined {
-    console.log(`>>>> route:`, route);
     return route.queryParams['api-key'] as string | undefined;
   }
 

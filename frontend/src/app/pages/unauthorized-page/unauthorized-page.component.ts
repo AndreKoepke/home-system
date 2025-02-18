@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {Router} from "@angular/router";
 import {AuthService} from "../../core/auth.service";
 
@@ -7,7 +7,8 @@ import {AuthService} from "../../core/auth.service";
   standalone: true,
   imports: [],
   templateUrl: './unauthorized-page.component.html',
-  styleUrl: './unauthorized-page.component.scss'
+  styleUrl: './unauthorized-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UnauthorizedPageComponent {
 

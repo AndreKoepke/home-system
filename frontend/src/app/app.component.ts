@@ -1,7 +1,8 @@
-import {ChangeDetectionStrategy, Component, HostListener, Signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, HostListener, Inject, PLATFORM_ID, Signal} from '@angular/core';
 import {NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {toSignal} from "@angular/core/rxjs-interop";
-import {filter, map} from "rxjs";
+import {filter, map, Subscription, timer} from "rxjs";
+import {isPlatformBrowser} from "@angular/common";
 
 @Component({
   selector: 'app-root',
@@ -14,24 +15,55 @@ import {filter, map} from "rxjs";
 export class AppComponent {
   title = 'home-system';
 
+  public readonly routes: { text: string; link: string }[] = [
+    {text: 'Home', link: '/'},
+    {text: 'Zug', link: '/train'},
+    {text: 'Wetter', link: '/weather'},
+    {text: 'Roggen', link: '/livecam'},
+    {text: 'Trello', link: '/trello'}
+  ];
   public activeRoute: Signal<string | undefined>;
 
+  private nextMenuSubscription: Subscription | undefined;
+  private readonly intervalForNextMenu = 60_000;
 
-  public constructor(router: Router) {
+
+  public constructor(private router: Router, @Inject(PLATFORM_ID) plattformId: Object) {
     this.activeRoute = toSignal(router.events.pipe(
       filter(event => event instanceof NavigationEnd),
       map(event => (event as NavigationEnd).url),
     ));
+
+    if (isPlatformBrowser(plattformId)) {
+      this.nextMenuSubscription = timer(this.intervalForNextMenu).subscribe(() => this.nextMenuByTimer());
+    }
   }
 
   private swipeCoord: [number, number] = [0, 0];
   private swipeTime: number = 0;
 
+  public clickMenuItem(link: string): void {
+    this.router.navigate([link]);
+    this.nextMenuSubscription?.unsubscribe();
+    this.nextMenuSubscription = timer(this.intervalForNextMenu * 2).subscribe(() => this.nextMenuByTimer());
+  }
+
+  private nextMenuByTimer(): void {
+    let currentRouteIndex = this.routes
+      .findIndex(configuredRoute => configuredRoute.link === (this.activeRoute() ?? '/'));
+    this.router.navigate([this.getLinkToNextMenuItem(currentRouteIndex)]);
+    this.nextMenuSubscription?.unsubscribe();
+    this.nextMenuSubscription = timer(this.intervalForNextMenu).subscribe(() => this.nextMenuByTimer());
+  }
+
+  private getLinkToNextMenuItem(current: number): string {
+    return this.routes[(current + 1) % this.routes.length].link;
+  }
+
   @HostListener('touchstart', ['$event'])
   private handleTouchStart(event: TouchEvent): void {
     this.swipe(event, 'start');
   }
-
 
   @HostListener('touchend', ['$event'])
   private handleTouchEnd(event: TouchEvent): void {

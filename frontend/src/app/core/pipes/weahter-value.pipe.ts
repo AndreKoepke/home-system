@@ -12,6 +12,6 @@ export class WeatherValuePipe implements PipeTransform {
       return undefined;
     }
 
-    return `${value.value}${value.unit}`;
+    return `${value.value} ${value.unit}`;
   }
 }

@@ -3,8 +3,10 @@
   background-color: #555;
   overflow: auto;
   position: fixed;
-  bottom: 5%;
-  left: 50%;
+  margin: 0 auto; /* Only centers horizontally not vertically! */
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 /* Navbar links */
