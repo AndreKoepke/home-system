@@ -1,6 +1,7 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
-import ch.akop.homesystem.controller.dtos.LightDto;
+import ch.akop.homesystem.controller.dtos.ActorDto;
+import ch.akop.homesystem.deconz.websocket.Sensor;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.services.impl.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,7 +32,14 @@ public class DeviceChangedSocket {
   @ConsumeEvent(value = "devices/lights/update", blocking = true)
   void updateDevice(String updatedDeviceId) {
     deviceService.findDeviceById(updatedDeviceId, SimpleLight.class)
-        .map(LightDto::from)
+        .map(ActorDto::from)
+        .ifPresent(this::broadcast);
+  }
+
+  @ConsumeEvent(value = "devices/sensora/update", blocking = true)
+  void updateDevice(String updatedDeviceId) {
+    deviceService.findDeviceById(updatedDeviceId, Sensor.class)
+        .map(ActorDto::from)
         .ifPresent(this::broadcast);
   }
 

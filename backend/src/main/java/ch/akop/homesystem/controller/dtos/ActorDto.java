@@ -8,7 +8,7 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import lombok.Data;
 
 @Data
-public class LightDto {
+public class ActorDto {
 
   private String id;
   private String name;
@@ -18,24 +18,24 @@ public class LightDto {
   private boolean reachable;
 
 
-  public static LightDto from(Device<?> light) {
-    return new LightDto()
+  public static ActorDto from(Device<?> light) {
+    return new ActorDto()
         .setId(light.getId())
         .setName(light.getName())
         .setReachable(light.isReachable());
   }
 
-  public static LightDto from(SimpleLight light) {
+  public static ActorDto from(SimpleLight light) {
     return from((Device<?>) light)
         .setOn(light.isCurrentStateIsOn());
   }
 
-  public static LightDto from(DimmableLight light) {
+  public static ActorDto from(DimmableLight light) {
     return from((SimpleLight) light)
         .setBrightness((int) (light.getCurrentBrightness() / 255f * 100));
   }
 
-  public static LightDto from(ColoredLight light) {
+  public static ActorDto from(ColoredLight light) {
     return from((DimmableLight) light)
         .setColor(light.getCurrentColor());
   }
