@@ -1,8 +1,7 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
 import ch.akop.homesystem.controller.dtos.ActorDto;
-import ch.akop.homesystem.deconz.websocket.Sensor;
-import ch.akop.homesystem.models.devices.actor.SimpleLight;
+import ch.akop.homesystem.models.devices.sensor.Sensor;
 import ch.akop.homesystem.services.impl.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.ConsumeEvent;
@@ -20,24 +19,17 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ApplicationScoped
-@ServerEndpoint("/secured/ws/v1/devices")
+@ServerEndpoint("/secured/ws/v1/devices/sensors")
 @RequiredArgsConstructor
-public class DeviceChangedSocket {
+public class SensorsChangedSocket {
 
   private final DeviceService deviceService;
   private final ObjectMapper objectMapper;
 
   Map<String, Session> sessions = new ConcurrentHashMap<>();
 
-  @ConsumeEvent(value = "devices/lights/update", blocking = true)
-  void updateDevice(String updatedDeviceId) {
-    deviceService.findDeviceById(updatedDeviceId, SimpleLight.class)
-        .map(ActorDto::from)
-        .ifPresent(this::broadcast);
-  }
-
-  @ConsumeEvent(value = "devices/sensora/update", blocking = true)
-  void updateDevice(String updatedDeviceId) {
+  @ConsumeEvent(value = "devices/sensors/update", blocking = true)
+  void updateSensor(String updatedDeviceId) {
     deviceService.findDeviceById(updatedDeviceId, Sensor.class)
         .map(ActorDto::from)
         .ifPresent(this::broadcast);
@@ -45,7 +37,7 @@ public class DeviceChangedSocket {
 
   @OnOpen
   public void onOpen(Session session) {
-    log.info("Opening session: {} @ {}", session.getId());
+    log.info("Opening session: {}", session.getId());
     sessions.put(session.getId(), session);
   }
 
