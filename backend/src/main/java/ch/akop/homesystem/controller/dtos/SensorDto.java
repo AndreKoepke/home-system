@@ -21,7 +21,7 @@ public class SensorDto {
   }
 
   public static SensorDto from(MotionSensor motionSensor) {
-    return from(motionSensor)
+    return from((Sensor<?>) motionSensor)
         .setPresence(motionSensor.getIsMoving$().blockingFirst());
   }
 }

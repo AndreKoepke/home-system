@@ -5,6 +5,7 @@ import {DevicesService} from "../../services/devices.service";
 import {map, Observable} from "rxjs";
 import {Light} from "../../models/devices/light.dto";
 import {WeatherService} from "../../services/weather.service";
+import {Sensor} from "../../models/devices/sensor.dto";
 
 @Component({
   standalone: true,
@@ -15,9 +16,12 @@ import {WeatherService} from "../../services/weather.service";
   template: `
     @if (weatherService.weather$ | async; as weather) {
       @if (lights$ | async; as lights) {
-        <app-start-page
-          [devices]="lights"
-          [weather]="weather"/>
+        @if (sensors$ | async; as sensors) {
+          <app-start-page
+            [actors]="lights"
+            [sensors]="sensors"
+            [weather]="weather"/>
+        }
       }
     }`,
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -25,9 +29,11 @@ import {WeatherService} from "../../services/weather.service";
 export class StartPageContainerComponent {
 
   lights$: Observable<Light[]>;
+  sensors$: Observable<Sensor[]>;
 
   constructor(devicesService: DevicesService, public weatherService: WeatherService) {
-    this.lights$ = devicesService.devices$.pipe(map(deviceMap => [...deviceMap.values()]));
+    this.lights$ = devicesService.lights$.pipe(map(deviceMap => [...deviceMap.values()]));
+    this.sensors$ = devicesService.sensors$.pipe(map(sensorMap => [...sensorMap.values()]));
   }
 
 }

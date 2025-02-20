@@ -4,6 +4,7 @@ import {Weather} from "../../models/devices/weather.dto";
 import {WeatherValuePipe} from "../../core/pipes/weahter-value.pipe";
 import {DateAgoPipe} from "../../core/pipes/date-ago.pipe";
 import {AsyncPipe} from "@angular/common";
+import {Sensor} from "../../models/devices/sensor.dto";
 
 @Component({
   selector: 'app-start-page',
@@ -19,10 +20,15 @@ import {AsyncPipe} from "@angular/common";
 })
 export class StartPageComponent {
 
-  public devices = input.required<Light[]>();
-  public devicesThatAreOn = computed(() => this.devices()
+  public actors = input.required<Light[]>();
+  public lightsThatAreOn = computed(() => this.actors()
     .filter(device => device.on && device.reachable)
     .sort((a, b) => a.name.localeCompare(b.name)))
+
+  public sensors = input.required<Sensor[]>();
+  public sensorsThatAreMoving = computed(() => this.sensors()
+    .filter(sensor => sensor.reachable && sensor.presence)
+    .sort((a, b) => a.name.localeCompare(b.name)));
 
   public weather = input.required<Weather>();
 }

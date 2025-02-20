@@ -4,6 +4,7 @@ package ch.akop.homesystem.controller.for_private;
 import ch.akop.homesystem.controller.dtos.ActorDto;
 import ch.akop.homesystem.controller.dtos.SensorDto;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
+import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.Sensor;
 import ch.akop.homesystem.services.impl.DeviceService;
 import java.util.stream.Stream;
@@ -39,7 +40,7 @@ public class DeviceController {
   @Path("sensors")
   @GET
   public Stream<SensorDto> getAllSensors() {
-    return deviceService.getDevicesOfType(Sensor.class)
+    return deviceService.getDevicesOfType(MotionSensor.class)
         .stream()
         .map(SensorDto::from);
   }

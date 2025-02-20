@@ -5,21 +5,37 @@ import {environment} from "../../environments/environment";
 import {Light} from "../models/devices/light.dto";
 import {webSocket} from "rxjs/webSocket";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
+import {Sensor} from "../models/devices/sensor.dto";
 
 @Injectable({
   providedIn: 'root'
 })
 export class DevicesService {
 
-  private devices = new Map<string, Light>;
-  private devicesSubject = new ReplaySubject<Map<string, Light>>(1);
+  private actors = new Map<string, Light>;
+  private sensors = new Map<string, Sensor>;
+  private actorSubject = new ReplaySubject<Map<string, Light>>(1);
+  private sensorsSubject = new ReplaySubject<Map<string, Sensor>>(1);
 
-  public get devices$() {
-    return this.devicesSubject;
+  public get lights$() {
+    return this.actorSubject;
   }
 
-  private webSocketSubject = webSocket<Light>({
-    url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/devices`,
+  public get sensors$() {
+    return this.sensorsSubject;
+  }
+
+  private websocketActorsSubject = webSocket<Light>({
+    url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/devices/lights`,
+    openObserver: {
+      next: () => this.hydrateDevices(),
+      error: err => console.error('WebSocketConnection threw error', err),
+      complete: () => console.warn('WebSocketConnection was closed')
+    }
+  });
+
+  private websocketSensorSubject = webSocket<Sensor>({
+    url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/devices/sensors`,
     openObserver: {
       next: () => this.hydrateDevices(),
       error: err => console.error('WebSocketConnection threw error', err),
@@ -34,21 +50,32 @@ export class DevicesService {
   private hydrateDevices(): void {
     this.fetchLights$()
       .subscribe(lights => {
-        this.devices = new Map(lights.map(light => [light.id, light]));
-        this.devicesSubject.next(this.devices);
+        this.actors = new Map(lights.map(light => [light.id, light]));
+        this.actorSubject.next(this.actors);
       });
   }
 
   private setupWebsocketListener() {
-    this.webSocketSubject
+    this.websocketActorsSubject
       .pipe(
         retry({delay: 5000}),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe(message => {
-        this.devices.set(message.id, message);
-        this.devices = new Map(this.devices);
-        this.devicesSubject.next(this.devices);
+        this.actors.set(message.id, message);
+        this.actors = new Map(this.actors);
+        this.actorSubject.next(this.actors);
+      });
+
+    this.websocketSensorSubject
+      .pipe(
+        retry({delay: 5000}),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(message => {
+        this.sensors.set(message.id, message);
+        this.sensors = new Map(this.actors);
+        this.sensorsSubject.next(this.actors);
       });
   }
 

@@ -1,15 +1,27 @@
 <div>
   <p>Hallo und Willkommen zum HeimSystem</p>
-  <span>Derzeit hast du {{ devices().length }} Lampen.</span>
+  <span>Derzeit hast du {{ actors().length }} Lampen.</span>
 
-  @if (devicesThatAreOn().length > 0) {
-    <span>Diese Lampen sind derzeit an:</span>
-    <ul>
-      @for (lamp of devicesThatAreOn(); track lamp.id) {
-        <li>{{ lamp.name }}</li>
-      }
-    </ul>
-  }
+  <div>
+    @if (lightsThatAreOn().length > 0) {
+      <span>Diese Lampen sind derzeit an:</span>
+      <ul>
+        @for (lamp of lightsThatAreOn(); track lamp.id) {
+          <li>{{ lamp.name }}</li>
+        }
+      </ul>
+    }
+  </div>
+  <div>
+    @if (sensorsThatAreMoving().length > 0) {
+      <span>Bewegungsmelder haben Bewegung: </span>
+      <ul>
+        @for (sensor of sensorsThatAreMoving(); track sensor.id) {
+          <li>{{ sensor.name }}</li>
+        }
+      </ul>
+    }
+  </div>
 </div>
 <div>
   <div>{{ weather().outerTemperature | weatherValue }}</div>
