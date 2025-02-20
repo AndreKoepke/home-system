@@ -35,7 +35,7 @@ export class DateAgoPipe implements PipeTransform {
           for (const intervall of this.intervals) {
             counter = Math.round(seconds / intervall.value);
             if (counter > 0) {
-              return `vor ${counter} ${intervall.name}`;
+              return `${counter} ${intervall.name}`;
             }
           }
 
