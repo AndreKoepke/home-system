@@ -49,4 +49,14 @@ public class PauseStep implements Step {
       SleepUtil.sleep(waitingTimeLeft);
     }
   }
+
+  @Override
+  public String getNameOfLight() {
+    return null;
+  }
+
+  @Override
+  public String getActionDescription() {
+    return "warte " + waitFor.getSeconds() + "s";
+  }
 }

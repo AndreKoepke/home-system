@@ -45,4 +45,9 @@ public class OnOffStep implements Step {
         .orElseThrow(() -> new EntityNotFoundException("Light with name " + nameOfLight + " was not found"))
         .turnTo(turnItOn);
   }
+
+  @Override
+  public String getActionDescription() {
+    return "schalte " + (turnItOn ? "an" : "aus");
+  }
 }

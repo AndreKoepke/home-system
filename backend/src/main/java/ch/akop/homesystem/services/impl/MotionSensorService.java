@@ -235,9 +235,9 @@ public class MotionSensorService {
 
     private void turnOn() {
       if (stateService.isState(SleepState.class) && config.getAnimationNight() != null) {
-        eventBus.publish("home/animation/play", config.getAnimationNight());
+        eventBus.publish("home/animation/play", config.getAnimationNight().getId());
       } else if (!stateService.isState(SleepState.class) && config.getAnimation() != null) {
-        eventBus.publish("home/animation/play", config.getAnimation());
+        eventBus.publish("home/animation/play", config.getAnimation().getId());
       } else {
         turnAllLightsOn();
       }
@@ -245,9 +245,9 @@ public class MotionSensorService {
 
     private void turnOff() {
       if (stateService.isState(SleepState.class) && config.getAnimationNight() != null) {
-        eventBus.publish("home/animation/turn-off", config.getAnimationNight());
+        eventBus.publish("home/animation/turn-off", config.getAnimationNight().getId());
       } else if (!stateService.isState(SleepState.class) && config.getAnimation() != null) {
-        eventBus.publish("home/animation/turn-off", config.getAnimation());
+        eventBus.publish("home/animation/turn-off", config.getAnimation().getId());
       } else {
         turnAllLightsOff();
         sensorsWithHigherTimeout.remove(config.getName().toLowerCase());
