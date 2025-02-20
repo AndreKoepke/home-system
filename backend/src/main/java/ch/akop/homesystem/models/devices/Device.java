@@ -20,7 +20,11 @@ public abstract class Device<T extends Device<?>> {
 
   public T consumeUpdate(State update) {
     reachable = update.getReachable() != null ? update.getReachable() : true;
-    lastUpdated = LocalDateTime.parse(update.getLastupdated()).atZone(ZoneId.systemDefault());
+    try {
+      lastUpdated = LocalDateTime.parse(update.getLastupdated()).atZone(ZoneId.systemDefault());
+    } catch (Exception e) {
+      lastUpdated = null;
+    }
     consumeInternalUpdate(update);
     return (T) this;
   }

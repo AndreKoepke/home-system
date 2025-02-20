@@ -4,4 +4,5 @@ export interface Light {
   brightness: number;
   on: boolean;
   reachable: boolean;
+  lastUpdated: string;
 }
