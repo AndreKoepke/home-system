@@ -7,7 +7,7 @@
       <span>Diese Lampen sind derzeit an:</span>
       <ul>
         @for (lamp of lightsThatAreOn(); track lamp.id) {
-          <li>{{ lamp.name }} <span class="grayed"> seit {{ lamp.lastUpdated | dateAgo | async }}</span></li>
+          <li>{{ lamp.name }}</li>
         }
       </ul>
     }
