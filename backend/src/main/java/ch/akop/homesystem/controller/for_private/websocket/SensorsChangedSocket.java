@@ -1,8 +1,9 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
 import ch.akop.homesystem.controller.dtos.ActorDto;
-import ch.akop.homesystem.models.devices.sensor.Sensor;
+import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.services.impl.DeviceService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.ConsumeEvent;
 import java.util.Map;
@@ -30,7 +31,7 @@ public class SensorsChangedSocket {
 
   @ConsumeEvent(value = "devices/sensors/update", blocking = true)
   void updateSensor(String updatedDeviceId) {
-    deviceService.findDeviceById(updatedDeviceId, Sensor.class)
+    deviceService.findDeviceById(updatedDeviceId, MotionSensor.class)
         .map(ActorDto::from)
         .ifPresent(this::broadcast);
   }
@@ -39,6 +40,7 @@ public class SensorsChangedSocket {
   public void onOpen(Session session) {
     log.info("Opening session: {}", session.getId());
     sessions.put(session.getId(), session);
+    sendAllSensorsToSession(session);
   }
 
   @OnClose
@@ -68,5 +70,22 @@ public class SensorsChangedSocket {
         log.error("Error while sending message", result.getException());
       }
     }));
+  }
+
+  @SneakyThrows
+  private void sendAllSensorsToSession(Session session) {
+    deviceService.getDevicesOfType(MotionSensor.class)
+        .forEach(motionSensor -> {
+          try {
+            var payload = objectMapper.writeValueAsString(motionSensor);
+            session.getAsyncRemote().sendObject(payload, result -> {
+              if (result.getException() != null) {
+                log.error("Error while sending message", result.getException());
+              }
+            });
+          } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 }

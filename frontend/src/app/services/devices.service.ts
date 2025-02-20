@@ -37,7 +37,8 @@ export class DevicesService {
   private websocketSensorSubject = webSocket<Sensor>({
     url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/devices/sensors`,
     openObserver: {
-      next: () => this.hydrateDevices(),
+      next: () => {
+      },
       error: err => console.error('WebSocketConnection threw error', err),
       complete: () => console.warn('WebSocketConnection was closed')
     }
