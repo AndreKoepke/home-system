@@ -1,6 +1,5 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
-import ch.akop.homesystem.controller.dtos.ActorDto;
 import ch.akop.homesystem.controller.dtos.SensorDto;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.services.impl.DeviceService;
@@ -31,7 +30,7 @@ public class SensorsChangedSocket extends AbstractBaseSocket {
   @ConsumeEvent(value = "devices/sensors/update", blocking = true)
   void updateSensor(String updatedDeviceId) {
     deviceService.findDeviceById(updatedDeviceId, MotionSensor.class)
-        .map(ActorDto::from)
+        .map(SensorDto::from)
         .ifPresent(this::broadcast);
   }
 

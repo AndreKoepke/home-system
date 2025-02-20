@@ -1,7 +1,7 @@
 package ch.akop.homesystem.controller.dtos;
 
 import ch.akop.homesystem.models.color.Color;
-import ch.akop.homesystem.models.devices.Device;
+import ch.akop.homesystem.models.devices.actor.Actor;
 import ch.akop.homesystem.models.devices.actor.ColoredLight;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
@@ -18,7 +18,7 @@ public class ActorDto {
   private boolean reachable;
 
 
-  public static ActorDto from(Device<?> light) {
+  public static ActorDto from(Actor<?> light) {
     return new ActorDto()
         .setId(light.getId())
         .setName(light.getName())
@@ -26,7 +26,7 @@ public class ActorDto {
   }
 
   public static ActorDto from(SimpleLight light) {
-    return from((Device<?>) light)
+    return from((Actor<?>) light)
         .setOn(light.isCurrentStateIsOn());
   }
 
