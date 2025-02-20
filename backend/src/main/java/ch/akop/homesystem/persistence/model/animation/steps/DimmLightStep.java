@@ -71,7 +71,7 @@ public class DimmLightStep implements Step {
 
   @Override
   public String getActionDescription() {
-    return "dimme zu " + dimmLightTo.multiply(BigDecimal.valueOf(100)) + "%";
+    return "dimme " + nameOfLight + " zu " + dimmLightTo.multiply(BigDecimal.valueOf(100)) + "%";
   }
 
   @Nullable

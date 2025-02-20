@@ -48,6 +48,6 @@ public class OnOffStep implements Step {
 
   @Override
   public String getActionDescription() {
-    return "schalte " + (turnItOn ? "an" : "aus");
+    return "schalte " + nameOfLight + (turnItOn ? " an" : " aus");
   }
 }

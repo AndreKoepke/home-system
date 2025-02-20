@@ -1,0 +1,13 @@
+@for (animation of animations(); track animation.id) {
+  <div>
+    <span>Animationsname: {{ animation.name }}</span>
+    <span>Schritte:</span>
+    <ul>
+      @for (step of animation.steps; track step.id) {
+        <li>{{ step.actionDescription }}</li>
+      }
+    </ul>
+    <button (click)="startAnimation.emit(animation.id)">Start</button>
+  </div>
+  <hr>
+}
