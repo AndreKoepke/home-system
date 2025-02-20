@@ -1,7 +1,9 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.websocket.Session;
 import lombok.SneakyThrows;
@@ -13,6 +15,7 @@ public abstract class AbstractBaseSocket {
   abstract ObjectMapper getObjectMapper();
 
   private final Map<String, Session> sessions = new ConcurrentHashMap<>();
+  private final Map<Session, Set<Integer>> sendHashCodes = new ConcurrentHashMap<>();
 
   public void registerSession(Session session) {
     sessions.put(session.getId(), session);
@@ -29,6 +32,11 @@ public abstract class AbstractBaseSocket {
 
   @SneakyThrows
   public void sendMessage(Session session, Object message) {
+    if (sendHashCodes.getOrDefault(session, new HashSet<>()).contains(message.hashCode())) {
+      return;
+    }
+    sendHashCodes.getOrDefault(session, new HashSet<>()).add(message.hashCode());
+
     var payload = getObjectMapper().writeValueAsString(message);
     session.getAsyncRemote().sendObject(payload, result -> {
       if (result.getException() != null) {

@@ -25,7 +25,7 @@ export class DevicesService {
   }
 
   private websocketActorsSubject = webSocket<Light>({
-    url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/devices/lights`,
+    url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/devices/actors`,
   });
 
   private websocketSensorSubject = webSocket<Sensor>({
@@ -53,12 +53,14 @@ export class DevicesService {
   }
 
   private sensorUpdate(message: Sensor): void {
+    console.log(`>>>> got motionSensor`, message);
     this.sensors.set(message.id, message);
     this.sensors = new Map(this.sensors);
     this.sensorsSubject.next(this.sensors);
   }
 
   private actorUpdate(message: Light): void {
+    console.log(`>>>> got light`, message);
     this.actors.set(message.id, message);
     this.actors = new Map(this.actors);
     this.actorSubject.next(this.actors);
