@@ -1,9 +1,9 @@
 export const environment = {
 
   backend: {
-    protocol: 'http://',
-    host: 'localhost:8080',
+    protocol: 'https://',
+    host: 'homesystem.akop.online',
     path: 'backend/',
-    webSocketProtocol: 'ws://'
+    webSocketProtocol: 'wss://'
   },
 };

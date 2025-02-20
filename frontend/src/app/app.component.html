@@ -1,4 +1,6 @@
-<router-outlet></router-outlet>
+<div class="container">
+  <router-outlet></router-outlet>
+</div>
 <div class="navbar">
   @for (route of routes; track route.link) {
     <a [class.active]="activeRoute() == route.link"

@@ -3,5 +3,5 @@ export interface Sensor {
   name: string;
   presence?: boolean;
   reachable: boolean;
-  lastUpdated: string;
+  lastUpdate: string;
 }

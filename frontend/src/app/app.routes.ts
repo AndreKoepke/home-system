@@ -6,6 +6,7 @@ import {AuthGuard} from "./core/auth.service";
 import {StartPageContainerComponent} from "./pages/start-page/start-page-container.component";
 import {LivecamPageComponent} from "./pages/livecam-page/livecam-page.component";
 import {TrelloPageComponent} from "./pages/trello-page/trello-page.component";
+import {AnimationPageContainerComponent} from "./pages/animation-page/animation-page-container.component";
 
 export const routes: Routes = [
   {
@@ -26,6 +27,11 @@ export const routes: Routes = [
   {
     path: 'livecam',
     component: LivecamPageComponent,
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'animation',
+    component: AnimationPageContainerComponent,
     canActivate: [AuthGuard]
   },
   {

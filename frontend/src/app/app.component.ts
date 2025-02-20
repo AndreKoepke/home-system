@@ -17,6 +17,7 @@ export class AppComponent {
 
   public readonly routes: { text: string; link: string }[] = [
     {text: 'Home', link: '/'},
+    {text: 'Animationen', link: '/animation'},
     {text: 'Zug', link: '/train'},
     {text: 'Wetter', link: '/weather'},
     {text: 'Roggen', link: '/livecam'},

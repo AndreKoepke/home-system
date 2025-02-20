@@ -1,32 +1,28 @@
 <div>
-  <p>Hallo und Willkommen zum HeimSystem</p>
-  <span>Derzeit hast du {{ actors().length }} Lampen.</span>
-
-  <div>
-    @if (lightsThatAreOn().length > 0) {
-      <span>Diese Lampen sind derzeit an:</span>
-      <ul>
-        @for (lamp of lightsThatAreOn(); track lamp.id) {
-          <li>{{ lamp.name }}</li>
-        }
-      </ul>
-    }
-  </div>
-  <div>
-    @if (sensorsThatAreMoving().length > 0) {
-      <span>Bewegungsmelder haben Bewegung: </span>
-      <ul>
-        @for (sensor of sensorsThatAreMoving(); track sensor.id) {
-          <li>{{ sensor.name }} <span class="grayed">seit {{ sensor.lastUpdated | dateAgo | async }}</span></li>
-        }
-      </ul>
-    }
-  </div>
+  @if (lightsThatAreOn().length > 0) {
+    <span>Diese Lampen sind derzeit an:</span>
+    <ul>
+      @for (lamp of lightsThatAreOn(); track lamp.id) {
+        <li>{{ lamp.name }}</li>
+      }
+    </ul>
+  }
 </div>
+<div>
+  @if (sensorsThatAreMoving().length > 0) {
+    <span>Bewegungsmelder haben Bewegung: </span>
+    <ul>
+      @for (sensor of sensorsThatAreMoving(); track sensor.id) {
+        <li>{{ sensor.name }} <span class="grayed">seit {{ sensor.lastUpdate | dateAgo | async }}</span></li>
+      }
+    </ul>
+  }
+</div>
+
 <div>
   <div>{{ weather().outerTemperature | weatherValue }}</div>
   <div>{{ weather().outerLight | weatherValue }}</div>
   <div>{{ weather().wind | weatherValue }}</div>
   <div>{{ weather().rain | weatherValue }}</div>
-  <div class="grayed">{{ weather().recordedAt | dateAgo | async }}</div>
+  <div class="grayed">vor {{ weather().recordedAt | dateAgo | async }}</div>
 </div>

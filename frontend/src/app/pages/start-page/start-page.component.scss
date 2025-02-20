@@ -1,8 +1,19 @@
 :host {
   display: grid;
-  grid-template-columns: 70% 30%;
+  grid-template-columns: 33% 33% 33%;
 }
 
 .grayed {
   color: #555555;
+}
+
+.light-list {
+  max-height: 50vh;
+}
+
+ul {
+  max-width: 20vw;
+  columns: 2;
+  -webkit-columns: 2;
+  -moz-columns: 2;
 }

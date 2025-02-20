@@ -1,6 +1,7 @@
 @for (animation of animations(); track animation.id) {
   <div>
     <span>Animationsname: {{ animation.name }}</span>
+    <br>
     <span>Schritte:</span>
     <ul>
       @for (step of animation.steps; track step.id) {

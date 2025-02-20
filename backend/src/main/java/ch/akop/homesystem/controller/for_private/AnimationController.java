@@ -7,6 +7,7 @@ import java.util.stream.Stream;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import lombok.RequiredArgsConstructor;
 
 @Path("secured/v1/animations")
@@ -22,9 +23,9 @@ public class AnimationController {
         .map(AnimationDto::from);
   }
 
-  @Path("/start/${animationId}")
+  @Path("/start/{animationId}")
   @POST
-  public void startAnimation(UUID animationId) {
+  public void startAnimation(@PathParam("animationId") UUID animationId) {
     animationService.playAnimation(animationId);
   }
 }

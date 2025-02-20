@@ -19,7 +19,6 @@ export class DateAgoPipe implements PipeTransform {
   ];
 
   transform(value: string | undefined, updateInterval: number = 30_000): Observable<string> {
-
     if (!value) {
       return EMPTY;
     }
@@ -28,7 +27,7 @@ export class DateAgoPipe implements PipeTransform {
       .pipe(map(_ => {
           const seconds = Math.round((+new Date() - +new Date(value)) / 1000);
           if (seconds < 29) {
-            return 'Grade eben';
+            return 'wenigen Sekunden';
           }
 
           let counter: number;
@@ -39,7 +38,7 @@ export class DateAgoPipe implements PipeTransform {
             }
           }
 
-          return '';
+        return 'lange';
         }
       ));
   }
