@@ -32,7 +32,8 @@ public abstract class AbstractBaseSocket {
 
   @SneakyThrows
   public void sendMessage(Session session, Object message) {
-    if (sendHashCodes.getOrDefault(session, new HashSet<>()).contains(message.hashCode())) {
+    sendHashCodes.putIfAbsent(session, new HashSet<>());
+    if (sendHashCodes.get(session).contains(message.hashCode())) {
       return;
     }
     sendHashCodes.getOrDefault(session, new HashSet<>()).add(message.hashCode());
