@@ -1,5 +1,4 @@
 import {DestroyRef, Injectable} from '@angular/core';
-import {HttpClient} from "@angular/common/http";
 import {Observable, ReplaySubject, retry} from "rxjs";
 import {environment} from "../../environments/environment";
 import {Light} from "../models/devices/light.dto";
@@ -17,43 +16,24 @@ export class DevicesService {
   private actorSubject = new ReplaySubject<Map<string, Light>>(1);
   private sensorsSubject = new ReplaySubject<Map<string, Sensor>>(1);
 
-  public get lights$() {
+  public get lights$(): Observable<Map<string, Light>> {
     return this.actorSubject;
   }
 
-  public get sensors$() {
+  public get sensors$(): Observable<Map<string, Sensor>> {
     return this.sensorsSubject;
   }
 
   private websocketActorsSubject = webSocket<Light>({
     url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/devices/lights`,
-    openObserver: {
-      next: () => this.hydrateDevices(),
-      error: err => console.error('WebSocketConnection threw error', err),
-      complete: () => console.warn('WebSocketConnection was closed')
-    }
   });
 
   private websocketSensorSubject = webSocket<Sensor>({
-    url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/devices/sensors`,
-    openObserver: {
-      next: () => {
-      },
-      error: err => console.error('WebSocketConnection threw error', err),
-      complete: () => console.warn('WebSocketConnection was closed')
-    }
+    url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/devices/sensors`
   });
 
-  constructor(private httpClient: HttpClient, private destroyRef: DestroyRef) {
+  constructor(private destroyRef: DestroyRef) {
     this.setupWebsocketListener();
-  }
-
-  private hydrateDevices(): void {
-    this.fetchLights$()
-      .subscribe(lights => {
-        this.actors = new Map(lights.map(light => [light.id, light]));
-        this.actorSubject.next(this.actors);
-      });
   }
 
   private setupWebsocketListener() {
@@ -62,29 +42,25 @@ export class DevicesService {
         retry({delay: 5000}),
         takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe(message => {
-        this.actors.set(message.id, message);
-        this.actors = new Map(this.actors);
-        this.actorSubject.next(this.actors);
-      });
+      .subscribe(light => this.actorUpdate(light));
 
     this.websocketSensorSubject
       .pipe(
         retry({delay: 5000}),
         takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe(message => {
-        this.sensors.set(message.id, message);
-        this.sensors = new Map(this.actors);
-        this.sensorsSubject.next(this.actors);
-      });
+      .subscribe(sensor => this.sensorUpdate(sensor));
   }
 
-  private fetchLights$(): Observable<Light[]> {
-    return this.httpClient.get<Light[]>(`${this.backendUrl}/secured/v1/devices/lights`);
+  private sensorUpdate(message: Sensor): void {
+    this.sensors.set(message.id, message);
+    this.sensors = new Map(this.sensors);
+    this.sensorsSubject.next(this.sensors);
   }
 
-  private get backendUrl(): string {
-    return `${environment.backend.protocol}${environment.backend.host}/${environment.backend.path}`;
+  private actorUpdate(message: Light): void {
+    this.actors.set(message.id, message);
+    this.actors = new Map(this.actors);
+    this.actorSubject.next(this.actors);
   }
 }
