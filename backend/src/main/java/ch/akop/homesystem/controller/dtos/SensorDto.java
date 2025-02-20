@@ -2,6 +2,7 @@ package ch.akop.homesystem.controller.dtos;
 
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.Sensor;
+import java.time.ZonedDateTime;
 import lombok.Data;
 
 @Data
@@ -9,6 +10,7 @@ public class SensorDto {
 
   private String id;
   private String name;
+  private ZonedDateTime lastUpdate;
   private boolean reachable;
   private boolean presence;
 
@@ -17,7 +19,8 @@ public class SensorDto {
     return new SensorDto()
         .setId(sensor.getId())
         .setName(sensor.getName())
-        .setReachable(sensor.isReachable());
+        .setReachable(sensor.isReachable())
+        .setLastUpdate(sensor.getLastUpdated());
   }
 
   public static SensorDto from(MotionSensor motionSensor) {

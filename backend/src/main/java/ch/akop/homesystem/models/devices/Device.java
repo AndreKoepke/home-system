@@ -1,6 +1,9 @@
 package ch.akop.homesystem.models.devices;
 
 import ch.akop.homesystem.deconz.rest.State;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import lombok.Data;
 
 @SuppressWarnings("unchecked")
@@ -11,11 +14,13 @@ public abstract class Device<T extends Device<?>> {
   private String id;
   private String uniqueId;
   private boolean reachable;
+  private ZonedDateTime lastUpdated;
 
   protected abstract void consumeInternalUpdate(State update);
 
   public T consumeUpdate(State update) {
     reachable = update.getReachable() != null ? update.getReachable() : true;
+    lastUpdated = LocalDateTime.parse(update.getLastupdated()).atZone(ZoneId.systemDefault());
     consumeInternalUpdate(update);
     return (T) this;
   }
