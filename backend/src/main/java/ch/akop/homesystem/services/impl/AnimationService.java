@@ -2,6 +2,7 @@ package ch.akop.homesystem.services.impl;
 
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.persistence.model.animation.Animation;
+import ch.akop.homesystem.persistence.model.animation.steps.Step;
 import ch.akop.homesystem.persistence.repository.config.AnimationRepository;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.Observable;
@@ -44,14 +45,22 @@ public class AnimationService {
     var freshAnimation = animationRepository.getOne(animationId);
     var animationSteps = freshAnimation.materializeSteps();
 
-    runningAnimations.put(animationId, Observable.fromRunnable(() -> animationSteps
-            .forEach(step -> {
-              if (runningAnimations.containsKey(animationId)) {
-                step.play(deviceService);
-              }
-            }))
+    runningAnimations.put(animationId, Observable.fromRunnable(() -> playAllAnimation(freshAnimation, animationSteps))
         .subscribeOn(RxHelper.blockingScheduler(vertx))
-        .subscribe(ignore -> runningAnimations.remove(animationId)));
+        .subscribe(o -> {
+        }));
+  }
+
+  private void playAllAnimation(Animation animation, List<? extends Step> steps) {
+    try {
+      steps.stream()
+          .filter(step -> runningAnimations.containsKey(animation.getId()))
+          .forEach(step -> step.play(deviceService));
+    } catch (Exception e) {
+      log.error("Error playing animation {}", animation.getId(), e);
+    } finally {
+      runningAnimations.remove(animation.getId());
+    }
   }
 
   @Transactional
