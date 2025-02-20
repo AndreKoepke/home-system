@@ -56,6 +56,8 @@ public class ActorsChangedSocket extends AbstractBaseSocket {
   @SneakyThrows
   private void sendAllLightsToSession(Session session) {
     deviceService.getDevicesOfType(SimpleLight.class)
+        .stream()
+        .map(ActorDto::from)
         .forEach(motionSensor -> sendMessage(session, motionSensor));
   }
 }

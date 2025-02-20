@@ -1,6 +1,7 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
 import ch.akop.homesystem.controller.dtos.ActorDto;
+import ch.akop.homesystem.controller.dtos.SensorDto;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.services.impl.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,6 +57,8 @@ public class SensorsChangedSocket extends AbstractBaseSocket {
   @SneakyThrows
   private void sendAllSensorsToSession(Session session) {
     deviceService.getDevicesOfType(MotionSensor.class)
+        .stream()
+        .map(SensorDto::from)
         .forEach(motionSensor -> sendMessage(session, motionSensor));
   }
 }
