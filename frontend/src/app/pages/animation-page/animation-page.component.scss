@@ -1,0 +1,9 @@
+.animation-container {
+  display: grid;
+  grid-template-columns: 1fr 4fr;
+  align-items: center;
+
+  .button-container {
+    max-width: 5%;
+  }
+}
