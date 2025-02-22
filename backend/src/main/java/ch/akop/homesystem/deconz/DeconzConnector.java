@@ -311,11 +311,21 @@ public class DeconzConnector {
         && update.getState() != null) {
 
       deviceService.findDeviceById(update.getId(), Actor.class)
-          .ifPresent(device -> device.consumeUpdate(update.getState()));
-
-      eventBus.publish("devices/lights/update", update.getId());
+          .ifPresent(device -> {
+            device.consumeUpdate(update.getState());
+            eventBus.publish("devices/" + getTopicName(device.getClass()) + "/update", update.getId());
+          });
     }
+  }
 
-
+  private static String getTopicName(Class<?> clazz) {
+    return switch (clazz.getSimpleName()) {
+      case "RollerShutter" -> "roller-shutters";
+      case "DimmableLight", "SimpleLight", "" -> "lights";
+      default -> {
+        log.warn("Unknown {}", clazz.getSimpleName());
+        yield "unknown";
+      }
+    };
   }
 }

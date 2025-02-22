@@ -1,6 +1,6 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
-import ch.akop.homesystem.controller.dtos.ActorDto;
+import ch.akop.homesystem.controller.dtos.LightDto;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.services.impl.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,9 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ApplicationScoped
-@ServerEndpoint("/secured/ws/v1/devices/actors")
+@ServerEndpoint("/secured/ws/v1/devices/lights")
 @RequiredArgsConstructor
-public class ActorsChangedSocket extends AbstractBaseSocket {
+public class LightsChangedSocket extends AbstractBaseSocket {
 
   private final DeviceService deviceService;
 
@@ -30,7 +30,7 @@ public class ActorsChangedSocket extends AbstractBaseSocket {
   @ConsumeEvent(value = "devices/lights/update", blocking = true)
   void updateLight(String updatedDeviceId) {
     deviceService.findDeviceById(updatedDeviceId, SimpleLight.class)
-        .map(ActorDto::from)
+        .map(LightDto::from)
         .ifPresent(this::broadcast);
   }
 
@@ -57,7 +57,7 @@ public class ActorsChangedSocket extends AbstractBaseSocket {
   private void sendAllLightsToSession(String sessionId) {
     deviceService.getDevicesOfType(SimpleLight.class)
         .stream()
-        .map(ActorDto::from)
+        .map(LightDto::from)
         .forEach(motionSensor -> sendMessage(sessionId, motionSensor));
   }
 }

@@ -1,7 +1,7 @@
 package ch.akop.homesystem.controller.for_private;
 
 
-import ch.akop.homesystem.controller.dtos.ActorDto;
+import ch.akop.homesystem.controller.dtos.LightDto;
 import ch.akop.homesystem.controller.dtos.SensorDto;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
@@ -23,17 +23,17 @@ public class DeviceController {
 
   @Path("lights")
   @GET
-  public Stream<ActorDto> getAllLights() {
+  public Stream<LightDto> getAllLights() {
     return deviceService.getDevicesOfType(SimpleLight.class)
         .stream()
-        .map(ActorDto::from);
+        .map(LightDto::from);
   }
 
   @Path("lights/{id}")
   @GET
-  public ActorDto getLight(@PathParam("id") String id) {
+  public LightDto getLight(@PathParam("id") String id) {
     return deviceService.findDeviceById(id, SimpleLight.class)
-        .map(ActorDto::from)
+        .map(LightDto::from)
         .orElseThrow(() -> new NotFoundException(id));
   }
 

@@ -30,6 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -70,6 +71,8 @@ public class RollerShutterService {
 
   @Transactional
   public void init() {
+    linkConfigsToRollerShutter();
+
     var rxScheduler = RxHelper.blockingScheduler(vertx, false);
     disposables.add(weatherService.getWeather()
         .subscribeOn(rxScheduler)
@@ -121,6 +124,13 @@ public class RollerShutterService {
     initTimer();
   }
 
+  private void linkConfigsToRollerShutter() {
+    rollerShutterConfigRepository.findAll()
+        .forEach(rollerShutterConfig -> deviceService.findDeviceByName(rollerShutterConfig.getName(), RollerShutter.class)
+            .orElseThrow(() -> new IllegalStateException("RollerShutterConfig " + rollerShutterConfig.getName() + " was not found."))
+            .setConfig(rollerShutterConfig));
+  }
+
   private void checkWindSpeed(Weather weather) {
     if (weather.getWind().isBiggerThan(10, METERS_PER_SECOND)) {
       telegramMessageService.sendMessageToMainChannel("Hui das ist sehr winding. Ich mach die Stören hoch.");
@@ -144,11 +154,11 @@ public class RollerShutterService {
   }
 
   private List<Completable> handleWeatherUpdate(Weather weather) {
-    var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
+    var rollerShutters = deviceService.getDevicesOfType(RollerShutter.class);
     var newBrightness = weather.getLight().getAs(KILO_LUX).intValue();
 
     if (weather.getOuterTemperatur().isBiggerThan(27, DEGREE)) {
-      return handleHighTemperature(configs);
+      return handleHighTemperature(rollerShutters);
     }
 
     if (newBrightness > 300) {
@@ -162,16 +172,15 @@ public class RollerShutterService {
         sunDirection.azimuth(),
         compassDirection));
 
-    return configs.stream()
+    return rollerShutters.stream()
         .map(config -> handleWeatherUpdate(config, sunDirection, compassDirection, weather))
         .toList();
   }
 
   @NotNull
-  private List<Completable> handleHighTemperature(List<RollerShutterConfig> configs) {
-    return configs.stream()
+  private List<Completable> handleHighTemperature(Collection<RollerShutter> rollerShutters) {
+    return rollerShutters.stream()
         .filter(RollerShutterService::isOkToClose)
-        .map(this::getRollerShutter)
         .filter(RollerShutterService::hasNoManualAction)
         .filter(rollerShutter -> rollerShutter.getCurrentLift() > 10)
         .map(rollerShutter -> rollerShutter.setLiftAndThenTilt(10, 15, "high temperature"))
@@ -183,25 +192,24 @@ public class RollerShutterService {
   }
 
   @NotNull
-  private Completable handleWeatherUpdate(RollerShutterConfig config,
+  private Completable handleWeatherUpdate(RollerShutter rollerShutter,
       SolarPosition sunDirection,
       CompassDirection compassDirection,
       Weather weather) {
-    var rollerShutter = getRollerShutter(config);
     var light = weather.getLight();
 
-    if (!hasNoManualAction(rollerShutter) || !isOkToOpen(config)) {
+    if (!hasNoManualAction(rollerShutter) || !isOkToOpen(rollerShutter)) {
       return Completable.complete();
     }
 
-    if (light.isBiggerThan(config.getHighSunLevel(), KILO_LUX)) {
-      if (!config.getCompassDirection().contains(compassDirection)) {
+    if (light.isBiggerThan(rollerShutter.getConfig().getHighSunLevel(), KILO_LUX)) {
+      if (!rollerShutter.getConfig().getCompassDirection().contains(compassDirection)) {
         return rollerShutter.open("wrong compass direction");
       }
-      return openBasedOnZenithAngle(config, rollerShutter, sunDirection.zenithAngle());
+      return openBasedOnZenithAngle(rollerShutter, sunDirection.zenithAngle());
     } else if (light.isBiggerThan(10, KILO_LUX) && highSunLock.isGateOpen()) {
       return rollerShutter.open("not much light outside");
-    } else if (isOkToClose(config) && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
+    } else if (isOkToClose(rollerShutter) && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
       blockedByUser = false;
       return rollerShutter.close("night");
     }
@@ -209,7 +217,8 @@ public class RollerShutterService {
     return Completable.complete();
   }
 
-  private Completable openBasedOnZenithAngle(RollerShutterConfig config, RollerShutter rollerShutter, double zenithAngle) {
+  private Completable openBasedOnZenithAngle(RollerShutter rollerShutter, double zenithAngle) {
+    var config = rollerShutter.getConfig();
     if (zenithAngle > 40) {
       return rollerShutter.setLiftAndThenTilt(config.getCloseLevelLowLift(), config.getCloseLevelLowTilt(), "brightness");
     } else if (zenithAngle > 20) {
@@ -219,13 +228,15 @@ public class RollerShutterService {
     return Completable.complete();
   }
 
-  private boolean isOkToOpen(RollerShutterConfig config) {
+  private boolean isOkToOpen(RollerShutter rollerShutter) {
+    var config = rollerShutter.getConfig();
     return (config.getOpenAt() == null || config.getOpenAt().isBefore(LocalTime.now()))
         && (config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now()))
         && !blockedByUser;
   }
 
-  private static boolean isOkToClose(RollerShutterConfig config) {
+  private static boolean isOkToClose(RollerShutter rollerShutter) {
+    var config = rollerShutter.getConfig();
     return (config.getCloseAt() == null || config.getCloseAt().isAfter(LocalTime.now()))
         && (config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now()));
   }
