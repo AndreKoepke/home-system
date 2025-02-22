@@ -18,6 +18,7 @@ export class AppComponent {
   public readonly routes: { text: string; link: string }[] = [
     {text: 'Home', link: '/'},
     {text: 'Animationen', link: '/animation'},
+    {text: 'Störe', link: '/roller-shutter'},
     {text: 'Zug', link: '/train'},
     {text: 'Wetter', link: '/weather'},
     {text: 'Roggen', link: '/livecam'},
@@ -71,8 +72,7 @@ export class AppComponent {
     this.swipe(event, 'end');
   }
 
-
-  swipe(e: TouchEvent, when: string): void {
+  private swipe(e: TouchEvent, when: string): void {
     const coord: [number, number] = [e.changedTouches[0].clientX, e.changedTouches[0].clientY];
     const time = new Date().getTime();
 

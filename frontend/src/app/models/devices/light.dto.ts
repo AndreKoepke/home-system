@@ -1,6 +1,6 @@
-export interface Light {
-  id: string;
-  name: string;
+import {Device} from "./device.dto";
+
+export interface Light extends Device {
   brightness: number;
   on: boolean;
   reachable: boolean;

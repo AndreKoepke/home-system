@@ -5,7 +5,7 @@ import {DevicesService} from "../../services/devices.service";
 import {map, Observable} from "rxjs";
 import {Light} from "../../models/devices/light.dto";
 import {WeatherService} from "../../services/weather.service";
-import {Sensor} from "../../models/devices/sensor.dto";
+import {MotionSensor} from "../../models/devices/sensor.dto";
 
 @Component({
   standalone: true,
@@ -29,7 +29,7 @@ import {Sensor} from "../../models/devices/sensor.dto";
 export class StartPageContainerComponent {
 
   lights$: Observable<Light[]>;
-  sensors$: Observable<Sensor[]>;
+  sensors$: Observable<MotionSensor[]>;
 
   constructor(devicesService: DevicesService, public weatherService: WeatherService) {
     this.lights$ = devicesService.lights$.pipe(map(deviceMap => [...deviceMap.values()]));

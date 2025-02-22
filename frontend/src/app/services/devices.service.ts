@@ -1,66 +1,60 @@
 import {DestroyRef, Injectable} from '@angular/core';
-import {Observable, ReplaySubject, retry} from "rxjs";
+import {BehaviorSubject, Observable, retry, Subject} from "rxjs";
 import {environment} from "../../environments/environment";
 import {Light} from "../models/devices/light.dto";
 import {webSocket} from "rxjs/webSocket";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
-import {Sensor} from "../models/devices/sensor.dto";
+import {MotionSensor} from "../models/devices/sensor.dto";
+import {Device} from "../models/devices/device.dto";
+import {RollerShutter} from "../models/devices/roller-shutter.dto";
 
 @Injectable({
   providedIn: 'root'
 })
 export class DevicesService {
 
-  private actors = new Map<string, Light>;
-  private sensors = new Map<string, Sensor>;
-  private actorSubject = new ReplaySubject<Map<string, Light>>(1);
-  private sensorsSubject = new ReplaySubject<Map<string, Sensor>>(1);
-
-  public get lights$(): Observable<Map<string, Light>> {
-    return this.actorSubject;
-  }
-
-  public get sensors$(): Observable<Map<string, Sensor>> {
-    return this.sensorsSubject;
-  }
-
-  private websocketActorsSubject = webSocket<Light>({
-    url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/devices/actors`,
-  });
-
-  private websocketSensorSubject = webSocket<Sensor>({
-    url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/devices/sensors`
-  });
+  private sensorListener = new Listener<MotionSensor>('sensors', this.destroyRef);
+  private lightListener = new Listener<Light>('lights', this.destroyRef);
+  private rollerShutterListener = new Listener<RollerShutter>('roller-shutters', this.destroyRef);
 
   constructor(private destroyRef: DestroyRef) {
-    this.setupWebsocketListener();
   }
 
-  private setupWebsocketListener() {
-    this.websocketActorsSubject
+  public get lights$(): Observable<Map<string, Light>> {
+    return this.lightListener.subject$;
+  }
+
+  public get sensors$(): Observable<Map<string, MotionSensor>> {
+    return this.sensorListener.subject$;
+  }
+
+  public get rollerShutters$(): Observable<Map<string, RollerShutter>> {
+    return this.rollerShutterListener.subject$;
+  }
+}
+
+class Listener<T extends Device> {
+
+  private devices = new Map<string, T>();
+  public subject$: Subject<Map<string, T>> = new BehaviorSubject(this.devices);
+  private websocket$ = webSocket<T>(Listener.getUrl(this.name));
+
+  constructor(private name: string, destroyRef: DestroyRef) {
+    this.websocket$
       .pipe(
         retry({delay: 5000}),
-        takeUntilDestroyed(this.destroyRef)
+        takeUntilDestroyed(destroyRef)
       )
-      .subscribe(light => this.actorUpdate(light));
-
-    this.websocketSensorSubject
-      .pipe(
-        retry({delay: 5000}),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe(sensor => this.sensorUpdate(sensor));
+      .subscribe(device => this.deviceUpdate(device));
   }
 
-  private sensorUpdate(message: Sensor): void {
-    this.sensors.set(message.id, message);
-    this.sensors = new Map(this.sensors);
-    this.sensorsSubject.next(this.sensors);
+  private static getUrl(name: string): string {
+    return `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/devices/${name}`;
   }
 
-  private actorUpdate(message: Light): void {
-    this.actors.set(message.id, message);
-    this.actors = new Map(this.actors);
-    this.actorSubject.next(this.actors);
+  private deviceUpdate(message: T): void {
+    this.devices.set(message.id, message);
+    this.devices = new Map(this.devices);
+    this.subject$.next(this.devices);
   }
 }

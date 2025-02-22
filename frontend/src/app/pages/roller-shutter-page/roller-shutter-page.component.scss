@@ -1,0 +1,10 @@
+:host {
+  display: grid;
+  grid-template-columns: 33% 33% 33%
+}
+
+@media screen and (max-width: 1000px) {
+  :host {
+    grid-template-columns: 100%;
+  }
+}
