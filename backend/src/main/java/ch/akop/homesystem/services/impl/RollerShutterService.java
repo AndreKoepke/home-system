@@ -173,6 +173,7 @@ public class RollerShutterService {
         compassDirection));
 
     return rollerShutters.stream()
+            .filter(rollerShutter -> rollerShutter.getConfig() != null)
         .map(config -> handleWeatherUpdate(config, sunDirection, compassDirection, weather))
         .toList();
   }
