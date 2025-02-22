@@ -62,6 +62,10 @@ public class RollerShutterDto {
     private Boolean closeWithInterrupt;
 
     public static ConfigDto from(RollerShutterConfig config) {
+      if (config == null) {
+        return null;
+      }
+
       return new ConfigDto()
           .setCompassDirection(config.getCompassDirection())
           .setCloseAt(config.getCloseAt())
