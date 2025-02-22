@@ -11,9 +11,9 @@
   max-height: 50vh;
 }
 
-ul {
-  max-width: 20vw;
-  columns: 2;
-  -webkit-columns: 2;
-  -moz-columns: 2;
+@media screen and (max-width: 700px) {
+  :host {
+    grid-template-columns: 100%;
+  }
 }
+

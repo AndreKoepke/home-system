@@ -4,4 +4,5 @@ export interface Sensor {
   presence?: boolean;
   reachable: boolean;
   lastUpdate: string;
+  presenceChangedAt: string;
 }

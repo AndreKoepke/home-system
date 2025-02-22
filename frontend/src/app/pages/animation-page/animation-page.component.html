@@ -1,8 +1,8 @@
 @for (animation of animations(); track animation.id) {
   <div class="animation-container">
     <div>
-      <span>Animationsname: {{ animation.name }}</span>
-      <br>
+      <h3>{{ animation.name ?? 'kein Name' }}</h3>
+
       <span>Schritte:</span>
       <ul>
         @for (step of animation.steps; track step.id) {

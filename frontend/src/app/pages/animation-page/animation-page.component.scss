@@ -1,9 +1,15 @@
 .animation-container {
   display: grid;
-  grid-template-columns: 1fr 4fr;
+  grid-template-columns: 2fr 4fr;
   align-items: center;
 
   .button-container {
-    max-width: 5%;
+    max-width: 30vh;
+  }
+}
+
+@media screen and (max-width: 700px) {
+  .animation-container {
+    grid-template-columns: 70% 30%;
   }
 }

@@ -1,6 +1,6 @@
 export interface AnimationDto {
   id: string;
-  name: string;
+  name: string | undefined;
   steps: Step[];
 }
 
