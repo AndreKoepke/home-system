@@ -15,7 +15,7 @@ public abstract class AbstractBaseSocket {
   abstract ObjectMapper getObjectMapper();
 
   private final Map<String, Session> sessions = new ConcurrentHashMap<>();
-  private final Map<Session, Set<Integer>> sendHashCodes = new ConcurrentHashMap<>();
+  private final Map<String, Set<Integer>> sendHashCodes = new ConcurrentHashMap<>();
 
   public void registerSession(Session session) {
     sessions.put(session.getId(), session);
@@ -24,6 +24,7 @@ public abstract class AbstractBaseSocket {
   @SneakyThrows
   public void deregisterSession(String sessionId) {
     sessions.remove(sessionId);
+    sendHashCodes.remove(sessionId);
   }
 
   public void broadcast(Object message) {
@@ -31,12 +32,14 @@ public abstract class AbstractBaseSocket {
   }
 
   @SneakyThrows
-  public void sendMessage(Session session, Object message) {
-    sendHashCodes.putIfAbsent(session, new HashSet<>());
-    if (sendHashCodes.get(session).contains(message.hashCode())) {
+  public void sendMessage(String sessionId, Object message) {
+    var session = sessions.get(sessionId);
+
+    sendHashCodes.putIfAbsent(sessionId, new HashSet<>());
+    if (sendHashCodes.get(sessionId).contains(message.hashCode())) {
       return;
     }
-    sendHashCodes.getOrDefault(session, new HashSet<>()).add(message.hashCode());
+    sendHashCodes.getOrDefault(sessionId, new HashSet<>()).add(message.hashCode());
 
     var payload = getObjectMapper().writeValueAsString(message);
     session.getAsyncRemote().sendObject(payload, result -> {

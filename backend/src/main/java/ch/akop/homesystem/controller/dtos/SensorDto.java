@@ -5,13 +5,19 @@ import ch.akop.homesystem.models.devices.sensor.Sensor;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
 public class SensorDto {
 
   private String id;
   private String name;
+
+  // some sensors change that value very often
+  // it causes a lot of websocket messages
+  @EqualsAndHashCode.Exclude
   private ZonedDateTime lastUpdate;
+
   private LocalDateTime presenceChangedAt;
   private boolean reachable;
   private boolean presence;
