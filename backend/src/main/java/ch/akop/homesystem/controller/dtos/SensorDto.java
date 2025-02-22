@@ -2,6 +2,7 @@ package ch.akop.homesystem.controller.dtos;
 
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.Sensor;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import lombok.Data;
 
@@ -11,6 +12,7 @@ public class SensorDto {
   private String id;
   private String name;
   private ZonedDateTime lastUpdate;
+  private LocalDateTime presenceChangedAt;
   private boolean reachable;
   private boolean presence;
 
@@ -25,6 +27,7 @@ public class SensorDto {
 
   public static SensorDto from(MotionSensor motionSensor) {
     return from((Sensor<?>) motionSensor)
-        .setPresence(motionSensor.getIsMoving$().blockingFirst());
+        .setPresenceChangedAt(motionSensor.getMovingChangedAt())
+        .setPresence(motionSensor.isMoving());
   }
 }

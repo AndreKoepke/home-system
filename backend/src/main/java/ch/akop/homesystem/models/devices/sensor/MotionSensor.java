@@ -3,6 +3,7 @@ package ch.akop.homesystem.models.devices.sensor;
 import ch.akop.homesystem.deconz.rest.State;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -18,16 +19,40 @@ public class MotionSensor extends Sensor<MotionSensor> {
   private final Subject<Integer> targetDistance$ = ReplaySubject.createWithSize(1);
   private final boolean offersDistance;
 
+  private boolean moving;
+  private boolean dark;
+  private Integer targetDistance;
+  private LocalDateTime movingChangedAt;
+
   @EqualsAndHashCode.Exclude
   @ToString.Exclude
   private LightLevel lightLevel;
 
   @Override
   protected void consumeInternalUpdate(State update) {
-    isMoving$.onNext(update.getPresence());
-    isDark$.onNext(update.getDark() != null && update.getDark());
-    if (update.getTargetdistance() != null) {
-      targetDistance$.onNext(update.getTargetdistance());
+    setMoving(update.getPresence());
+    setDark(update.getDark() != null && update.getDark());
+    setTargetDistance(targetDistance);
+  }
+
+  private void setMoving(boolean moving) {
+    if (moving == this.moving) {
+      return;
+    }
+    this.movingChangedAt = LocalDateTime.now();
+    this.moving = moving;
+    isMoving$.onNext(moving);
+  }
+
+  private void setDark(boolean dark) {
+    isDark$.onNext(dark);
+    this.dark = dark;
+  }
+
+  private void setTargetDistance(Integer targetDistance) {
+    this.targetDistance = targetDistance;
+    if (targetDistance != null) {
+      targetDistance$.onNext(targetDistance);
     }
   }
 }
