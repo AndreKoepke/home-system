@@ -38,7 +38,7 @@ public class ActorsChangedSocket extends AbstractBaseSocket {
   public void onOpen(Session session) {
     log.info("Opening session: {}", session.getId());
     registerSession(session);
-    sendAllLightsToSession(session);
+    sendAllLightsToSession(session.getId());
   }
 
   @OnClose
@@ -54,10 +54,10 @@ public class ActorsChangedSocket extends AbstractBaseSocket {
   }
 
   @SneakyThrows
-  private void sendAllLightsToSession(Session session) {
+  private void sendAllLightsToSession(String sessionId) {
     deviceService.getDevicesOfType(SimpleLight.class)
         .stream()
         .map(ActorDto::from)
-        .forEach(motionSensor -> sendMessage(session, motionSensor));
+        .forEach(motionSensor -> sendMessage(sessionId, motionSensor));
   }
 }

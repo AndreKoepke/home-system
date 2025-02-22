@@ -38,7 +38,7 @@ public class SensorsChangedSocket extends AbstractBaseSocket {
   public void onOpen(Session session) {
     log.info("Opening session: {}", session.getId());
     registerSession(session);
-    sendAllSensorsToSession(session);
+    sendAllSensorsToSession(session.getId());
   }
 
   @OnClose
@@ -54,10 +54,10 @@ public class SensorsChangedSocket extends AbstractBaseSocket {
   }
 
   @SneakyThrows
-  private void sendAllSensorsToSession(Session session) {
+  private void sendAllSensorsToSession(String sessionId) {
     deviceService.getDevicesOfType(MotionSensor.class)
         .stream()
         .map(SensorDto::from)
-        .forEach(motionSensor -> sendMessage(session, motionSensor));
+        .forEach(motionSensor -> sendMessage(sessionId, motionSensor));
   }
 }

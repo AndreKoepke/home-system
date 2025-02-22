@@ -28,7 +28,7 @@ public abstract class AbstractBaseSocket {
   }
 
   public void broadcast(Object message) {
-    sessions.values().forEach(session -> sendMessage(session, message));
+    sessions.keySet().forEach(sessionId -> sendMessage(sessionId, message));
   }
 
   @SneakyThrows
