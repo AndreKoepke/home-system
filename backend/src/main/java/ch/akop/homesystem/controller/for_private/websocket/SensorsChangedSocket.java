@@ -36,14 +36,12 @@ public class SensorsChangedSocket extends AbstractBaseSocket {
 
   @OnOpen
   public void onOpen(Session session) {
-    log.info("Opening session: {}", session.getId());
     registerSession(session);
     sendAllSensorsToSession(session.getId());
   }
 
   @OnClose
   public void onClose(Session session) {
-    log.info("Close session: {}", session.getId());
     deregisterSession(session.getId());
   }
 

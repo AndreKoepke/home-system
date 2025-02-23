@@ -36,20 +36,17 @@ public class LightsChangedSocket extends AbstractBaseSocket {
 
   @OnOpen
   public void onOpen(Session session) {
-    log.info("Opening session: {}", session.getId());
     registerSession(session);
     sendAllLightsToSession(session.getId());
   }
 
   @OnClose
   public void onClose(Session session) {
-    log.info("Close session: {}", session.getId());
     deregisterSession(session.getId());
   }
 
   @OnError
   public void onError(Session session, Throwable throwable) {
-    log.error("Error on session: {}", session.getId(), throwable);
     deregisterSession(session.getId());
   }
 

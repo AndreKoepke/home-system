@@ -34,7 +34,7 @@ export class DevicesService {
   }
 
   public openAllRollerShutters(): Observable<never> {
-    return this.httpClient.post(`${baseUrl()}/v1/devices/roller-shutters/open-all`, null)
+    return this.httpClient.post(`${environment.backend.protocol}${baseUrl()}/v1/devices/roller-shutters/open-all`, null)
       .pipe(mergeMap(() => EMPTY));
   }
 

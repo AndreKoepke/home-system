@@ -43,14 +43,12 @@ public class WeatherChangedSocket {
 
   @OnOpen
   public void onOpen(Session session) {
-    log.info("Opening session: {} @ {}", session.getId());
     sessions.put(session.getId(), session);
     sendWeatherToSession(session.getAsyncRemote());
   }
 
   @OnClose
   public void onClose(Session session) {
-    log.info("Close session: {}", session.getId());
     sessions.remove(session.getId());
   }
 
