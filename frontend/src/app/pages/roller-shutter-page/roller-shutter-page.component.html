@@ -1,3 +1,10 @@
-@for (rollerShutter of rollerShutters(); track rollerShutter.id) {
-  <app-roller-shutter-cell [rollerShutter]="rollerShutter"/>
-}
+<div class="controls">
+  <app-circle-button text="Alles auf" (triggered)="openAll.emit()"/>
+  <app-circle-button text="Alles zu" (triggered)="closeAll.emit()"/>
+</div>
+
+<div class="shutter-tiles">
+  @for (rollerShutter of rollerShutters(); track rollerShutter.id) {
+    <app-roller-shutter-cell [rollerShutter]="rollerShutter"/>
+  }
+</div>

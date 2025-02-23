@@ -13,7 +13,9 @@ import {RollerShutterPageComponent} from "./roller-shutter-page.component";
   ],
   template: `
     @if (rollerShutters$ | async; as rollerShutters) {
-      <app-roller-shutter-page [rollerShutters]="rollerShutters"/>
+      <app-roller-shutter-page [rollerShutters]="rollerShutters"
+                               (closeAll)="devicesService.closeAllRollerShutters().subscribe()"
+                               (openAll)="devicesService.openAllRollerShutters().subscribe()"/>
     }`,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -21,7 +23,7 @@ export class RollerShutterPageContainerComponent {
 
   rollerShutters$: Observable<RollerShutter[]>;
 
-  constructor(devicesService: DevicesService) {
+  constructor(public devicesService: DevicesService) {
     this.rollerShutters$ = devicesService.rollerShutters$.pipe(map(deviceMap => [...deviceMap.values()]));
   }
 }
