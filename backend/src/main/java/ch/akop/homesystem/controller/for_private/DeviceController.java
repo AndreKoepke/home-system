@@ -66,6 +66,6 @@ public class DeviceController {
   @Path("roller-shutters/close-all")
   public void closeAllRollerShutters() {
     deviceService.getDevicesOfType(RollerShutter.class)
-        .forEach(rollerShutter -> rollerShutter.open("close-all").subscribe());
+        .forEach(rollerShutter -> rollerShutter.close("close-all").subscribe());
   }
 }
