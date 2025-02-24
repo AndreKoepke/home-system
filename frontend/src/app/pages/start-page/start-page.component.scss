@@ -1,6 +1,6 @@
 :host {
   display: grid;
-  grid-template-columns: 33% 33% 33%;
+  grid-template-columns: repeat( auto-fit, minmax(350px, 1fr) );
 }
 
 .grayed {
@@ -10,10 +10,3 @@
 .light-list {
   max-height: 50vh;
 }
-
-@media screen and (max-width: 1000px) {
-  :host {
-    grid-template-columns: 100%;
-  }
-}
-
