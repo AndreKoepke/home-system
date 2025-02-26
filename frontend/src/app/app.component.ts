@@ -1,8 +1,17 @@
-import {ChangeDetectionStrategy, Component, HostListener, Inject, PLATFORM_ID, Signal} from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  CUSTOM_ELEMENTS_SCHEMA,
+  HostListener,
+  Inject,
+  PLATFORM_ID,
+  Signal
+} from '@angular/core';
 import {NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {toSignal} from "@angular/core/rxjs-interop";
 import {filter, map, Subscription, timer} from "rxjs";
 import {isPlatformBrowser} from "@angular/common";
+import '@sbb-esta/lyne-elements/clock.js'
 
 @Component({
   selector: 'app-root',
@@ -11,6 +20,7 @@ import {isPlatformBrowser} from "@angular/common";
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class AppComponent {
   title = 'home-system';

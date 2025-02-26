@@ -30,7 +30,8 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/@sbb-esta/lyne-elements/standard-theme.css"
             ],
             "scripts": [],
             "server": "src/main.server.ts",
