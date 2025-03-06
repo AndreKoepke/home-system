@@ -321,7 +321,7 @@ public class DeconzConnector {
   private static String getTopicName(Class<?> clazz) {
     return switch (clazz.getSimpleName()) {
       case "RollerShutter" -> "roller-shutters";
-      case "DimmableLight", "SimpleLight", "" -> "lights";
+      case "DimmableLight", "SimpleLight", "ColoredLight" -> "lights";
       default -> {
         log.warn("Unknown {}", clazz.getSimpleName());
         yield "unknown";
