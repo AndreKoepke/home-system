@@ -1,6 +1,3 @@
-ALTER TABLE animation
-  ADD PRIMARY KEY (id);
-
 ALTER TABLE config_motion_sensor
   ADD COLUMN IF NOT EXISTS animation_id_night uuid NULL REFERENCES animation (id),
   ADD PRIMARY KEY (name);
