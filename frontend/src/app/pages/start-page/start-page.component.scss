@@ -1,0 +1,12 @@
+:host {
+  display: grid;
+  grid-template-columns: repeat( auto-fit, minmax(200px, 1fr) );
+}
+
+.grayed {
+  color: #555555;
+}
+
+.light-list {
+  max-height: 50vh;
+}

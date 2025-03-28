@@ -215,15 +215,10 @@ public class NormalState extends Activatable implements State {
       return;
     }
 
-    canStartMainDoorAnimation.setForever(true);
-    try {
-      eventBus.publish("home/animation/play", basicConfigRepository.findByOrderByModifiedDesc()
-          .orElseThrow()
-          .getWhenMainDoorOpened());
-
-    } finally {
-      canStartMainDoorAnimation.reset();
-    }
+    eventBus.publish("home/animation/play", basicConfigRepository.findByOrderByModifiedDesc()
+        .orElseThrow()
+        .getWhenMainDoorOpened()
+        .getId());
   }
 
   @Override

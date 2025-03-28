@@ -1,10 +1,10 @@
 package ch.akop.homesystem.controller.dtos;
 
 import ch.akop.homesystem.models.color.Color;
-import ch.akop.homesystem.models.devices.Device;
 import ch.akop.homesystem.models.devices.actor.ColoredLight;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
+import java.time.ZonedDateTime;
 import lombok.Data;
 
 @Data
@@ -15,16 +15,15 @@ public class LightDto {
   private int brightness;
   private Color color;
   private boolean on;
-
-
-  public static LightDto from(Device<?> light) {
-    return new LightDto()
-        .setId(light.getId())
-        .setName(light.getName());
-  }
+  private boolean reachable;
+  private ZonedDateTime lastUpdated;
 
   public static LightDto from(SimpleLight light) {
-    return from((Device<?>) light)
+    return new LightDto()
+        .setId(light.getId())
+        .setName(light.getName())
+        .setReachable(light.isReachable())
+        .setLastUpdated(light.getLastUpdated())
         .setOn(light.isCurrentStateIsOn());
   }
 

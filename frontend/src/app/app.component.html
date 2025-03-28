@@ -1,7 +1,18 @@
-<router-outlet></router-outlet>
-<div class="navbar">
-  <a [class.active]="activeRoute() == '/'" href="#">Home</a>
-  <a [class.active]="activeRoute() == '/train'" href="/train">Zug</a>
-  <a [class.active]="activeRoute() == '/weather'" href="/weather">Wetter</a>
+<div class="container">
+  <router-outlet></router-outlet>
 </div>
 
+<div class="navbar">
+  @for (route of routes; track route.link) {
+    <button type="button" [class.active]="activeRoute() == route.link"
+       (click)="clickMenuItem(route.link)"
+       (touchstart)="clickMenuItem(route.link)">
+      {{ route.text }}
+    </button>
+  }
+</div>
+
+
+<div class="panel">
+  <sbb-clock></sbb-clock>
+</div>

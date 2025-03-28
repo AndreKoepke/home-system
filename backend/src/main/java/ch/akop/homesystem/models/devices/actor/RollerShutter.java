@@ -1,6 +1,7 @@
 package ch.akop.homesystem.models.devices.actor;
 
 import ch.akop.homesystem.deconz.rest.State;
+import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.util.TimedGateKeeper;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
@@ -81,6 +82,8 @@ public class RollerShutter extends Actor<RollerShutter> {
   private Integer currentTilt;
 
   private boolean isOpen;
+
+  public RollerShutterConfig config;
 
   /**
    * Set "tilt" and wait until both reached their position. After that, set lift to the given value.

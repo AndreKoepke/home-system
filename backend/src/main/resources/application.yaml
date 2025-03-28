@@ -7,6 +7,7 @@ server:
 
 quarkus:
 
+
   scheduler:
     enabled: true
 
@@ -34,3 +35,5 @@ quarkus:
       origins: "*"
       methods: "GET,OPTIONS"
       exposed-headers: "prompt"
+
+    root-path: backend

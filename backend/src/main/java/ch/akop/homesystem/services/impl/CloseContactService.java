@@ -46,7 +46,7 @@ public class CloseContactService {
     }
 
     if (config.getAnimationWhenTrigger() != null) {
-      eventBus.publish("home/animation/play", config.getAnimationWhenTrigger());
+      eventBus.publish("home/animation/play", config.getAnimationWhenTrigger().getId());
     }
 
   }

@@ -1,4 +1,4 @@
-package ch.akop.homesystem.controller;
+package ch.akop.homesystem.controller.for_public;
 
 import ch.akop.homesystem.services.impl.TelegramMessageService;
 import com.pengrad.telegrambot.utility.BotUtils;

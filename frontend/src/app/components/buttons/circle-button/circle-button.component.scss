@@ -1,0 +1,42 @@
+:host {
+  max-height: 100%;
+  max-width: 100%;
+}
+
+.round-button {
+  height: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+.round-button-circle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid #cfdcec;
+  overflow: hidden;
+
+  background: #0c1053;
+  box-shadow: 0 0 3px gray;
+}
+
+.round-button-circle:hover {
+  background: #30588e;
+}
+
+.round-button span {
+  cursor: pointer;
+  display: block;
+  float: left;
+  width: 100%;
+  padding-top: 50%;
+  padding-bottom: 50%;
+  line-height: 1em;
+  margin-top: -0.5em;
+
+  text-align: center;
+  color: #e2eaf3;
+  font-family: Verdana;
+  font-size: 1.2em;
+  font-weight: bold;
+  text-decoration: none;
+}

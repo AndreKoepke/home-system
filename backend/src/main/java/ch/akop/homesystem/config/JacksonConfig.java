@@ -10,6 +10,7 @@ public class JacksonConfig implements ObjectMapperCustomizer {
 
   @Override
   public void customize(ObjectMapper objectMapper) {
-    objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    objectMapper
+        .setSerializationInclusion(JsonInclude.Include.NON_NULL);
   }
 }

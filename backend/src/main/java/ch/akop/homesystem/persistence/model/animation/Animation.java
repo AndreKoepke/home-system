@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
+import org.jetbrains.annotations.Nullable;
 
 @Entity
 @Table(name = "animation")
@@ -32,6 +33,10 @@ public class Animation {
   @GeneratedValue(generator = "UUID")
   @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
   private UUID id;
+
+  @Nullable
+  private String name;
+
 
   @NonNull
   @OneToMany(cascade = CascadeType.ALL, mappedBy = "animation")
