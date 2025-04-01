@@ -221,11 +221,11 @@ public class RollerShutterService {
   private Completable openBasedOnZenithAngle(RollerShutter rollerShutter, double zenithAngle) {
     var config = rollerShutter.getConfig();
     if (zenithAngle > 70) {
-      return rollerShutter.setLiftAndThenTilt(0, config.getCloseLevelHighTilt(), "brightness and high zenith angle");
+      return rollerShutter.setLiftAndThenTilt(0, config.getCloseLevelLowTilt(), "brightness and high zenith angle");
     } else if (zenithAngle > 40) {
-      return rollerShutter.setLiftAndThenTilt(config.getCloseLevelHighLift(), config.getCloseLevelHighTilt(), "brightness");
-    } else if (zenithAngle > 20) {
       return rollerShutter.setLiftAndThenTilt(config.getCloseLevelLowLift(), config.getCloseLevelLowTilt(), "brightness");
+    } else if (zenithAngle > 20) {
+      return rollerShutter.setLiftAndThenTilt(config.getCloseLevelHighLift(), config.getCloseLevelHighTilt(), "brightness");
     }
 
     return Completable.complete();
