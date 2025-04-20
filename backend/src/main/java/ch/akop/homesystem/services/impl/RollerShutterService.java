@@ -12,6 +12,7 @@ import ch.akop.homesystem.models.CompassDirection;
 import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
+import ch.akop.homesystem.services.activatable.Activatable;
 import ch.akop.homesystem.util.TimeUtil;
 import ch.akop.homesystem.util.TimedGateKeeper;
 import ch.akop.weathercloud.Weather;
@@ -19,7 +20,10 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.EventBus;
 import io.vertx.rxjava3.RxHelper;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -50,7 +54,7 @@ import org.jetbrains.annotations.NotNull;
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor
-public class RollerShutterService {
+public class RollerShutterService extends Activatable {
 
   public static final Duration TIMEOUT_AFTER_MANUAL = Duration.ofHours(1);
   public static final Duration KEEP_OPEN_AFTER_DARKNESS_FOR = Duration.ofMinutes(10);
@@ -62,15 +66,22 @@ public class RollerShutterService {
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
   private final TelegramMessageService telegramMessageService;
   private final Vertx vertx;
+  private final EventBus eventBus;
 
   private final List<Disposable> disposables = new ArrayList<>();
   private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
   private final TimedGateKeeper highSunLock = new TimedGateKeeper();
 
   private Boolean blockedByUser = false;
+  private final Subject<Boolean> blockedByUserResolver = PublishSubject.create();
 
   @Transactional
   public void init() {
+    started();
+  }
+
+  @Override
+  protected void started() {
     linkConfigsToRollerShutter();
 
     var rxScheduler = RxHelper.blockingScheduler(vertx, false);
@@ -81,6 +92,7 @@ public class RollerShutterService {
             .repeat()
             .switchMap(message -> weatherService.getWeather().take(1))
         )
+        .mergeWith(blockedByUserResolver.switchMap(message -> weatherService.getWeather().take(1)))
         .debounce(10, SECONDS)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
         .retryWhen(origin -> origin
@@ -115,13 +127,47 @@ public class RollerShutterService {
         .subscribe());
 
     disposables.add(telegramMessageService.waitForMessageOnce("keineSonne")
-        .repeat()
-        .subscribe(message -> {
-          telegramMessageService.sendFunnyMessageToMainChannel("Ok ok, ich lasse die Stören bis zum Abend in Ruhe");
+        .switchMap(message -> {
+          telegramMessageService.sendFunnyMessageToMainChannel("Ok ok, ich lasse die Stören bis zum Abend in Ruhe.");
           blockedByUser = true;
-        }));
+          return weatherService.getWeather();
+        })
+        .filter(weather -> weather.getLight().isSmallerThan(1d, KILO_LUX))
+        .mergeWith(blockedByUserResolver.map(ignored -> new Weather()))
+        .doOnNext(weather -> {
+          blockedByUser = false;
+          telegramMessageService.sendFunnyMessageToMainChannel("Es wird dunkel, ich übernehme die Stören wieder.");
+        })
+        .repeat()
+        .subscribe());
 
     initTimer();
+  }
+
+  public void startCalculatingAgain() {
+    blockedByUserResolver.onNext(true);
+  }
+
+  @Transactional
+  public void block(String id) {
+    rollerShutterConfigRepository.findById(id)
+        .ifPresent(rollerShutterConfig -> {
+          rollerShutterConfig.setNoAutomaticsUntil(LocalDateTime.now().plusDays(1));
+          telegramMessageService.sendMessageToMainChannel("Aye, " + rollerShutterConfig.getName() + " ist bis morgen gesperrt.");
+          super.dispose();
+          eventBus.publish("devices/roller-shutters/update", id);
+        });
+  }
+
+  @Transactional
+  public void unblock(String id) {
+    rollerShutterConfigRepository.findById(id)
+        .ifPresent(rollerShutterConfig -> {
+          rollerShutterConfig.setNoAutomaticsUntil(null);
+          telegramMessageService.sendMessageToMainChannel("Aye, " + rollerShutterConfig.getName() + " ist wieder aktiv..");
+          super.dispose();
+          eventBus.publish("devices/roller-shutters/update", id);
+        });
   }
 
   private void linkConfigsToRollerShutter() {
@@ -211,7 +257,6 @@ public class RollerShutterService {
     } else if (light.isBiggerThan(10, KILO_LUX) && highSunLock.isGateOpen()) {
       return rollerShutter.open("not much light outside");
     } else if (isOkToClose(rollerShutter) && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
-      blockedByUser = false;
       return rollerShutter.close("night");
     }
 

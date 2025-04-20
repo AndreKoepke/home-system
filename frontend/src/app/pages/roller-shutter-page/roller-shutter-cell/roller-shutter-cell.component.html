@@ -11,8 +11,18 @@
       <span>{{ directions | compass }}</span>
     }
     @if (rollerShutter().config?.noAutomaticsUntil; as noAutomaticsUntil) {
-      <br>
-      <span>blockiert bis zum {{ noAutomaticsUntil | date:'dd.MM.yyyy' }}</span>
+      @if (noAutomaticsUntil | isDateInFuturePipe | async) {
+        <br>
+        <span>blockiert bis zum {{ noAutomaticsUntil | date:'dd.MM.yyyy' }}</span>
+      }
+    }
+  </div>
+
+  <div class="actions">
+    @if (rollerShutter().config?.noAutomaticsUntil | isDateInFuturePipe | async) {
+      <app-circle-button (triggered)="unblock.emit()" text="🔓"></app-circle-button>
+    } @else {
+      <app-circle-button (triggered)="block.emit()" text="🔒"></app-circle-button>
     }
   </div>
 

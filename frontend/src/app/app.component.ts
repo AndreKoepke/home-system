@@ -1,26 +1,17 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  CUSTOM_ELEMENTS_SCHEMA,
-  HostListener,
-  Inject,
-  PLATFORM_ID,
-  Signal
-} from '@angular/core';
+import {ChangeDetectionStrategy, Component, HostListener, Inject, PLATFORM_ID, Signal} from '@angular/core';
 import {NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {toSignal} from "@angular/core/rxjs-interop";
 import {filter, map, Subscription, timer} from "rxjs";
 import {isPlatformBrowser} from "@angular/common";
-import '@sbb-esta/lyne-elements/clock.js'
+import {SbbClockDirective} from "@sbb-esta/lyne-angular/clock";
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, SbbClockDirective],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class AppComponent {
   title = 'home-system';
@@ -40,7 +31,7 @@ export class AppComponent {
   private readonly intervalForNextMenu = 60_000;
 
 
-  public constructor(private router: Router, @Inject(PLATFORM_ID) plattformId: Object) {
+  public constructor(private readonly router: Router, @Inject(PLATFORM_ID) plattformId: Object) {
     this.activeRoute = toSignal(router.events.pipe(
       filter(event => event instanceof NavigationEnd),
       map(event => (event as NavigationEnd).url),

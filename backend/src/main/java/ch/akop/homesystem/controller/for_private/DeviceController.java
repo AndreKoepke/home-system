@@ -3,7 +3,6 @@ package ch.akop.homesystem.controller.for_private;
 
 import ch.akop.homesystem.controller.dtos.LightDto;
 import ch.akop.homesystem.controller.dtos.SensorDto;
-import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.Sensor;
@@ -11,7 +10,6 @@ import ch.akop.homesystem.services.impl.DeviceService;
 import java.util.stream.Stream;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import lombok.RequiredArgsConstructor;
@@ -53,19 +51,5 @@ public class DeviceController {
     return deviceService.findDeviceById(id, Sensor.class)
         .map(SensorDto::from)
         .orElseThrow(() -> new NotFoundException(id));
-  }
-
-  @POST
-  @Path("roller-shutters/open-all")
-  public void openAllRollerShutters() {
-    deviceService.getDevicesOfType(RollerShutter.class)
-        .forEach(rollerShutter -> rollerShutter.open("open-all").subscribe());
-  }
-
-  @POST
-  @Path("roller-shutters/close-all")
-  public void closeAllRollerShutters() {
-    deviceService.getDevicesOfType(RollerShutter.class)
-        .forEach(rollerShutter -> rollerShutter.close("close-all").subscribe());
   }
 }

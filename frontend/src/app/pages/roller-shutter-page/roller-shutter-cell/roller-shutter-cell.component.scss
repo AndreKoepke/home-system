@@ -1,13 +1,14 @@
 
 .container {
   display: grid;
-  grid-template-columns: 130px auto;
+  grid-template-columns: 130px 5fr 1fr;
   align-items: center;
   border: #555555 solid 1px;
   border-radius: 10px;
   height: 100px;
   width: 400px;
-  margin: 15px
+  margin: 15px;
+  padding-right: 15px;
 }
 
 #wrapper {

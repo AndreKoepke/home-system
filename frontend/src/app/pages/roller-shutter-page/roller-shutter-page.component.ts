@@ -24,4 +24,13 @@ export class RollerShutterPageComponent {
   @Output()
   public closeAll = new OutputEmitterRef<void>();
 
+  @Output()
+  public calcAgain = new OutputEmitterRef<void>();
+
+  @Output()
+  public block = new OutputEmitterRef<string>();
+
+  @Output()
+  public unblock = new OutputEmitterRef<string>();
+
 }
