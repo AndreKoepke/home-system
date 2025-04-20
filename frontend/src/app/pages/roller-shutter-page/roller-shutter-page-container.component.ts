@@ -16,9 +16,9 @@ import {RollerShutterService} from "../../services/roller-shutter.service";
       <app-roller-shutter-page [rollerShutters]="rollerShutters"
                                (closeAll)="rollerShutterService.closeAllRollerShutters().subscribe()"
                                (openAll)="rollerShutterService.openAllRollerShutters().subscribe()"
-                               (calcAgain)="rollerShutterService.calcAgain()"
-                               (block)="rollerShutterService.block($event)"
-                               (unblock)="rollerShutterService.unblock($event)"
+                               (calcAgain)="rollerShutterService.calcAgain().subscribe()"
+                               (block)="rollerShutterService.block($event).subscribe()"
+                               (unblock)="rollerShutterService.unblock($event).subscribe()"
       />
     }`,
   changeDetection: ChangeDetectionStrategy.OnPush

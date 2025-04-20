@@ -150,23 +150,31 @@ public class RollerShutterService extends Activatable {
 
   @Transactional
   public void block(String id) {
-    rollerShutterConfigRepository.findById(id)
-        .ifPresent(rollerShutterConfig -> {
-          rollerShutterConfig.setNoAutomaticsUntil(LocalDateTime.now().plusDays(1));
-          telegramMessageService.sendMessageToMainChannel("Aye, " + rollerShutterConfig.getName() + " ist bis morgen gesperrt.");
-          super.dispose();
-          eventBus.publish("devices/roller-shutters/update", id);
+    deviceService.findDeviceById(id, RollerShutter.class)
+        .ifPresent(rollerShutter -> {
+          var rollerShutterConfig = rollerShutterConfigRepository.findByNameLike(rollerShutter.getName());
+
+          if (rollerShutterConfig.isPresent()) {
+            rollerShutterConfig.get().setNoAutomaticsUntil(LocalDateTime.now().plusDays(1));
+            telegramMessageService.sendMessageToMainChannel("Aye, " + rollerShutter.getName() + " ist bis morgen gesperrt.");
+            super.dispose();
+            eventBus.publish("devices/roller-shutters/update", id);
+          }
         });
   }
 
   @Transactional
   public void unblock(String id) {
-    rollerShutterConfigRepository.findById(id)
-        .ifPresent(rollerShutterConfig -> {
-          rollerShutterConfig.setNoAutomaticsUntil(null);
-          telegramMessageService.sendMessageToMainChannel("Aye, " + rollerShutterConfig.getName() + " ist wieder aktiv..");
-          super.dispose();
-          eventBus.publish("devices/roller-shutters/update", id);
+    deviceService.findDeviceById(id, RollerShutter.class)
+        .ifPresent(rollerShutter -> {
+          var rollerShutterConfig = rollerShutterConfigRepository.findByNameLike(rollerShutter.getName());
+
+          if (rollerShutterConfig.isPresent()) {
+            rollerShutterConfig.get().setNoAutomaticsUntil(null);
+            telegramMessageService.sendMessageToMainChannel("Aye, " + rollerShutter.getName() + " ist wieder aktiv..");
+            super.dispose();
+            eventBus.publish("devices/roller-shutters/update", id);
+          }
         });
   }
 
