@@ -158,6 +158,7 @@ public class RollerShutterService extends Activatable {
             rollerShutterConfig.get().setNoAutomaticsUntil(LocalDateTime.now().plusDays(1));
             telegramMessageService.sendMessageToMainChannel("Aye, " + rollerShutter.getName() + " ist bis morgen gesperrt.");
             super.dispose();
+            super.start();
             eventBus.publish("devices/roller-shutters/update", id);
           }
         });
@@ -173,6 +174,7 @@ public class RollerShutterService extends Activatable {
             rollerShutterConfig.get().setNoAutomaticsUntil(null);
             telegramMessageService.sendMessageToMainChannel("Aye, " + rollerShutter.getName() + " ist wieder aktiv..");
             super.dispose();
+            super.start();
             eventBus.publish("devices/roller-shutters/update", id);
           }
         });
