@@ -19,7 +19,6 @@ import ch.akop.weathercloud.Weather;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import io.vertx.core.Vertx;
@@ -43,7 +42,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -68,7 +66,6 @@ public class RollerShutterService extends Activatable {
   private final Vertx vertx;
   private final EventBus eventBus;
 
-  private final List<Disposable> disposables = new ArrayList<>();
   private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
   private final TimedGateKeeper highSunLock = new TimedGateKeeper();
 
@@ -85,7 +82,7 @@ public class RollerShutterService extends Activatable {
     linkConfigsToRollerShutter();
 
     var rxScheduler = RxHelper.blockingScheduler(vertx, false);
-    disposables.add(weatherService.getWeather()
+    super.disposeWhenClosed(weatherService.getWeather()
         .subscribeOn(rxScheduler)
         .doOnNext(this::checkWindSpeed)
         .mergeWith(telegramMessageService.waitForMessageOnce("calcRollerShutter")
@@ -100,7 +97,7 @@ public class RollerShutterService extends Activatable {
             .delay(5, TimeUnit.MINUTES))
         .subscribe());
 
-    disposables.add(telegramMessageService.waitForMessageOnce("noAutomaticsForRollerShutter")
+    super.disposeWhenClosed(telegramMessageService.waitForMessageOnce("noAutomaticsForRollerShutter")
         .subscribeOn(rxScheduler)
         .doOnNext(message -> telegramMessageService.sendMessageToMainChannel("Ok, welche Störe soll ich eine Zeit in Ruhe lassen?"))
         .doOnNext(message -> deviceService.getDevicesOfType(RollerShutter.class)
@@ -126,7 +123,7 @@ public class RollerShutterService extends Activatable {
         .repeat()
         .subscribe());
 
-    disposables.add(telegramMessageService.waitForMessageOnce("keineSonne")
+    super.disposeWhenClosed(telegramMessageService.waitForMessageOnce("keineSonne")
         .switchMap(message -> {
           telegramMessageService.sendFunnyMessageToMainChannel("Ok ok, ich lasse die Stören bis zum Abend in Ruhe.");
           blockedByUser = true;
@@ -317,7 +314,7 @@ public class RollerShutterService extends Activatable {
       return;
     }
 
-    disposables.add(Observable.defer(this::timerForNextEvent)
+    super.disposeWhenClosed(Observable.defer(this::timerForNextEvent)
         .repeat()
         .subscribe());
   }
@@ -353,11 +350,6 @@ public class RollerShutterService extends Activatable {
         .map(TimeUtil::getLocalDateTimeForTodayOrTomorrow)
         .min(LocalDateTime::compareTo)
         .orElseThrow();
-  }
-
-  @PreDestroy
-  void tearDown() {
-    disposables.forEach(Disposable::dispose);
   }
 
   private CompassDirection resolveCompassDirection(SolarPosition sunDirection) {
