@@ -131,6 +131,7 @@ public class RollerShutterService extends Activatable {
         })
         .filter(weather -> weather.getLight().isSmallerThan(1d, KILO_LUX))
         .mergeWith(blockedByUserResolver.map(ignored -> new Weather()))
+        .take(1)
         .doOnNext(weather -> {
           blockedByUser = false;
           telegramMessageService.sendFunnyMessageToMainChannel("Es wird dunkel, ich übernehme die Stören wieder.");
