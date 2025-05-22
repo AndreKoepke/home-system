@@ -32,6 +32,7 @@ import io.vertx.core.eventbus.EventBus;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import javax.annotation.Priority;
@@ -61,7 +62,14 @@ public class DeconzConnector {
   @Getter
   private final AtomicBoolean isConnected = new AtomicBoolean(false);
 
+  private final LinkedBlockingQueue<UpdateLightParams> updateActions = new LinkedBlockingQueue<>(1000);
+
   DeconzService deconzService;
+
+
+  private record UpdateLightParams(String id, State newState) {
+
+  }
 
 
   @Transactional
@@ -92,7 +100,28 @@ public class DeconzConnector {
     registerDevices();
     automationService.discoverNewDevices();
 
+    new Thread(this::sendUpdateActions).start();
+
     log.info("deCONZ is up");
+  }
+
+  private void sendUpdateActions() {
+    log.info("deCONZ start sending messages");
+
+    var shouldRun = true;
+    do {
+      try {
+        var actionToSend = updateActions.take();
+        deconzService.updateLight(actionToSend.id, actionToSend.newState);
+        Thread.sleep(10);
+      } catch (InterruptedException e) {
+        log.info("Aborts to send light updates");
+        shouldRun = false;
+        Thread.currentThread().interrupt();
+      }
+    } while (shouldRun);
+
+    log.warn("deCONZ stopped sending messages");
   }
 
   private void registerDevices() {
@@ -236,7 +265,9 @@ public class DeconzConnector {
       return;
     }
 
-    deconzService.updateLight(id, newState);
+    if (!updateActions.offer(new UpdateLightParams(id, newState))) {
+      throw new IllegalStateException("Too many updates pending");
+    }
   }
 
   private ColoredLight createColorLight(String id) {
