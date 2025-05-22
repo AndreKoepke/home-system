@@ -28,6 +28,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
 import io.vertx.core.eventbus.EventBus;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -118,7 +119,6 @@ public class NormalState extends Activatable implements State {
         .subscribe(this::gotNewPresenceMap));
 
     super.disposeWhenClosed(userService.isAnyoneAtHome$()
-        .delay(10, TimeUnit.MINUTES)
         .switchMap(this::shouldLightsTurnedOff)
         .filter(canTurnOff -> canTurnOff)
         .subscribe(canTurnOff -> deviceService.turnAllLightsOff()));
@@ -198,7 +198,8 @@ public class NormalState extends Activatable implements State {
     messageService.sendMessageToMainChannel("Es niemand zu Hause, deswegen mache ich gleich die Lichter aus." +
         "Es sei denn, /lassAn");
 
-    return messageService.waitForMessageOnce("lassAn")
+    return Observable.timer(10, TimeUnit.MINUTES)
+        .switchMap(ignored -> messageService.waitForMessageOnce("lassAn"))
         .doOnNext(message -> messageService.sendMessageToMainChannel("Ok, ich lasse die Lichter an."))
         .map(s -> false)
         .timeout(5, TimeUnit.MINUTES)
