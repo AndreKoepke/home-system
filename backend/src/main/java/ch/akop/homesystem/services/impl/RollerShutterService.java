@@ -298,7 +298,9 @@ public class RollerShutterService extends Activatable {
   }
 
   private void initTimer() {
-    rollerShutterConfigRepository.findAll().stream()
+    deviceService.getDevicesOfType(RollerShutter.class)
+        .stream()
+        .map(RollerShutter::getConfig)
         .filter(config -> config.getCloseAt() != null || config.getOpenAt() != null)
         .forEach(config -> {
           Optional.ofNullable(config.getOpenAt())
