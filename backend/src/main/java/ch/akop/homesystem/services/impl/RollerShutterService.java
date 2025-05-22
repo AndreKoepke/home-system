@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.enterprise.context.ApplicationScoped;
@@ -301,6 +302,7 @@ public class RollerShutterService extends Activatable {
     deviceService.getDevicesOfType(RollerShutter.class)
         .stream()
         .map(RollerShutter::getConfig)
+        .filter(Objects::nonNull)
         .filter(config -> config.getCloseAt() != null || config.getOpenAt() != null)
         .forEach(config -> {
           Optional.ofNullable(config.getOpenAt())
