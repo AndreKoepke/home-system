@@ -26,6 +26,7 @@ import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
 import ch.akop.homesystem.services.impl.AutomationService;
 import ch.akop.homesystem.services.impl.DeviceService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
 import io.vertx.core.eventbus.EventBus;
@@ -63,6 +64,7 @@ public class DeconzConnector {
   private final AtomicBoolean isConnected = new AtomicBoolean(false);
 
   private final LinkedBlockingQueue<UpdateLightParams> updateActions = new LinkedBlockingQueue<>(1000);
+  private final ObjectMapper objectMapper;
 
   DeconzService deconzService;
 
@@ -105,6 +107,7 @@ public class DeconzConnector {
     log.info("deCONZ is up");
   }
 
+  @SneakyThrows
   private void sendUpdateActions() {
     log.info("deCONZ start sending messages");
 
@@ -112,7 +115,7 @@ public class DeconzConnector {
     do {
       try {
         var actionToSend = updateActions.take();
-        log.info("Sending {} to {}", actionToSend.newState, actionToSend.id);
+        log.info("Sending {} to {}", objectMapper.writeValueAsString(actionToSend.newState), actionToSend.id);
         deconzService.updateLight(actionToSend.id, actionToSend.newState);
         Thread.sleep(20);
       } catch (InterruptedException e) {
