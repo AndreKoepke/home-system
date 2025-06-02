@@ -100,7 +100,7 @@ public class DeconzConnector {
     registerDevices();
     automationService.discoverNewDevices();
 
-    new Thread(this::sendUpdateActions).start();
+    new Thread(this::sendUpdateActions, "deconz-notifier").start();
 
     log.info("deCONZ is up");
   }
@@ -112,8 +112,9 @@ public class DeconzConnector {
     do {
       try {
         var actionToSend = updateActions.take();
+        log.info("Sending {} to {}", actionToSend.newState, actionToSend.id);
         deconzService.updateLight(actionToSend.id, actionToSend.newState);
-        Thread.sleep(10);
+        Thread.sleep(20);
       } catch (InterruptedException e) {
         log.info("Aborts to send light updates");
         shouldRun = false;

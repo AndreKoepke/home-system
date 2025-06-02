@@ -6,11 +6,11 @@ import static ch.akop.homesystem.util.TimeUtil.getLocalDateTimeForTodayOrTomorro
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 import static ch.akop.weathercloud.wind.WindSpeedUnit.METERS_PER_SECOND;
+import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import ch.akop.homesystem.models.CompassDirection;
 import ch.akop.homesystem.models.devices.actor.RollerShutter;
-import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
 import ch.akop.homesystem.services.activatable.Activatable;
 import ch.akop.homesystem.util.TimeUtil;
@@ -31,17 +31,18 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
@@ -67,7 +68,7 @@ public class RollerShutterService extends Activatable {
   private final Vertx vertx;
   private final EventBus eventBus;
 
-  private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
+  private final Map<LocalTime, Set<String>> timeToConfigs = new HashMap<>();
   private final TimedGateKeeper highSunLock = new TimedGateKeeper();
 
   private Boolean blockedByUser = false;
@@ -236,6 +237,7 @@ public class RollerShutterService extends Activatable {
   @NotNull
   private List<Completable> handleHighTemperature(Collection<RollerShutter> rollerShutters) {
     return rollerShutters.stream()
+        .filter(rollerShutter -> rollerShutter.getConfig() != null)
         .filter(RollerShutterService::isOkToClose)
         .filter(RollerShutterService::hasNoManualAction)
         .filter(rollerShutter -> rollerShutter.getCurrentLift() > 10)
@@ -305,12 +307,12 @@ public class RollerShutterService extends Activatable {
         .filter(Objects::nonNull)
         .filter(config -> config.getCloseAt() != null || config.getOpenAt() != null)
         .forEach(config -> {
-          Optional.ofNullable(config.getOpenAt())
-              .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new ArrayList<>()))
+          ofNullable(config.getOpenAt())
+              .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new HashSet<>()))
               .ifPresent(list -> list.add(config.getName()));
 
-          Optional.ofNullable(config.getCloseAt())
-              .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new ArrayList<>()))
+          ofNullable(config.getCloseAt())
+              .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new HashSet<>()))
               .ifPresent(list -> list.add(config.getName()));
         });
 
@@ -336,11 +338,9 @@ public class RollerShutterService extends Activatable {
   private void handleTime(LocalTime time) {
     timeToConfigs.get(time)
         .stream()
-        .map(id -> QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findById(id))
-            .orElseThrow(() -> new IllegalStateException("RollerShutterConfig %s is not in database".formatted(id))))
-        .forEach(config -> {
-          var rollerShutter = getRollerShutter(config);
-          if (config.getCloseAt() != null && config.getCloseAt().equals(time)) {
+        .flatMap(name -> deviceService.findDeviceByName(name, RollerShutter.class).stream())
+        .forEach(rollerShutter -> {
+          if (rollerShutter.getConfig().getCloseAt() != null && rollerShutter.getConfig().getCloseAt().equals(time)) {
             rollerShutter.close("time").subscribe();
           } else {
             rollerShutter.open("time").subscribe();
@@ -361,10 +361,5 @@ public class RollerShutterService extends Activatable {
     return Arrays.stream(CompassDirection.values())
         .min(Comparator.comparing(value -> Math.abs(value.getDirection() - sunDirection.azimuth())))
         .orElseThrow(() -> new NoSuchElementException("Can't resolve direction for %s".formatted(sunDirection)));
-  }
-
-  private RollerShutter getRollerShutter(RollerShutterConfig config) {
-    return deviceService.findDeviceByName(config.getName(), RollerShutter.class)
-        .orElseThrow(() -> new NoSuchElementException("No rollerShutter named '%s' was found in deviceList.".formatted(config.getName())));
   }
 }
