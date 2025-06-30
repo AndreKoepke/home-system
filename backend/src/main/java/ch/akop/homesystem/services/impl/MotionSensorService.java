@@ -5,22 +5,21 @@ import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
+import ch.akop.homesystem.persistence.model.animation.Animation;
 import ch.akop.homesystem.persistence.model.config.MotionSensorConfig;
 import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigRepository;
 import ch.akop.homesystem.states.NormalState;
 import ch.akop.homesystem.states.SleepState;
-import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
-import io.vertx.rxjava3.RxHelper;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Priority;
@@ -28,6 +27,7 @@ import javax.enterprise.context.Dependent;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 
 @RequiredArgsConstructor
 @Priority(500)
@@ -40,9 +40,7 @@ public class MotionSensorService {
   private final StateService stateService;
   private final WeatherService weatherService;
   private final EventBus eventBus;
-  private final Vertx vertx;
   private final Set<String> sensorsWithHigherTimeout = new HashSet<>();
-
 
   @Transactional
   public void init() {
@@ -78,9 +76,24 @@ public class MotionSensorService {
 
     public ConfigWithLights(MotionSensorConfig config) {
       this.config = config;
+      eagerFetchAllLazyCollections(config);
       this.referencedLights = resolveLights();
       this.sensor = MotionSensorService.this.deviceService.findDeviceByName(config.getName(), MotionSensor.class)
           .orElseThrow(() -> new NoSuchElementException("MotionSensor '" + config.getName() + "' not found"));
+    }
+
+    private void eagerFetchAllLazyCollections(MotionSensorConfig motionSensorConfig) {
+      Hibernate.initialize(motionSensorConfig.getLights());
+      Hibernate.initialize(motionSensorConfig.getLightsAtNight());
+      Optional.ofNullable(motionSensorConfig.getAnimation()).ifPresent(this::eagerFetchAllLazyCollections);
+      Optional.ofNullable(motionSensorConfig.getAnimationNight()).ifPresent(this::eagerFetchAllLazyCollections);
+    }
+
+    private void eagerFetchAllLazyCollections(Animation animation) {
+      Hibernate.initialize(animation.getLights());
+      Hibernate.initialize(animation.getDimmLightSteps());
+      Hibernate.initialize(animation.getPauseSteps());
+      Hibernate.initialize(animation.getOnOffSteps());
     }
 
     private List<SimpleLight> resolveLights() {
@@ -93,8 +106,7 @@ public class MotionSensorService {
     public void startListing() {
       stateService.getCurrrentState$()
           .skip(1)
-          .subscribeOn(RxHelper.blockingScheduler(vertx, false))
-          .subscribe(newState -> QuarkusTransaction.requiringNew().run(() -> this.referencedLights = resolveLights()));
+          .subscribe(newState -> this.referencedLights = resolveLights());
 
       sensor.getIsMoving$()
           .subscribeOn(Schedulers.io())
