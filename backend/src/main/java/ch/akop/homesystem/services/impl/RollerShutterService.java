@@ -241,7 +241,7 @@ public class RollerShutterService extends Activatable {
         .filter(RollerShutterService::isOkToClose)
         .filter(RollerShutterService::hasNoManualAction)
         .filter(rollerShutter -> rollerShutter.getCurrentLift() > 10)
-        .map(rollerShutter -> rollerShutter.setLiftAndThenTilt(10, 15, "high temperature"))
+        .map(rollerShutter -> rollerShutter.close("high temperature"))
         .toList();
   }
 
