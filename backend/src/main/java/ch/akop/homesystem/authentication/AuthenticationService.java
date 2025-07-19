@@ -1,6 +1,8 @@
 package ch.akop.homesystem.authentication;
 
 import ch.akop.homesystem.services.impl.TelegramMessageService;
+import io.quarkus.runtime.util.StringUtil;
+import java.net.InetAddress;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -8,6 +10,7 @@ import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.container.ContainerRequestContext;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -22,11 +25,16 @@ public class AuthenticationService {
   private final AuthenticationRepository authenticationRepository;
   private final TelegramMessageService telegramMessageService;
 
-  @ConfigProperty(name = "BASE_URL")
+  @ConfigProperty(name = "BASE_URL", defaultValue = "")
   String baseUrl;
 
   @PostConstruct
+  @SneakyThrows
   public void init() {
+    if (StringUtil.isNullOrEmpty(baseUrl)) {
+      baseUrl = InetAddress.getLocalHost().getHostAddress();
+    }
+
     telegramMessageService.waitForMessageOnce("registerNewWebUrl")
         .repeat()
         .map(registration -> authenticationRepository.save(new AuthenticationToken()
