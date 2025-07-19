@@ -6,6 +6,9 @@ import {AnimationDto} from "../../../models/animation.dto";
 //👇 This default export determines where your story goes in the story list
 const meta: Meta<AnimationEditorComponent> = {
   component: AnimationEditorComponent,
+  argTypes: {
+    createStep: {action: 'outputChange'},
+  }
 };
 
 export default meta;

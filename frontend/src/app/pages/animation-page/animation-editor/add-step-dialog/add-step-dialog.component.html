@@ -1,0 +1,21 @@
+<h2 mat-dialog-title>Neuer Step</h2>
+<mat-dialog-content>
+  <mat-form-field>
+    <mat-label>Was für einen Schritt?</mat-label>
+    <mat-select [(value)]="newKindOfAnimation">
+      <mat-option value="break">Pause</mat-option>
+      <mat-option value="dim">Licht dimmen</mat-option>
+      <mat-option value="switch">Licht an- oder ausschalten</mat-option>
+    </mat-select>
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <button mat-button (click)="onNoClick()">Ne doch nicht</button>
+  <button mat-button (click)="onSave()" cdkFocusInitial>Speichern</button>
+</mat-dialog-actions>
+
+
+
+
+
