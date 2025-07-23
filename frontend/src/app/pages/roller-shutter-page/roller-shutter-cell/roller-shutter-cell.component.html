@@ -1,0 +1,29 @@
+<div class="container">
+  <div id="wrapper">
+    <div class="stripe" [style.--lift]="rollerShutter().currentLift + '%'"
+         [style.--tilt]="rollerShutter().currentTilt + '%'"></div>
+  </div>
+
+  <div>
+    <span>{{ rollerShutter().name }}</span>
+    @if (rollerShutter().config?.compassDirection; as directions) {
+      <br>
+      <span>{{ directions | compass }}</span>
+    }
+    @if (rollerShutter().config?.noAutomaticsUntil; as noAutomaticsUntil) {
+      @if (noAutomaticsUntil | isDateInFuturePipe | async) {
+        <br>
+        <span>blockiert bis zum {{ noAutomaticsUntil | date:'dd.MM.yyyy' }}</span>
+      }
+    }
+  </div>
+
+  <div class="actions">
+    @if (rollerShutter().config?.noAutomaticsUntil | isDateInFuturePipe | async) {
+      <app-circle-button (triggered)="unblock.emit()" text="🔓"></app-circle-button>
+    } @else {
+      <app-circle-button (triggered)="block.emit()" text="🔒"></app-circle-button>
+    }
+  </div>
+
+</div>

@@ -29,3 +29,9 @@ services:
       - DB_PASS=super_long_and_very_secure_password_should_be_fine_okay?
     depends_on:
       - database
+
+  home-system-ui:
+    image: akop/home-system-frontend:latest
+    restart: always
+    ports:
+      - "0.0.0.0:8080:8080"

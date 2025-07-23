@@ -6,20 +6,23 @@ import static ch.akop.homesystem.util.TimeUtil.getLocalDateTimeForTodayOrTomorro
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
 import static ch.akop.weathercloud.wind.WindSpeedUnit.METERS_PER_SECOND;
+import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import ch.akop.homesystem.models.CompassDirection;
 import ch.akop.homesystem.models.devices.actor.RollerShutter;
-import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
+import ch.akop.homesystem.services.activatable.Activatable;
 import ch.akop.homesystem.util.TimeUtil;
 import ch.akop.homesystem.util.TimedGateKeeper;
 import ch.akop.weathercloud.Weather;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.EventBus;
 import io.vertx.rxjava3.RxHelper;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -28,17 +31,19 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +54,7 @@ import org.jetbrains.annotations.NotNull;
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor
-public class RollerShutterService {
+public class RollerShutterService extends Activatable {
 
   public static final Duration TIMEOUT_AFTER_MANUAL = Duration.ofHours(1);
   public static final Duration KEEP_OPEN_AFTER_DARKNESS_FOR = Duration.ofMinutes(10);
@@ -61,23 +66,32 @@ public class RollerShutterService {
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
   private final TelegramMessageService telegramMessageService;
   private final Vertx vertx;
+  private final EventBus eventBus;
 
-  private final List<Disposable> disposables = new ArrayList<>();
-  private final Map<LocalTime, List<String>> timeToConfigs = new HashMap<>();
+  private final Map<LocalTime, Set<String>> timeToConfigs = new HashMap<>();
   private final TimedGateKeeper highSunLock = new TimedGateKeeper();
 
   private Boolean blockedByUser = false;
+  private final Subject<Boolean> blockedByUserResolver = PublishSubject.create();
 
   @Transactional
   public void init() {
+    started();
+  }
+
+  @Override
+  protected void started() {
+    linkConfigsToRollerShutter();
+
     var rxScheduler = RxHelper.blockingScheduler(vertx, false);
-    disposables.add(weatherService.getWeather()
+    super.disposeWhenClosed(weatherService.getWeather()
         .subscribeOn(rxScheduler)
         .doOnNext(this::checkWindSpeed)
         .mergeWith(telegramMessageService.waitForMessageOnce("calcRollerShutter")
             .repeat()
             .switchMap(message -> weatherService.getWeather().take(1))
         )
+        .mergeWith(blockedByUserResolver.switchMap(message -> weatherService.getWeather().take(1)))
         .debounce(10, SECONDS)
         .flatMapCompletable(weather -> Completable.merge(handleWeatherUpdate(weather)))
         .retryWhen(origin -> origin
@@ -85,7 +99,7 @@ public class RollerShutterService {
             .delay(5, TimeUnit.MINUTES))
         .subscribe());
 
-    disposables.add(telegramMessageService.waitForMessageOnce("noAutomaticsForRollerShutter")
+    super.disposeWhenClosed(telegramMessageService.waitForMessageOnce("noAutomaticsForRollerShutter")
         .subscribeOn(rxScheduler)
         .doOnNext(message -> telegramMessageService.sendMessageToMainChannel("Ok, welche Störe soll ich eine Zeit in Ruhe lassen?"))
         .doOnNext(message -> deviceService.getDevicesOfType(RollerShutter.class)
@@ -111,14 +125,66 @@ public class RollerShutterService {
         .repeat()
         .subscribe());
 
-    disposables.add(telegramMessageService.waitForMessageOnce("keineSonne")
-        .repeat()
-        .subscribe(message -> {
-          telegramMessageService.sendFunnyMessageToMainChannel("Ok ok, ich lasse die Stören bis zum Abend in Ruhe");
+    super.disposeWhenClosed(telegramMessageService.waitForMessageOnce("keineSonne")
+        .switchMap(message -> {
+          telegramMessageService.sendFunnyMessageToMainChannel("Ok ok, ich lasse die Stören bis zum Abend in Ruhe.");
           blockedByUser = true;
-        }));
+          return weatherService.getWeather();
+        })
+        .filter(weather -> weather.getLight().isSmallerThan(1d, KILO_LUX))
+        .mergeWith(blockedByUserResolver.map(ignored -> new Weather()))
+        .take(1)
+        .doOnNext(weather -> {
+          blockedByUser = false;
+          telegramMessageService.sendFunnyMessageToMainChannel("Es wird dunkel, ich übernehme die Stören wieder.");
+        })
+        .repeat()
+        .subscribe());
 
     initTimer();
+  }
+
+  public void startCalculatingAgain() {
+    blockedByUserResolver.onNext(true);
+  }
+
+  @Transactional
+  public void block(String id) {
+    deviceService.findDeviceById(id, RollerShutter.class)
+        .ifPresent(rollerShutter -> {
+          var rollerShutterConfig = rollerShutterConfigRepository.findByNameLike(rollerShutter.getName());
+
+          if (rollerShutterConfig.isPresent()) {
+            rollerShutterConfig.get().setNoAutomaticsUntil(LocalDateTime.now().plusDays(1));
+            telegramMessageService.sendMessageToMainChannel("Aye, " + rollerShutter.getName() + " ist bis morgen gesperrt.");
+            super.dispose();
+            super.start();
+            eventBus.publish("devices/roller-shutters/update", id);
+          }
+        });
+  }
+
+  @Transactional
+  public void unblock(String id) {
+    deviceService.findDeviceById(id, RollerShutter.class)
+        .ifPresent(rollerShutter -> {
+          var rollerShutterConfig = rollerShutterConfigRepository.findByNameLike(rollerShutter.getName());
+
+          if (rollerShutterConfig.isPresent()) {
+            rollerShutterConfig.get().setNoAutomaticsUntil(null);
+            telegramMessageService.sendMessageToMainChannel("Aye, " + rollerShutter.getName() + " ist wieder aktiv..");
+            super.dispose();
+            super.start();
+            eventBus.publish("devices/roller-shutters/update", id);
+          }
+        });
+  }
+
+  private void linkConfigsToRollerShutter() {
+    rollerShutterConfigRepository.findAll()
+        .forEach(rollerShutterConfig -> deviceService.findDeviceByName(rollerShutterConfig.getName(), RollerShutter.class)
+            .orElseThrow(() -> new IllegalStateException("RollerShutterConfig " + rollerShutterConfig.getName() + " was not found."))
+            .setConfig(rollerShutterConfig));
   }
 
   private void checkWindSpeed(Weather weather) {
@@ -144,11 +210,11 @@ public class RollerShutterService {
   }
 
   private List<Completable> handleWeatherUpdate(Weather weather) {
-    var configs = QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findRollerShutterConfigByCompassDirectionIsNotNull().toList());
+    var rollerShutters = deviceService.getDevicesOfType(RollerShutter.class);
     var newBrightness = weather.getLight().getAs(KILO_LUX).intValue();
 
     if (weather.getOuterTemperatur().isBiggerThan(27, DEGREE)) {
-      return handleHighTemperature(configs);
+      return handleHighTemperature(rollerShutters);
     }
 
     if (newBrightness > 300) {
@@ -162,19 +228,20 @@ public class RollerShutterService {
         sunDirection.azimuth(),
         compassDirection));
 
-    return configs.stream()
+    return rollerShutters.stream()
+        .filter(rollerShutter -> rollerShutter.getConfig() != null)
         .map(config -> handleWeatherUpdate(config, sunDirection, compassDirection, weather))
         .toList();
   }
 
   @NotNull
-  private List<Completable> handleHighTemperature(List<RollerShutterConfig> configs) {
-    return configs.stream()
+  private List<Completable> handleHighTemperature(Collection<RollerShutter> rollerShutters) {
+    return rollerShutters.stream()
+        .filter(rollerShutter -> rollerShutter.getConfig() != null)
         .filter(RollerShutterService::isOkToClose)
-        .map(this::getRollerShutter)
         .filter(RollerShutterService::hasNoManualAction)
         .filter(rollerShutter -> rollerShutter.getCurrentLift() > 10)
-        .map(rollerShutter -> rollerShutter.setLiftAndThenTilt(10, 15, "high temperature"))
+        .map(rollerShutter -> rollerShutter.close("high temperature"))
         .toList();
   }
 
@@ -183,34 +250,35 @@ public class RollerShutterService {
   }
 
   @NotNull
-  private Completable handleWeatherUpdate(RollerShutterConfig config,
+  private Completable handleWeatherUpdate(RollerShutter rollerShutter,
       SolarPosition sunDirection,
       CompassDirection compassDirection,
       Weather weather) {
-    var rollerShutter = getRollerShutter(config);
     var light = weather.getLight();
 
-    if (!hasNoManualAction(rollerShutter) || !isOkToOpen(config)) {
+    if (!hasNoManualAction(rollerShutter) || !isOkToOpen(rollerShutter)) {
       return Completable.complete();
     }
 
-    if (light.isBiggerThan(config.getHighSunLevel(), KILO_LUX)) {
-      if (!config.getCompassDirection().contains(compassDirection)) {
+    if (light.isBiggerThan(rollerShutter.getConfig().getHighSunLevel(), KILO_LUX)) {
+      if (!rollerShutter.getConfig().getCompassDirection().contains(compassDirection)) {
         return rollerShutter.open("wrong compass direction");
       }
-      return openBasedOnZenithAngle(config, rollerShutter, sunDirection.zenithAngle());
+      return openBasedOnZenithAngle(rollerShutter, sunDirection.zenithAngle());
     } else if (light.isBiggerThan(10, KILO_LUX) && highSunLock.isGateOpen()) {
       return rollerShutter.open("not much light outside");
-    } else if (isOkToClose(config) && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
-      blockedByUser = false;
+    } else if (isOkToClose(rollerShutter) && weatherService.outSideDarkFor().compareTo(KEEP_OPEN_AFTER_DARKNESS_FOR) > 0) {
       return rollerShutter.close("night");
     }
 
     return Completable.complete();
   }
 
-  private Completable openBasedOnZenithAngle(RollerShutterConfig config, RollerShutter rollerShutter, double zenithAngle) {
-    if (zenithAngle > 40) {
+  private Completable openBasedOnZenithAngle(RollerShutter rollerShutter, double zenithAngle) {
+    var config = rollerShutter.getConfig();
+    if (zenithAngle > 70) {
+      return rollerShutter.setLiftAndThenTilt(0, config.getCloseLevelLowTilt(), "brightness and high zenith angle");
+    } else if (zenithAngle > 40) {
       return rollerShutter.setLiftAndThenTilt(config.getCloseLevelLowLift(), config.getCloseLevelLowTilt(), "brightness");
     } else if (zenithAngle > 20) {
       return rollerShutter.setLiftAndThenTilt(config.getCloseLevelHighLift(), config.getCloseLevelHighTilt(), "brightness");
@@ -219,27 +287,32 @@ public class RollerShutterService {
     return Completable.complete();
   }
 
-  private boolean isOkToOpen(RollerShutterConfig config) {
+  private boolean isOkToOpen(RollerShutter rollerShutter) {
+    var config = rollerShutter.getConfig();
     return (config.getOpenAt() == null || config.getOpenAt().isBefore(LocalTime.now()))
         && (config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now()))
         && !blockedByUser;
   }
 
-  private static boolean isOkToClose(RollerShutterConfig config) {
+  private static boolean isOkToClose(RollerShutter rollerShutter) {
+    var config = rollerShutter.getConfig();
     return (config.getCloseAt() == null || config.getCloseAt().isAfter(LocalTime.now()))
         && (config.getNoAutomaticsUntil() == null || config.getNoAutomaticsUntil().isBefore(LocalDateTime.now()));
   }
 
   private void initTimer() {
-    rollerShutterConfigRepository.findAll().stream()
+    deviceService.getDevicesOfType(RollerShutter.class)
+        .stream()
+        .map(RollerShutter::getConfig)
+        .filter(Objects::nonNull)
         .filter(config -> config.getCloseAt() != null || config.getOpenAt() != null)
         .forEach(config -> {
-          Optional.ofNullable(config.getOpenAt())
-              .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new ArrayList<>()))
+          ofNullable(config.getOpenAt())
+              .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new HashSet<>()))
               .ifPresent(list -> list.add(config.getName()));
 
-          Optional.ofNullable(config.getCloseAt())
-              .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new ArrayList<>()))
+          ofNullable(config.getCloseAt())
+              .map(localTime -> timeToConfigs.computeIfAbsent(localTime, ignored -> new HashSet<>()))
               .ifPresent(list -> list.add(config.getName()));
         });
 
@@ -248,7 +321,7 @@ public class RollerShutterService {
       return;
     }
 
-    disposables.add(Observable.defer(this::timerForNextEvent)
+    super.disposeWhenClosed(Observable.defer(this::timerForNextEvent)
         .repeat()
         .subscribe());
   }
@@ -265,11 +338,9 @@ public class RollerShutterService {
   private void handleTime(LocalTime time) {
     timeToConfigs.get(time)
         .stream()
-        .map(id -> QuarkusTransaction.requiringNew().call(() -> rollerShutterConfigRepository.findById(id))
-            .orElseThrow(() -> new IllegalStateException("RollerShutterConfig %s is not in database".formatted(id))))
-        .forEach(config -> {
-          var rollerShutter = getRollerShutter(config);
-          if (config.getCloseAt() != null && config.getCloseAt().equals(time)) {
+        .flatMap(name -> deviceService.findDeviceByName(name, RollerShutter.class).stream())
+        .forEach(rollerShutter -> {
+          if (rollerShutter.getConfig().getCloseAt() != null && rollerShutter.getConfig().getCloseAt().equals(time)) {
             rollerShutter.close("time").subscribe();
           } else {
             rollerShutter.open("time").subscribe();
@@ -286,19 +357,9 @@ public class RollerShutterService {
         .orElseThrow();
   }
 
-  @PreDestroy
-  void tearDown() {
-    disposables.forEach(Disposable::dispose);
-  }
-
   private CompassDirection resolveCompassDirection(SolarPosition sunDirection) {
     return Arrays.stream(CompassDirection.values())
         .min(Comparator.comparing(value -> Math.abs(value.getDirection() - sunDirection.azimuth())))
         .orElseThrow(() -> new NoSuchElementException("Can't resolve direction for %s".formatted(sunDirection)));
-  }
-
-  private RollerShutter getRollerShutter(RollerShutterConfig config) {
-    return deviceService.findDeviceByName(config.getName(), RollerShutter.class)
-        .orElseThrow(() -> new NoSuchElementException("No rollerShutter named '%s' was found in deviceList.".formatted(config.getName())));
   }
 }

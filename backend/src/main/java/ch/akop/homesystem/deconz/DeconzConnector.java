@@ -26,11 +26,14 @@ import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
 import ch.akop.homesystem.services.impl.AutomationService;
 import ch.akop.homesystem.services.impl.DeviceService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
+import io.vertx.core.eventbus.EventBus;
 import java.net.URL;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import javax.annotation.Priority;
@@ -55,11 +58,20 @@ public class DeconzConnector {
   private final AutomationService automationService;
   private final DeconzConfigRepository deconzConfigRepository;
   private final RollerShutterConfigRepository rollerShutterConfigRepository;
+  private final EventBus eventBus;
 
   @Getter
-  private AtomicBoolean isConnected = new AtomicBoolean(false);
+  private final AtomicBoolean isConnected = new AtomicBoolean(false);
+
+  private final LinkedBlockingQueue<UpdateLightParams> updateActions = new LinkedBlockingQueue<>(1000);
+  private final ObjectMapper objectMapper;
 
   DeconzService deconzService;
+
+
+  private record UpdateLightParams(String id, State newState) {
+
+  }
 
 
   @Transactional
@@ -90,7 +102,30 @@ public class DeconzConnector {
     registerDevices();
     automationService.discoverNewDevices();
 
+    new Thread(this::sendUpdateActions, "deconz-notifier").start();
+
     log.info("deCONZ is up");
+  }
+
+  @SneakyThrows
+  private void sendUpdateActions() {
+    log.info("deCONZ start sending messages");
+
+    var shouldRun = true;
+    do {
+      try {
+        var actionToSend = updateActions.take();
+        log.info("Sending {} to {}", objectMapper.writeValueAsString(actionToSend.newState), actionToSend.id);
+        deconzService.updateLight(actionToSend.id, actionToSend.newState);
+        Thread.sleep(20);
+      } catch (InterruptedException e) {
+        log.info("Aborts to send light updates");
+        shouldRun = false;
+        Thread.currentThread().interrupt();
+      }
+    } while (shouldRun);
+
+    log.warn("deCONZ stopped sending messages");
   }
 
   private void registerDevices() {
@@ -234,7 +269,9 @@ public class DeconzConnector {
       return;
     }
 
-    deconzService.updateLight(id, newState);
+    if (!updateActions.offer(new UpdateLightParams(id, newState))) {
+      throw new IllegalStateException("Too many updates pending");
+    }
   }
 
   private ColoredLight createColorLight(String id) {
@@ -302,12 +339,28 @@ public class DeconzConnector {
 
       deviceService.findDeviceById(update.getId(), ch.akop.homesystem.models.devices.sensor.Sensor.class)
           .ifPresent(device -> device.consumeUpdate(update.getState()));
+
+      eventBus.publish("devices/sensors/update", update.getId());
     } else if (update.getR().equals("lights")
         && update.getE().equals("changed")
         && update.getState() != null) {
 
       deviceService.findDeviceById(update.getId(), Actor.class)
-          .ifPresent(device -> device.consumeUpdate(update.getState()));
+          .ifPresent(device -> {
+            device.consumeUpdate(update.getState());
+            eventBus.publish("devices/" + getTopicName(device.getClass()) + "/update", update.getId());
+          });
     }
+  }
+
+  private static String getTopicName(Class<?> clazz) {
+    return switch (clazz.getSimpleName()) {
+      case "RollerShutter" -> "roller-shutters";
+      case "DimmableLight", "SimpleLight", "ColoredLight" -> "lights";
+      default -> {
+        log.warn("Unknown {}", clazz.getSimpleName());
+        yield "unknown";
+      }
+    };
   }
 }

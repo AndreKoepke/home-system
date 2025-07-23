@@ -1,0 +1,20 @@
+<h1>Animation: {{ animation().name }}</h1>
+
+<div class="steps-container">
+
+  @for (step of sortedSteps(); track step.id; let i = $index) {
+    <app-circle-button (triggered)="addStepBefore(step)" text="+"/>
+
+    <div class="step">
+
+    </div>
+
+    <app-circle-button (triggered)="addStepBefore(i+1)" text="+"/>
+  }
+
+</div>
+
+@if (!sortedSteps()?.length) {
+  <div>Noch kein Step vorhanden. Soll einer hinzugefügt werden?</div>
+  <app-circle-button (triggered)="openDialog()" text="+"/>
+}

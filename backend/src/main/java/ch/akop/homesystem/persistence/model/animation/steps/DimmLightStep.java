@@ -56,7 +56,6 @@ public class DimmLightStep implements Step {
   @Convert(converter = ColorConverter.class)
   private Color color;
 
-
   @Override
   public void play(DeviceService deviceService) {
     if (color != null) {
@@ -68,6 +67,11 @@ public class DimmLightStep implements Step {
           .orElseThrow(() -> new EntityNotFoundException("Light with name " + nameOfLight + " was not found"));
       light.setBrightness(dimmLightTo, getDimmDuration());
     }
+  }
+
+  @Override
+  public String getActionDescription() {
+    return "dimme " + nameOfLight + " zu " + dimmLightTo.multiply(BigDecimal.valueOf(100)) + "%";
   }
 
   @Nullable

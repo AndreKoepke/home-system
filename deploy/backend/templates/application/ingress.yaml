@@ -11,8 +11,8 @@ spec:
     - host: {{ .Values.host }}
       http:
         paths:
-          - path: /
-            pathType: ImplementationSpecific
+          - path: /backend
+            pathType: Prefix
             backend:
               service:
                 name: {{ .Release.Name }}-backend

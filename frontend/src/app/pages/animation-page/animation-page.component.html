@@ -1,0 +1,19 @@
+@for (animation of animations(); track animation.id) {
+  <div class="animation-container">
+    <div>
+      <h3>{{ animation.name ?? 'kein Name' }}</h3>
+
+      <span>Schritte:</span>
+      <ul>
+        @for (step of animation.steps; track step.id) {
+          <li>{{ step.actionDescription }}</li>
+        }
+      </ul>
+    </div>
+
+    <div class="button-container">
+      <app-circle-button text="Start" (triggered)="startAnimation.emit(animation.id)"/>
+    </div>
+  </div>
+  <hr>
+}
