@@ -1,33 +1,28 @@
 import {ChangeDetectionStrategy, Component} from "@angular/core";
 import {AsyncPipe} from "@angular/common";
-import {map, Observable} from "rxjs";
-import {RollerShutter} from "../../models/devices/roller-shutter.dto";
-import {RollerShutterPageComponent} from "./roller-shutter-page.component";
-import {RollerShutterService} from "../../services/roller-shutter.service";
+import {Observable} from "rxjs";
+import {TimerPageComponent} from "./timer-page.component";
+import {TimerService} from "../../services/timer.service";
+import {TimerConfig} from "../../models/timer-config.dto";
 
 @Component({
   standalone: true,
   imports: [
     AsyncPipe,
-    RollerShutterPageComponent
+    TimerPageComponent
   ],
   template: `
-    @if (rollerShutters$ | async; as rollerShutters) {
-      <app-roller-shutter-page [rollerShutters]="rollerShutters"
-                               (closeAll)="rollerShutterService.closeAllRollerShutters().subscribe()"
-                               (openAll)="rollerShutterService.openAllRollerShutters().subscribe()"
-                               (calcAgain)="rollerShutterService.calcAgain().subscribe()"
-                               (block)="rollerShutterService.block($event).subscribe()"
-                               (unblock)="rollerShutterService.unblock($event).subscribe()"
-      />
+    @if (timers$ | async; as timers) {
+      <app-timer-page [timerConfigs]="timers"
+                      (saveTimerConfig)="timerService.saveConfig($event)"/>
     }`,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class RollerShutterPageContainerComponent {
+export class TimerPageComponentContainer {
 
-  rollerShutters$: Observable<RollerShutter[]>;
+  timers$: Observable<TimerConfig[]>;
 
-  constructor(public rollerShutterService: RollerShutterService) {
-    this.rollerShutters$ = rollerShutterService.rollerShutters$.pipe(map(deviceMap => [...deviceMap.values()]));
+  constructor(public timerService: TimerService) {
+    this.timers$ = timerService.getConfigs();
   }
 }

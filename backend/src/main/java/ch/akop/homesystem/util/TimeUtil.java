@@ -10,6 +10,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import lombok.AccessLevel;
@@ -43,6 +44,23 @@ public final class TimeUtil {
     }
 
     return time.atDate(LocalDate.now().plusDays(1));
+  }
+
+  /**
+   * Check for the next closest time in a map.
+   * <p>
+   * Example: timingMap has '13:00' and '22:00'. Currently, it is '23:32'. This method will return 'Tomorrow, 13', because '13:00' it is the nearest occurrence.
+   *
+   * @param timingMap Map containing LocalTimes as key.
+   * @return The LocalDateTime for closest entry.
+   */
+  public static LocalDateTime determineNextExecutionTime(Map<LocalTime, ?> timingMap) {
+    return timingMap
+        .keySet()
+        .stream()
+        .map(TimeUtil::getLocalDateTimeForTodayOrTomorrow)
+        .min(LocalDateTime::compareTo)
+        .orElseThrow();
   }
 
   @NonNull

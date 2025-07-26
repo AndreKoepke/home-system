@@ -8,6 +8,7 @@ import {LivecamPageComponent} from "./livecam-page/livecam-page.component";
 import {TrelloPageComponent} from "./trello-page/trello-page.component";
 import {AnimationPageContainerComponent} from "./animation-page/animation-page-container.component";
 import {RollerShutterPageContainerComponent} from "./roller-shutter-page/roller-shutter-page-container.component";
+import {TimerPageComponent} from "./timer-page/timer-page.component";
 
 export const routes: Routes = [
   {
@@ -43,6 +44,11 @@ export const routes: Routes = [
   {
     path: 'trello',
     component: TrelloPageComponent,
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'timer',
+    component: TimerPageComponent,
     canActivate: [AuthGuard]
   },
   {
