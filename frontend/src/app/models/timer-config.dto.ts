@@ -1,7 +1,7 @@
 export interface TimerConfig {
-  id: string;
+  id: string | undefined;
   name: string;
-  turnOnAt?: string;
-  turnOffAt?: string
-
+  turnOnAt: string | undefined;
+  turnOffAt: string | undefined;
+  lights: string[]
 }

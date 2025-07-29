@@ -2,20 +2,34 @@
   @for (timer of timerConfigs(); track timer.id) {
     <sbb-expansion-panel>
       <sbb-expansion-panel-header>
-        {{ timer.name }}
+        <span class="label">{{ timer.name }}</span>
+        <sbb-icon name="clock-small"></sbb-icon>
+        <span>
         @if (timer.turnOnAt) {
           {{ timer.turnOnAt }}
         }
-        @if (timer.turnOnAt && timer.turnOffAt) {
-          -
-        }
-        @if (timer.turnOffAt) {
-          {{ timer.turnOffAt }}
-        }
+          @if (timer.turnOnAt && timer.turnOffAt) {
+            -
+          }
+          @if (timer.turnOffAt) {
+            {{ timer.turnOffAt }}
+          }
+          </span>
       </sbb-expansion-panel-header>
       <sbb-expansion-panel-content>
-
+        <app-timer-form [config]="timer" [devices]="devices()" (onSave)="save.emit($event)"/>
       </sbb-expansion-panel-content>
     </sbb-expansion-panel>
   }
+
+  <sbb-expansion-panel>
+    <sbb-expansion-panel-header>
+      <span class="label">Neuen Timer einrichten</span>
+      <sbb-icon name="clock-small"></sbb-icon>
+
+    </sbb-expansion-panel-header>
+    <sbb-expansion-panel-content>
+      <app-timer-form [devices]="devices()" (onSave)="save.emit($event)"/>
+    </sbb-expansion-panel-content>
+  </sbb-expansion-panel>
 </sbb-accordion>

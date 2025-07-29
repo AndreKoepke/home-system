@@ -30,7 +30,8 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/@sbb-esta/lyne-elements/standard-theme.css"
             ],
             "scripts": [],
             "server": "src/main.server.ts",
@@ -101,7 +102,8 @@
               "src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              "node_modules/@sbb-esta/lyne-elements/standard-theme.css"
             ],
             "scripts": []
           }
@@ -112,7 +114,11 @@
             "configDir": ".storybook",
             "browserTarget": "home-system:build",
             "compodoc": false,
-            "port": 6006
+            "port": 6006,
+            "styles": [
+              "src/styles.scss",
+              "node_modules/@sbb-esta/lyne-elements/standard-theme.css"
+            ]
           }
         },
         "build-storybook": {
@@ -121,7 +127,11 @@
             "configDir": ".storybook",
             "browserTarget": "home-system:build",
             "compodoc": false,
-            "outputDir": "storybook-static"
+            "outputDir": "storybook-static",
+            "styles": [
+              "src/styles.scss",
+              "node_modules/@sbb-esta/lyne-elements/standard-theme.css"
+            ]
           }
         }
       }

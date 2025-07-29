@@ -1,0 +1,11 @@
+sbb-expansion-panel-header {
+  --sbb-expansion-panel-header-gap: 0.5rem;
+
+  .label {
+    min-width: 10%
+  }
+}
+
+sbb-accordion {
+  width: max(90px, 25vw);
+}

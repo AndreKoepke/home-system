@@ -1,5 +1,29 @@
-<sbb-form-field>
-  <label>Example</label>
-  <input required/>
-  <sbb-form-error>This field is required!</sbb-form-error>
-</sbb-form-field>
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <sbb-form-field>
+    <label>Bezeichnung des Timers</label>
+    <input formControlName="name" required/>
+  </sbb-form-field>
+
+  <sbb-form-field>
+    <label>Schalte Geräte ein um:</label>
+    <sbb-time-input formControlName="turnOnAt"></sbb-time-input>
+  </sbb-form-field>
+
+  <sbb-form-field>
+    <label>Schalte Geräte aus um:</label>
+    <sbb-time-input formControlName="turnOffAt"></sbb-time-input>
+  </sbb-form-field>
+
+  <sbb-form-field>
+    <label>Betroffene Geräte:</label>
+    <sbb-select formControlName="lights" multiple="multiple">
+      @for (device of devices(); track device.id) {
+        <sbb-option [value]="device.name">{{ device.name }}</sbb-option>
+      }
+    </sbb-select>
+  </sbb-form-field>
+
+  <sbb-action-group alignGroup="end">
+    <sbb-button type="submit" [formGroup]="form" [disabled]="form.invalid || form.pristine">Save</sbb-button>
+  </sbb-action-group>
+</form>
