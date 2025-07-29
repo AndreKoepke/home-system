@@ -23,7 +23,8 @@ export class AppComponent {
     {text: 'Zug', link: '/train'},
     {text: 'Wetter', link: '/weather'},
     {text: 'Roggen', link: '/livecam'},
-    {text: 'Trello', link: '/trello'}
+    {text: 'Trello', link: '/trello'},
+    {text: 'Timer', link: '/timer'}
   ];
   public activeRoute: Signal<string | undefined>;
 

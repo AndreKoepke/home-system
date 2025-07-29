@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, effect, input, output} from '@angular/core';
+import {ChangeDetectionStrategy, Component, effect, inject, input, LOCALE_ID, output} from '@angular/core';
 import {SbbFormField} from "@sbb-esta/lyne-angular/form-field/form-field";
 import {SbbTimeInput} from "@sbb-esta/lyne-angular/time-input";
 import {Light} from "../../../models/devices/light.dto";
@@ -8,6 +8,8 @@ import {FormControl, FormGroup, ReactiveFormsModule} from "@angular/forms";
 import {TimerConfig} from "../../../models/timer-config.dto";
 import {SbbButton} from "@sbb-esta/lyne-angular/button/button";
 import {SbbActionGroup} from "@sbb-esta/lyne-angular/action-group";
+import {DatePipe} from "@angular/common";
+import {v4 as uuidV4} from 'uuid';
 
 @Component({
   selector: 'app-timer-form',
@@ -26,6 +28,8 @@ import {SbbActionGroup} from "@sbb-esta/lyne-angular/action-group";
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TimerFormComponent {
+
+  private datePipe = new DatePipe(inject(LOCALE_ID));
 
   public config = input<TimerConfig | undefined>();
   public devices = input<Array<Light>>();
@@ -46,19 +50,28 @@ export class TimerFormComponent {
     effect(() => {
       const setConfig = this.config();
       if (setConfig !== undefined) {
-        console.log(`>>>> setConfig`, setConfig);
         this.form.patchValue(setConfig, {emitEvent: false});
       }
     });
-
-
   }
 
   public onSubmit(): void {
-    console.log(`>>>> submit`, this.form.value);
+    const turnOnAt = this.formatDate(this.form.value.turnOnAt);
+    const turnOffAt = this.formatDate(this.form.value.turnOffAt);
+
     this.onSave.emit(<TimerConfig>{
       ...this.form.value,
-      id: this.config()?.id
+      turnOnAt,
+      turnOffAt,
+      id: this.config()?.id ?? uuidV4()
     });
+  }
+
+  private formatDate(date: string | undefined | null): string | undefined {
+    if (date === undefined || date === null) {
+      return undefined;
+    }
+
+    return this.datePipe.transform(new Date(date), 'hh:MM')!;
   }
 }

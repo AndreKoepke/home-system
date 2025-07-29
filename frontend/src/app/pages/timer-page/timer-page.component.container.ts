@@ -1,28 +1,54 @@
-import {ChangeDetectionStrategy, Component} from "@angular/core";
+import {ChangeDetectionStrategy, Component, inject, signal} from "@angular/core";
 import {AsyncPipe} from "@angular/common";
-import {Observable} from "rxjs";
+import {combineLatest, map} from "rxjs";
 import {TimerPageComponent} from "./timer-page.component";
 import {TimerService} from "../../services/timer.service";
+import {DevicesService} from "../../services/devices.service";
 import {TimerConfig} from "../../models/timer-config.dto";
+import {SbbLoadingIndicatorCircle} from "@sbb-esta/lyne-angular/loading-indicator-circle";
 
 @Component({
   standalone: true,
   imports: [
     AsyncPipe,
-    TimerPageComponent
+    TimerPageComponent,
+    SbbLoadingIndicatorCircle
   ],
   template: `
-    @if (timers$ | async; as timers) {
-      <app-timer-page [timerConfigs]="timers"
-                      (saveTimerConfig)="timerService.saveConfig($event)"/>
+    @if (!isLoading()) {
+      @if (viewContainer$ | async; as container) {
+        <app-timer-page [timerConfigs]="container.timer"
+                        [devices]="container.devices"
+                        (save)="save($event)"
+
+        />
+      }
+    } @else {
+      <sbb-loading-indicator-circle/>
     }`,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TimerPageComponentContainer {
 
-  timers$: Observable<TimerConfig[]>;
+  public readonly timerService = inject(TimerService);
+  private readonly deviceService = inject(DevicesService);
 
-  constructor(public timerService: TimerService) {
-    this.timers$ = timerService.getConfigs();
+  public isLoading = signal(false);
+
+  public timers$ = this.timerService.getConfigs();
+  public devices$ = this.deviceService.lights$
+    .pipe(map(map => [...map.values()]));
+
+  public viewContainer$ = combineLatest([this.timers$, this.devices$])
+    .pipe(map(([timer, devices]) => {
+      return {timer, devices};
+    }));
+
+  public save(config: TimerConfig): void {
+    this.isLoading.set(true);
+    this.timerService.saveConfig(config)
+      .subscribe(() => {
+        this.isLoading.set(false);
+      })
   }
 }
