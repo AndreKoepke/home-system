@@ -72,6 +72,6 @@ export class TimerFormComponent {
       return undefined;
     }
 
-    return this.datePipe.transform(new Date(date), 'hh:MM')!;
+    return this.datePipe.transform(new Date(date), 'HH:mm')!;
   }
 }
