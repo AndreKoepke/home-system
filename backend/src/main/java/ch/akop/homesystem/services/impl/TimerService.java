@@ -85,17 +85,17 @@ public class TimerService {
     return configRepository.findAll();
   }
 
-  private Observable<LocalTime> timerForNextEvent(Map<LocalTime, ?> timingMap, Consumer<SimpleLight> action) {
+  private Observable<LocalTime> timerForNextEvent(Map<LocalTime, Set<String>> timingMap, Consumer<SimpleLight> action) {
     var nextExecutionTime = determineNextExecutionTime(timingMap).atZone(ZoneId.systemDefault());
     var nextEvent = Duration.between(ZonedDateTime.now(), nextExecutionTime);
 
     return Observable.timer(nextEvent.toSeconds(), SECONDS)
         .map(ignored -> nextExecutionTime.toLocalTime())
-        .doOnNext(timeKey -> handleTime(timeKey, action));
+        .doOnNext(timeKey -> handleTime(timingMap, timeKey, action));
   }
 
-  private void handleTime(LocalTime time, Consumer<SimpleLight> action) {
-    timeToTurnOff.get(time)
+  private void handleTime(Map<LocalTime, Set<String>> map, LocalTime time, Consumer<SimpleLight> action) {
+    map.get(time)
         .stream()
         .flatMap(deviceName -> deviceService.findDeviceByName(deviceName, SimpleLight.class).stream())
         .forEach(action);
