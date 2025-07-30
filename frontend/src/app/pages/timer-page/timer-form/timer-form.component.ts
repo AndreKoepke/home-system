@@ -77,6 +77,7 @@ export class TimerFormComponent {
     console.log(`>>>> haha`, );
     console.log(`>>>> lalala`, );
     console.log(`>>>> lalala`, );
+    console.log(`>>>> test`, ); 
     if (date === undefined || date === null) {
       return undefined;
     }
