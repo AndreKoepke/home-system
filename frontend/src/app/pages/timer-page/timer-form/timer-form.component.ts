@@ -73,6 +73,7 @@ export class TimerFormComponent {
   private formatDate(date: string | undefined | null): string | undefined {
     console.log(`>>>> test`,);
     console.log(`>>>> and so?`,); 
+    console.log(`>>>> bla`, ); 
     if (date === undefined || date === null) {
       return undefined;
     }
