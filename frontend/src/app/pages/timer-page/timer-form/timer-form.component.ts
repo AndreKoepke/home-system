@@ -10,6 +10,7 @@ import {SbbButton} from "@sbb-esta/lyne-angular/button/button";
 import {SbbActionGroup} from "@sbb-esta/lyne-angular/action-group";
 import {DatePipe} from "@angular/common";
 import {v4 as uuidV4} from 'uuid';
+import {SbbMiniButton} from "@sbb-esta/lyne-angular/button/mini-button";
 
 @Component({
   selector: 'app-timer-form',
@@ -22,6 +23,7 @@ import {v4 as uuidV4} from 'uuid';
     SbbSelect,
     ReactiveFormsModule,
     SbbActionGroup,
+    SbbMiniButton
   ],
   templateUrl: './timer-form.component.html',
   styleUrl: './timer-form.component.scss',
@@ -34,6 +36,7 @@ export class TimerFormComponent {
   public config = input<TimerConfig | undefined>();
   public devices = input<Array<Light>>();
   public onSave = output<TimerConfig>();
+  public onDelete = output<TimerConfig>();
 
   public form = new FormGroup({
       name: new FormControl<string>('', {updateOn: 'blur'}),

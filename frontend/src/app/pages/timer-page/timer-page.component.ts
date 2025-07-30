@@ -6,7 +6,6 @@ import {SbbExpansionPanelHeader} from "@sbb-esta/lyne-angular/expansion-panel/ex
 import {SbbExpansionPanel} from "@sbb-esta/lyne-angular/expansion-panel/expansion-panel";
 import {TimerFormComponent} from "./timer-form/timer-form.component";
 import {Light} from "../../models/devices/light.dto";
-import {SbbIcon} from "@sbb-esta/lyne-angular/icon";
 
 @Component({
   selector: 'app-timer-page',
@@ -17,7 +16,6 @@ import {SbbIcon} from "@sbb-esta/lyne-angular/icon";
     SbbExpansionPanelContent,
     SbbExpansionPanelHeader,
     TimerFormComponent,
-    SbbIcon,
   ],
   templateUrl: './timer-page.component.html',
   styleUrl: './timer-page.component.scss'

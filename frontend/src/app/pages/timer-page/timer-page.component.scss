@@ -7,5 +7,11 @@ sbb-expansion-panel-header {
 }
 
 sbb-accordion {
-  width: max(90px, 25vw);
+  width: 33vw;
+}
+
+@media screen and (max-width: 1200px) {
+  sbb-accordion {
+    width: 90vw;
+  }
 }
