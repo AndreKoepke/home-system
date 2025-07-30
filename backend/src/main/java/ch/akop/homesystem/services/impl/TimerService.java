@@ -68,7 +68,7 @@ public class TimerService {
     }
 
     if (!timeToTurnOff.isEmpty()) {
-      turnOffSubscription = Observable.defer(() -> timerForNextEvent(timeToTurnOff, SimpleLight::turnOn))
+      turnOffSubscription = Observable.defer(() -> timerForNextEvent(timeToTurnOff, SimpleLight::turnOff))
           .repeat()
           .subscribe();
     }
