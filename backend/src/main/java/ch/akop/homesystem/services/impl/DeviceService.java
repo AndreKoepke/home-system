@@ -85,7 +85,7 @@ public class DeviceService {
         .filter(this::isLightUsableForCentralFunctions)
         .filter(Device::isReachable)
         .forEach(light -> {
-          // see #74, if the commands are cumming to fast, then maybe lights are not correctly off
+          // see #74, if the commands are coming to fast, then maybe lights are not correctly off
           // if this workaround helps, then this should be removed for a rate-limit (see #3)
           SleepUtil.sleep(Duration.of(25, MILLIS));
 

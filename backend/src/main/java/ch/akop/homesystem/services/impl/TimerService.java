@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +62,8 @@ public class TimerService {
               .ifPresent(list -> list.addAll(config.getDevices()));
         });
 
+    registerEachLightAsControlledLight();
+
     if (!timeToTurnOn.isEmpty()) {
       turnOnSubscription = Observable.defer(() -> timerForNextEvent(timeToTurnOn, SimpleLight::turnOn))
           .repeat()
@@ -72,6 +75,15 @@ public class TimerService {
           .repeat()
           .subscribe();
     }
+  }
+
+  private void registerEachLightAsControlledLight() {
+    Stream.concat(
+            timeToTurnOff.values().stream(),
+            timeToTurnOn.values().stream()
+        ).flatMap(Set::stream)
+        .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
+        .forEach(deviceService::registerAControlledLight);
   }
 
   @Transactional
