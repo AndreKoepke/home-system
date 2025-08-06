@@ -2,6 +2,7 @@ package ch.akop.homesystem.services.impl;
 
 import static ch.akop.homesystem.models.devices.actor.RollerShutter.BLOCK_TIME_WHEN_HIGH_WIND;
 import static ch.akop.homesystem.util.Comparer.is;
+import static ch.akop.homesystem.util.TimeUtil.determineNextExecutionTime;
 import static ch.akop.homesystem.util.TimeUtil.getLocalDateTimeForTodayOrTomorrow;
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 import static ch.akop.weathercloud.temperature.TemperatureUnit.DEGREE;
@@ -327,7 +328,7 @@ public class RollerShutterService extends Activatable {
   }
 
   private Observable<LocalTime> timerForNextEvent() {
-    var nextExecutionTime = getNextExecutionTime().atZone(ZoneId.systemDefault());
+    var nextExecutionTime = determineNextExecutionTime(timeToConfigs).atZone(ZoneId.systemDefault());
     var nextEvent = Duration.between(ZonedDateTime.now(), nextExecutionTime);
 
     return Observable.timer(nextEvent.toSeconds(), SECONDS)
@@ -346,15 +347,6 @@ public class RollerShutterService extends Activatable {
             rollerShutter.open("time").subscribe();
           }
         });
-  }
-
-  private LocalDateTime getNextExecutionTime() {
-    return timeToConfigs
-        .keySet()
-        .stream()
-        .map(TimeUtil::getLocalDateTimeForTodayOrTomorrow)
-        .min(LocalDateTime::compareTo)
-        .orElseThrow();
   }
 
   private CompassDirection resolveCompassDirection(SolarPosition sunDirection) {

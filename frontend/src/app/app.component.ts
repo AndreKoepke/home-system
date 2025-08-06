@@ -3,12 +3,12 @@ import {NavigationEnd, Router, RouterOutlet} from '@angular/router';
 import {toSignal} from "@angular/core/rxjs-interop";
 import {filter, map, Subscription, timer} from "rxjs";
 import {isPlatformBrowser} from "@angular/common";
-import {SbbClockDirective} from "@sbb-esta/lyne-angular/clock";
+import {SbbClock} from "@sbb-esta/lyne-angular/clock";
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, SbbClockDirective],
+  imports: [RouterOutlet, SbbClock],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -23,7 +23,8 @@ export class AppComponent {
     {text: 'Zug', link: '/train'},
     {text: 'Wetter', link: '/weather'},
     {text: 'Roggen', link: '/livecam'},
-    {text: 'Trello', link: '/trello'}
+    {text: 'Trello', link: '/trello'},
+    {text: 'Timer', link: '/timer'}
   ];
   public activeRoute: Signal<string | undefined>;
 

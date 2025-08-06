@@ -1,4 +1,4 @@
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 
 WORKDIR /usr/src/app
 COPY package.json yarn.lock ./
@@ -9,7 +9,7 @@ COPY . ./
 RUN npm run build
 
 # use SSR, so a running node is necessary
-FROM node:20-alpine
+FROM node:24-alpine
 WORKDIR /usr/app
 COPY --from=build /usr/src/app/dist/home-system ./
 CMD node server/server.mjs

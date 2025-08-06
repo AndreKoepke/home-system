@@ -1,0 +1,32 @@
+
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <sbb-form-field>
+    <label>Bezeichnung des Timers</label>
+    <input formControlName="name" required/>
+  </sbb-form-field>
+
+  <sbb-form-field>
+    <label>Schalte Geräte ein um:</label>
+    <sbb-time-input formControlName="turnOnAt"></sbb-time-input>
+  </sbb-form-field>
+
+  <sbb-form-field>
+    <label>Schalte Geräte aus um:</label>
+    <sbb-time-input formControlName="turnOffAt"></sbb-time-input>
+  </sbb-form-field>
+
+  <sbb-form-field>
+    <label>Betroffene Geräte:</label>
+    <sbb-select formControlName="lights" multiple="multiple">
+      @for (device of devices(); track device.id) {
+        <sbb-option [value]="device.name">{{ device.name }}</sbb-option>
+      }
+    </sbb-select>
+  </sbb-form-field>
+
+  <sbb-action-group alignGroup="start">
+    <sbb-mini-button iconName="trash-medium" [disabled]="config()?.id === undefined">
+    </sbb-mini-button>
+    <sbb-button type="submit" [formGroup]="form" [disabled]="form.invalid || form.pristine">Save</sbb-button>
+  </sbb-action-group>
+</form>

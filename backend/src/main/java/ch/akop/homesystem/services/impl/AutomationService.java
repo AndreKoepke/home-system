@@ -49,6 +49,7 @@ public class AutomationService {
   private final MotionSensorService motionSensorService;
   private final RollerShutterService rollerShutterService;
   private final LightnessControlledDeviceService lightnessControlledDeviceService;
+  private final TimerService timerService;
   private final EventBus eventPublisher;
 
   @SuppressWarnings("rawtypes")
@@ -64,6 +65,7 @@ public class AutomationService {
     motionSensorService.init();
     rollerShutterService.init();
     lightnessControlledDeviceService.init();
+    timerService.init();
   }
 
   private boolean unknownDevice(Device<?> device) {
