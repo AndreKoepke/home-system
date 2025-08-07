@@ -1,7 +1,6 @@
 package ch.akop.homesystem.authentication;
 
 import ch.akop.homesystem.services.impl.TelegramMessageService;
-import io.quarkus.runtime.util.StringUtil;
 import java.net.InetAddress;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -25,15 +24,13 @@ public class AuthenticationService {
   private final AuthenticationRepository authenticationRepository;
   private final TelegramMessageService telegramMessageService;
 
-  @ConfigProperty(name = "BASE_URL", defaultValue = "")
-  String baseUrl;
+  @ConfigProperty(name = "BASE_URL")
+  Optional<String> baseUrl;
 
   @PostConstruct
   @SneakyThrows
   public void init() {
-    if (StringUtil.isNullOrEmpty(baseUrl)) {
-      baseUrl = InetAddress.getLocalHost().getHostAddress();
-    }
+    var host = baseUrl.orElseGet(this::getHost);
 
     telegramMessageService.waitForMessageOnce("registerNewWebUrl")
         .repeat()
@@ -42,7 +39,7 @@ public class AuthenticationService {
             .setToken(UUID.randomUUID().toString())))
         .subscribe(savedAuth -> telegramMessageService
             .sendMessageToMainChannel("Ok, der neue Token wurde erstellt. Du kannst jetzt mit folgender Url verwenden: "
-                + baseUrl + "?api-key=" + savedAuth.getToken()));
+                + host + "?api-key=" + savedAuth.getToken()));
   }
 
   public boolean isAuthenticated(String token) {
@@ -53,6 +50,11 @@ public class AuthenticationService {
           return foundToken;
         })
         .isPresent();
+  }
+
+  @SneakyThrows
+  private String getHost() {
+    return "http://" + InetAddress.getLocalHost().getHostAddress() + ":8080";
   }
 
   @ServerRequestFilter
