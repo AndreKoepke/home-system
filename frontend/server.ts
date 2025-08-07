@@ -49,12 +49,10 @@ function run(): void {
   const port = process.env['PORT'] || 4000;
 
   console.log(`Set ngssc`);
-  exec('/usr/sbin/ngssc insert browser/index.html', (err: any, stdout: any, stderr: any) => {
-      console.log(`stdout: ${stdout}`);
-      console.log(`stderr: ${stderr}`);
-    }
-  );
-  exec('/usr/sbin/ngssc insert browser/index.csr.html');
+  exec('/usr/sbin/ngssc substitute --ngssc-path=browser/ -o=browser/ browser', (err: any, stdout: any, stderr: any) => {
+    console.log(`stdout: ${stdout}`);
+    console.log(`stderr: ${stderr}`);
+  })
 
   // Start up the Node server
   const server = app();
