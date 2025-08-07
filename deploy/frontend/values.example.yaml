@@ -1,4 +1,12 @@
 image:
   base: akop/home-system-frontend
   tag: latest
-host: host-which-will-be-used-for-frontend.webhook.com
+host: host-which-will-be-used-for-frontend.com
+
+# here are settings specified how the frontend can reach the backend
+backend:
+  protocol: https://
+  wsProtocol: wss://
+  # leave the host empty, if it is the same as the backend
+  host: host-addr
+  path: /backend

@@ -22,6 +22,10 @@ export class AnimationService {
   }
 
   private get backendUrl(): string {
-    return `${environment.backend.protocol}${environment.backend.host}/${environment.backend.path}`;
+    if (environment.backend.host) {
+      return `${environment.backend.protocol}${environment.backend.host}/${environment.backend.path}`;
+    }
+
+    return environment.backend.path!;
   }
 }

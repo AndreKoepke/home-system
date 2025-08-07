@@ -1,9 +1,8 @@
 export const environment = {
   backend: {
-    protocol: 'https://',
-    // TODO inject host
-    host: 'homesystem.akop.online',
-    path: 'backend/',
-    webSocketProtocol: 'wss://'
+    protocol: process.env['protocol'],
+    host: process.env['host'],
+    path: process.env['path'],
+    webSocketProtocol: process.env['wsProtocol']
   },
 };

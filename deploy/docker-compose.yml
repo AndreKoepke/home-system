@@ -17,7 +17,7 @@ services:
     environment:
       - POSTGRES_PASSWORD=super_long_and_very_secure_password_should_be_fine_okay?
     volumes:
-      - /var/lib/postgresql/data
+      - postgres:/var/lib/postgresql/data
 
   home-system:
     image: akop/home-system:latest
@@ -35,3 +35,6 @@ services:
     restart: always
     ports:
       - "0.0.0.0:8080:8080"
+
+volumes:
+  postgres:

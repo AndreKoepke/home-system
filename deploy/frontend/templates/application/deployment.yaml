@@ -36,3 +36,16 @@ spec:
             - containerPort: 4000
               name: http
               protocol: TCP
+          env:
+ {{ with .Values.backend -}}
+            - name: protocol
+              value: "{{ .protocol }}"
+            - name: wsProtocol
+              value: "{{ .wsProtocol }}"
+              {{ if .host }}
+            - name: host
+              value: "{{ .host }}"
+              {{ end }}
+            - name: path
+              value: "{{ .path }}"
+ {{- end -}}
