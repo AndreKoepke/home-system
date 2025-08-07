@@ -49,7 +49,8 @@ function run(): void {
   const port = process.env['PORT'] || 4000;
 
   console.log(`Set ngssc `);
-  exec('ngssc insert index.html');
+  exec('ngssc insert browser/index.html');
+  exec('ngssc insert browser/index.csr.html');
 
   // Start up the Node server
   const server = app();
