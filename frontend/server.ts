@@ -5,7 +5,7 @@ import {dirname, join, resolve} from 'node:path';
 import bootstrap from './src/main.server';
 import {CommonEngine} from "@angular/ssr/node";
 
-const {exec} = require('child_process');
+const {execSync} = require('child_process');
 
 // The Express app is exported so that it can be used by serverless Functions.
 export function app(): express.Express {
@@ -49,10 +49,7 @@ function run(): void {
   const port = process.env['PORT'] || 4000;
 
   console.log(`Set ngssc`);
-  exec('/usr/sbin/ngssc substitute --ngssc-path=browser/ -o=browser/ browser', (err: any, stdout: any, stderr: any) => {
-    console.log(`stdout: ${stdout}`);
-    console.log(`stderr: ${stderr}`);
-  })
+  execSync('/usr/sbin/ngssc insert browser/')
 
   // Start up the Node server
   const server = app();
