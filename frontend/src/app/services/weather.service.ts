@@ -1,9 +1,9 @@
 import {DestroyRef, Injectable} from '@angular/core';
 import {ReplaySubject, retry} from "rxjs";
-import {environment} from "../../environments/environment";
 import {webSocket} from "rxjs/webSocket";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {Weather} from "../models/devices/weather.dto";
+import {getWebsocketBaseUrl} from "../url-resolver";
 
 @Injectable({
   providedIn: 'root'
@@ -17,7 +17,7 @@ export class WeatherService {
   }
 
   private webSocketSubject = webSocket<Weather>({
-    url: `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}secured/ws/v1/weather`,
+    url: `${getWebsocketBaseUrl()}weather`,
     openObserver: {
       next: () => {
       },

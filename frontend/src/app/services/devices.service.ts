@@ -1,11 +1,11 @@
 import {DestroyRef, Injectable} from '@angular/core';
 import {BehaviorSubject, Observable, retry, Subject} from "rxjs";
-import {environment} from "../../environments/environment";
 import {Light} from "../models/devices/light.dto";
 import {webSocket} from "rxjs/webSocket";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {MotionSensor} from "../models/devices/sensor.dto";
 import {Device} from "../models/devices/device.dto";
+import {getWebsocketBaseUrl} from "../url-resolver";
 
 @Injectable({
   providedIn: 'root'
@@ -28,19 +28,11 @@ export class DevicesService {
   }
 }
 
-export function baseUrl(): string {
-  if (environment.backend.host) {
-    return `${environment.backend.protocol}${environment.backend.host}/${environment.backend.path}/secured`;
-  }
-
-  return `${environment.backend.path}/secured`;
-}
-
 export class Listener<T extends Device> {
 
   private devices = new Map<string, T>();
   public subject$: Subject<Map<string, T>> = new BehaviorSubject(this.devices);
-  private readonly websocket$ = webSocket<T>(Listener.getUrl(this.name));
+  private readonly websocket$ = webSocket<T>(`${getWebsocketBaseUrl()}devices/${this.name}`);
 
   constructor(private readonly name: string, destroyRef: DestroyRef) {
     this.websocket$
@@ -49,14 +41,6 @@ export class Listener<T extends Device> {
         takeUntilDestroyed(destroyRef)
       )
       .subscribe(device => this.deviceUpdate(device));
-  }
-
-  public static getUrl(name: string): string {
-    if (environment.backend.host) {
-      return `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}/secured/ws/v1/devices/${name}`;
-    }
-
-    return `${environment.backend.webSocketProtocol}${window.location.host}/${environment.backend.path}/secured/ws/v1/devices/${name}`;
   }
 
   private deviceUpdate(message: T): void {
