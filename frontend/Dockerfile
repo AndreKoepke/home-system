@@ -6,7 +6,7 @@ RUN yarn install --frozen-lockfile
 
 # Bundle app source
 COPY . ./
-RUN npm run build
+RUN npm run build:ngssc
 
 # use SSR, so a running node is necessary
 FROM node:24-alpine
