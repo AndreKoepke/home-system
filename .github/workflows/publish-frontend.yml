@@ -4,6 +4,7 @@ on:
     branches: [ master ]
     paths:
       - 'frontend/**'
+      - 'deploy/frontend/**'
       - '.github/workflows/publish-frontend.yml'
 jobs:
   publish:
