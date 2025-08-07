@@ -48,9 +48,13 @@ export function app(): express.Express {
 function run(): void {
   const port = process.env['PORT'] || 4000;
 
-  console.log(`Set ngssc `);
-  exec('ngssc insert browser/index.html');
-  exec('ngssc insert browser/index.csr.html');
+  console.log(`Set ngssc`);
+  exec('/usr/sbin/ngssc insert browser/index.html', (err: any, stdout: any, stderr: any) => {
+      console.log(`stdout: ${stdout}`);
+      console.log(`stderr: ${stderr}`);
+    }
+  );
+  exec('/usr/sbin/ngssc insert browser/index.csr.html');
 
   // Start up the Node server
   const server = app();
