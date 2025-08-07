@@ -29,7 +29,11 @@ export class DevicesService {
 }
 
 export function baseUrl(): string {
-  return `${environment.backend.host}/${environment.backend.path}secured`;
+  if (environment.backend.host) {
+    return `${environment.backend.protocol}${environment.backend.host}/${environment.backend.path}/secured`;
+  }
+
+  return `${environment.backend.path}/secured`;
 }
 
 export class Listener<T extends Device> {
@@ -48,7 +52,11 @@ export class Listener<T extends Device> {
   }
 
   public static getUrl(name: string): string {
-    return `${environment.backend.webSocketProtocol}${baseUrl()}/ws/v1/devices/${name}`;
+    if (environment.backend.host) {
+      return `${environment.backend.webSocketProtocol}${environment.backend.host}/${environment.backend.path}/secured/ws/v1/devices/${name}`;
+    }
+
+    return `${environment.backend.webSocketProtocol}${window.location.host}/${environment.backend.path}/secured/ws/v1/devices/${name}`;
   }
 
   private deviceUpdate(message: T): void {
