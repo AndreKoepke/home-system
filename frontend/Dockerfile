@@ -12,5 +12,9 @@ RUN npm run build
 FROM node:24-alpine
 WORKDIR /usr/app
 COPY --from=build /usr/src/app/dist/home-system ./
+
+ADD https://github.com/kyubisation/angular-server-side-configuration/releases/download/v20.0.0/ngssc_64bit /usr/sbin/ngssc
+RUN chmod +x /usr/sbin/ngssc
+
 CMD node server/server.mjs
 EXPOSE 4000
