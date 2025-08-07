@@ -9,4 +9,4 @@ backend:
   wsProtocol: wss://
   # leave the host empty, if it is the same as the backend
   host: host-addr
-  path: /backend
+  path: "/backend"
