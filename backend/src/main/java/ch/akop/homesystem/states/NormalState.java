@@ -191,7 +191,7 @@ public class NormalState extends Activatable implements State {
 
   private Flowable<Boolean> shouldLightsTurnedOff(boolean anyOneAtHome) {
 
-    if (anyOneAtHome || !deviceService.isAnyLightOn()) {
+    if (!anyOneAtHome || !deviceService.isAnyLightOn()) {
       return Flowable.just(false);
     }
 
