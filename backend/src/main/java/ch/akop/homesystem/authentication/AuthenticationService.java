@@ -1,7 +1,8 @@
 package ch.akop.homesystem.authentication;
 
 import ch.akop.homesystem.services.impl.TelegramMessageService;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,7 +55,10 @@ public class AuthenticationService {
 
   @SneakyThrows
   private String getHost() {
-    return "http://" + InetAddress.getLocalHost().getHostAddress() + ":8080";
+    try (var socket = new Socket()) {
+      socket.connect(new InetSocketAddress("1.1.1.1", 80));
+      return "http:/" + socket.getLocalAddress() + ":8080";
+    }
   }
 
   @ServerRequestFilter

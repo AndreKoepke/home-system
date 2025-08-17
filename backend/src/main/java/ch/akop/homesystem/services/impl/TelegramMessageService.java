@@ -163,8 +163,10 @@ public class TelegramMessageService {
   }
 
   private void updateBotCommands() {
-    bot.execute(new SetMyCommands(availableCommands.toArray(new BotCommand[0]))
-        .scope(new BotCommandsScopeChat(mainChannelChatId)));
+    if (bot != null) {
+      bot.execute(new SetMyCommands(availableCommands.toArray(new BotCommand[0]))
+          .scope(new BotCommandsScopeChat(mainChannelChatId)));
+    }
   }
 
   private void consumeUpdate(@Nullable Update update, @NonNull TelegramConfig config) {
