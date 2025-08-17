@@ -1,10 +1,13 @@
 import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core';
 import {Light} from "../../models/devices/light.dto";
 import {Weather} from "../../models/devices/weather.dto";
+import {MotionSensor} from "../../models/devices/sensor.dto";
+import {SbbTeaserProduct} from "@sbb-esta/lyne-angular/teaser-product/teaser-product";
+import {SbbImage} from "@sbb-esta/lyne-angular/image";
+import {SbbTitle} from "@sbb-esta/lyne-angular/title";
 import {WeatherValuePipe} from "../../core/pipes/weahter-value.pipe";
 import {DateAgoPipe} from "../../core/pipes/date-ago.pipe";
 import {AsyncPipe} from "@angular/common";
-import {MotionSensor} from "../../models/devices/sensor.dto";
 
 @Component({
   selector: 'app-start-page',
@@ -12,9 +15,7 @@ import {MotionSensor} from "../../models/devices/sensor.dto";
   templateUrl: './start-page.component.html',
   styleUrl: './start-page.component.scss',
   imports: [
-    WeatherValuePipe,
-    DateAgoPipe,
-    AsyncPipe
+    SbbTeaserProduct, SbbImage, SbbTitle, WeatherValuePipe, DateAgoPipe, AsyncPipe
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })

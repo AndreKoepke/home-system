@@ -2,15 +2,39 @@
   <router-outlet></router-outlet>
 </div>
 
-<div class="navbar">
-  @for (route of routes; track route.link) {
-    <button type="button" [class.active]="activeRoute() == route.link"
-       (click)="clickMenuItem(route.link)"
-       (touchstart)="clickMenuItem(route.link)">
-      {{ route.text }}
-    </button>
-  }
+<div class="navigation-trigger">
+  <sbb-breadcrumb size="l"
+                  icon-name="hamburger-menu-small"
+                  aria-label="trigger navigation"
+                  aria-haspopup="true"
+                  #navTrigger>
+    {{ currentRoute()?.text }}
+  </sbb-breadcrumb>
 </div>
+
+<sbb-navigation #nav [trigger]="navTrigger">
+  <sbb-navigation-marker id="nav-marker">
+    @for (route of routes; track route.link) {
+      <sbb-navigation-button [class.sbb-active]="activeRoute() == route.link"
+                             (click)="clickMenuItem(route.link)"
+                             (touchstart)="clickMenuItem(route.link)"
+                             sbb>
+        {{ route.text }}
+      </sbb-navigation-button>
+    }
+  </sbb-navigation-marker>
+</sbb-navigation>
+
+
+<!--<div class="navbar">-->
+<!--  @for (route of routes; track route.link) {-->
+<!--    <button type="button" [class.active]="activeRoute() == route.link"-->
+<!--       (click)="clickMenuItem(route.link)"-->
+<!--       (touchstart)="clickMenuItem(route.link)">-->
+<!--      {{ route.text }}-->
+<!--    </button>-->
+<!--  }-->
+<!--</div>-->
 
 
 <div class="panel">
