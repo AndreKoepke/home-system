@@ -1,7 +1,9 @@
 package ch.akop.homesystem.controller.dtos;
 
 import ch.akop.homesystem.persistence.model.animation.Animation;
+import ch.akop.homesystem.persistence.model.animation.steps.PauseStep;
 import ch.akop.homesystem.persistence.model.animation.steps.Step;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import lombok.Data;
@@ -29,13 +31,18 @@ public class AnimationDto {
     private Integer sortOrder;
     private String actionDescription;
     private String affectedLight;
+    private Duration runTime;
 
     public static StepDto from(Step step) {
       return new StepDto()
           .setId(step.getId())
           .setSortOrder(step.getSortOrder())
           .setActionDescription(step.getActionDescription())
-          .setAffectedLight(step.getNameOfLight());
+          .setAffectedLight(step.getNameOfLight())
+          .setRunTime(switch (step) {
+            case PauseStep pauseStep -> pauseStep.getWaitFor();
+            default -> Duration.ZERO;
+          });
     }
   }
 }
