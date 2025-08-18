@@ -58,9 +58,7 @@ public class WeatherService {
         .scrape$(nearestWeatherCloudStation, Duration.of(5, MINUTES))
         .doOnError(throwable -> log.error("There was an error while scraping data from weather cloud", throwable))
         .retryWhen(errors$ ->
-            errors$
-                .scan(0, (numberOfTotalErrors, lastError) -> numberOfTotalErrors + 1)
-                .map(numberOfTotalErrors -> Observable.timer((long) Math.min(Math.pow(4, numberOfTotalErrors), 180), TimeUnit.SECONDS))
+            errors$.delay(30, TimeUnit.SECONDS).retry()
         )
         .subscribe(weather::onNext);
 
