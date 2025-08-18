@@ -39,10 +39,15 @@ public class AnimationDto {
           .setSortOrder(step.getSortOrder())
           .setActionDescription(step.getActionDescription())
           .setAffectedLight(step.getNameOfLight())
-          .setRunTime(switch (step) {
-            case PauseStep pauseStep -> pauseStep.getWaitFor();
-            default -> Duration.ZERO;
-          });
+          .setRunTime(getRunTime(step));
+    }
+
+    public static Duration getRunTime(Step step) {
+      if (step instanceof PauseStep pauseStep) {
+        return pauseStep.getWaitFor();
+      }
+
+      return Duration.ZERO;
     }
   }
 }
