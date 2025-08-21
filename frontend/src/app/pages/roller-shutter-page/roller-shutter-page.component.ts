@@ -1,14 +1,16 @@
 import {ChangeDetectionStrategy, Component, input, Output, OutputEmitterRef} from '@angular/core';
 import {RollerShutter} from "../../models/devices/roller-shutter.dto";
 import {RollerShutterCellComponent} from "./roller-shutter-cell/roller-shutter-cell.component";
-import {CircleButtonComponent} from "../../components/buttons/circle-button/circle-button.component";
+import {SbbActionGroup} from "@sbb-esta/lyne-angular/action-group";
+import {SbbButton} from "@sbb-esta/lyne-angular/button/button";
 
 @Component({
   selector: 'app-roller-shutter-page',
   standalone: true,
   imports: [
     RollerShutterCellComponent,
-    CircleButtonComponent
+    SbbActionGroup,
+    SbbButton
   ],
   templateUrl: './roller-shutter-page.component.html',
   styleUrl: './roller-shutter-page.component.scss',

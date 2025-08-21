@@ -3,7 +3,10 @@ import {RollerShutter} from "../../../models/devices/roller-shutter.dto";
 import {CompassPipe} from "../../../core/pipes/compass.pipe";
 import {AsyncPipe, DatePipe} from "@angular/common";
 import {IsDateInFuturePipePipe} from "../../../core/pipes/is-date-in-future.pipe";
-import {CircleButtonComponent} from "../../../components/buttons/circle-button/circle-button.component";
+import {SbbFlipCard} from "@sbb-esta/lyne-angular/flip-card/flip-card";
+import {SbbFlipCardSummary} from "@sbb-esta/lyne-angular/flip-card/flip-card-summary";
+import {SbbFlipCardDetails} from "@sbb-esta/lyne-angular/flip-card/flip-card-details";
+import {SbbButton} from "@sbb-esta/lyne-angular/button/button";
 
 @Component({
   selector: 'app-roller-shutter-cell',
@@ -13,7 +16,10 @@ import {CircleButtonComponent} from "../../../components/buttons/circle-button/c
     DatePipe,
     IsDateInFuturePipePipe,
     AsyncPipe,
-    CircleButtonComponent
+    SbbButton,
+    SbbFlipCard,
+    SbbFlipCardSummary,
+    SbbFlipCardDetails,
   ],
   templateUrl: './roller-shutter-cell.component.html',
   styleUrl: './roller-shutter-cell.component.scss'

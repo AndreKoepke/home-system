@@ -1,29 +1,40 @@
-<div class="container">
-  <div id="wrapper">
-    <div class="stripe" [style.--lift]="rollerShutter().currentLift + '%'"
-         [style.--tilt]="rollerShutter().currentTilt + '%'"></div>
-  </div>
+<sbb-flip-card>
+  <sbb-flip-card-summary>
+    <div class="left-side">
+      {{ rollerShutter().name }}
 
-  <div>
-    <span>{{ rollerShutter().name }}</span>
-    @if (rollerShutter().config?.compassDirection; as directions) {
-      <br>
-      <span>{{ directions | compass }}</span>
-    }
-    @if (rollerShutter().config?.noAutomaticsUntil; as noAutomaticsUntil) {
-      @if (noAutomaticsUntil | isDateInFuturePipe | async) {
+      @if (rollerShutter().config?.compassDirection; as directions) {
         <br>
-        <span>blockiert bis zum {{ noAutomaticsUntil | date:'dd.MM.yyyy' }}</span>
+        <span>{{ directions | compass }}</span>
       }
-    }
-  </div>
+      @if (rollerShutter().config?.noAutomaticsUntil; as noAutomaticsUntil) {
+        @if (noAutomaticsUntil | isDateInFuturePipe | async) {
+          <br>
+          <span>blockiert bis zum {{ noAutomaticsUntil | date:'dd.MM.yyyy' }}</span>
+        }
+      }
+    </div>
 
-  <div class="actions">
+    <div slot="image">
+      <div class="container">
+        <div class="house">
+          <div class="window">
+            <div class="stripe"
+                 [style.--lift]="rollerShutter().currentLift + '%'"
+                 [style.--tilt]="rollerShutter().currentTilt + '%'"></div>
+          </div>
+          <div class="flower"></div>
+        </div>
+      </div>
+    </div>
+  </sbb-flip-card-summary>
+
+  <sbb-flip-card-details>
     @if (rollerShutter().config?.noAutomaticsUntil | isDateInFuturePipe | async) {
-      <app-circle-button (triggered)="unblock.emit()" text="🔓"></app-circle-button>
+      <sbb-button (click)="unblock.emit()" text="">Entsperren</sbb-button>
     } @else {
-      <app-circle-button (triggered)="block.emit()" text="🔒"></app-circle-button>
+      <sbb-button (click)="block.emit()" text="">Sperren für 24h</sbb-button>
     }
-  </div>
+  </sbb-flip-card-details>
+</sbb-flip-card>
 
-</div>

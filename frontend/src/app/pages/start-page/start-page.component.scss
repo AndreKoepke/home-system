@@ -3,6 +3,15 @@
   grid-template-columns: repeat( auto-fit, minmax(200px, 1fr) );
 }
 
+
+.teaser-wrapper {
+
+
+  sbb-teaser-product {
+    --sbb-teaser-product-min-height: 80vh;
+  }
+}
+
 .grayed {
   color: #555555;
 }

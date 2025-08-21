@@ -2,13 +2,12 @@
   <router-outlet></router-outlet>
 </div>
 
-<div class="navigation-trigger">
+<div class="navigation-trigger" #navTrigger>
   <sbb-breadcrumb size="l"
                   icon-name="hamburger-menu-small"
                   aria-label="trigger navigation"
-                  aria-haspopup="true"
-                  #navTrigger>
-    {{ currentRoute()?.text }}
+                  aria-haspopup="true">
+    <span>{{ currentRoute()?.text }}</span>
   </sbb-breadcrumb>
 </div>
 
@@ -24,18 +23,6 @@
     }
   </sbb-navigation-marker>
 </sbb-navigation>
-
-
-<!--<div class="navbar">-->
-<!--  @for (route of routes; track route.link) {-->
-<!--    <button type="button" [class.active]="activeRoute() == route.link"-->
-<!--       (click)="clickMenuItem(route.link)"-->
-<!--       (touchstart)="clickMenuItem(route.link)">-->
-<!--      {{ route.text }}-->
-<!--    </button>-->
-<!--  }-->
-<!--</div>-->
-
 
 <div class="panel">
   <sbb-clock></sbb-clock>

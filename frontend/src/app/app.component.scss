@@ -9,7 +9,7 @@ sbb-clock {
   min-width: 100px;
   max-width: 300px;
   right: 10px;
-  bottom: 10vh;
+  bottom: 10px;
 }
 
 .container {
@@ -20,6 +20,19 @@ sbb-clock {
 
 .navigation-trigger {
   position: fixed;
-  left: min(5vw, 10px);
+  left: 0;
   bottom: min(5vh, 10px);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: black;
+  padding: 5px min(5vw, 10px);
+  border-radius: 0 15px 15px 0;
+  border: solid 1px rgba(255, 255, 255, 0.3);
+
+  span {
+    font-size: x-large;
+  }
+
+  sbb-breadcrumb {
+    --sbb-breadcrumb-color: white;
+  }
 }

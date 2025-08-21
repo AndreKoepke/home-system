@@ -4,7 +4,7 @@
 
 
 :root {
-  --primary-color: #499ae6;
+  --primary-color: #272d33;
   --primary-background-color: #00253c;
   --small-device-width-border: 1000px;
 }
@@ -13,3 +13,11 @@ body {
   background-color: var(--primary-background-color);
   color: var(--primary-color);
 }
+
+
+@media screen and (max-width: 1023px) {
+  .img {
+    max-height: 20vh;
+  }
+}
+

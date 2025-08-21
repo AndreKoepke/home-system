@@ -17,7 +17,7 @@ import {AsyncPipe} from "@angular/common";
   imports: [
     SbbTeaserProduct, SbbImage, SbbTitle, WeatherValuePipe, DateAgoPipe, AsyncPipe
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StartPageComponent {
 

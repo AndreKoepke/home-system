@@ -1,26 +1,28 @@
-<sbb-teaser-product negative>
-  <sbb-image slot="image" image-src="assets/background.jpg"></sbb-image>
+<div class="teaser-wrapper">
+  <sbb-teaser-product negative>
+    <sbb-image class="img" slot="image" image-src="assets/background.jpg"></sbb-image>
 
 
-  <sbb-title level="3" class="sbb-teaser-product--spacing">
-    HeimSystem
-  </sbb-title>
-  <p class="sbb-teaser-product--spacing">
-    Es sind {{ lightsThatAreOn().length }} von {{ actors().length }} Geräte an.
-  </p>
+    <sbb-title level="3" class="sbb-teaser-product--spacing">
+      HeimSystem
+    </sbb-title>
+    <p class="sbb-teaser-product--spacing">
+      Es sind {{ lightsThatAreOn().length }} von {{ actors().length }} Geräte an.
+    </p>
 
-  <div class="sbb-teaser-product--spacing">
+    <div class="sbb-teaser-product--spacing">
 
-  </div>
+    </div>
 
-  <div slot="footnote" class="sbb-teaser-product--spacing">
-    <span>{{ weather().outerTemperature | weatherValue }} | </span>
-    <span>{{ weather().outerLight | weatherValue }} | </span>
-    <span>{{ weather().wind | weatherValue }} | </span>
-    <span>{{ weather().rain | weatherValue }}</span>
-    <div class="grayed">vor {{ weather().recordedAt | dateAgo | async }}</div>
-  </div>
-</sbb-teaser-product>
+    <div slot="footnote" class="sbb-teaser-product--spacing">
+      <span>{{ weather().outerTemperature | weatherValue }} | </span>
+      <span>{{ weather().outerLight | weatherValue }} | </span>
+      <span>{{ weather().wind | weatherValue }} | </span>
+      <span>{{ weather().rain | weatherValue }}</span>
+      <div class="grayed">vor {{ weather().recordedAt | dateAgo | async }}</div>
+    </div>
+  </sbb-teaser-product>
+</div>
 
 
 <!--<div>-->
