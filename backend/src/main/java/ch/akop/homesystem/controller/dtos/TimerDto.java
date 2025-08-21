@@ -3,14 +3,15 @@ package ch.akop.homesystem.controller.dtos;
 import ch.akop.homesystem.persistence.model.config.TimerConfig;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.Data;
 import org.jetbrains.annotations.Nullable;
 
 @Data
-public class TimerDto {
+public class TimerDto implements Identable {
 
-  private UUID id;
+  private String id;
   private String name;
   private List<String> lights;
 
@@ -22,7 +23,7 @@ public class TimerDto {
 
   public static TimerDto from(TimerConfig config) {
     return new TimerDto()
-        .setId(config.getId())
+        .setId(config.getId().toString())
         .setName(config.getName())
         .setLights(config.getDevices())
         .setTurnOffAt(config.getTurnOffAt())
@@ -31,7 +32,7 @@ public class TimerDto {
 
   public TimerConfig toObject() {
     return new TimerConfig()
-        .setId(getId())
+        .setId(Optional.ofNullable(getId()).map(UUID::fromString).orElse(null))
         .setName(getName())
         .setDevices(getLights())
         .setTurnOffAt(getTurnOffAt())

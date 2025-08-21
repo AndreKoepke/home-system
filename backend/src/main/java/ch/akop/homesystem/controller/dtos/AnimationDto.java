@@ -9,15 +9,15 @@ import java.util.UUID;
 import lombok.Data;
 
 @Data
-public class AnimationDto {
+public class AnimationDto implements Identable {
 
-  private UUID id;
+  private String id;
   private String name;
   private List<StepDto> steps;
 
   public static AnimationDto from(Animation animation) {
     return new AnimationDto()
-        .setId(animation.getId())
+        .setId(animation.getId().toString())
         .setName(animation.getName())
         .setSteps(animation.materializeSteps().stream()
             .map(StepDto::from)

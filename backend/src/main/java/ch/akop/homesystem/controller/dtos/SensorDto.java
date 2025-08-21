@@ -8,7 +8,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
-public class SensorDto {
+public class SensorDto implements Identable {
 
   private String id;
   private String name;

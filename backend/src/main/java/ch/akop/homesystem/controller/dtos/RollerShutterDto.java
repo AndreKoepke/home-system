@@ -12,7 +12,7 @@ import lombok.Data;
 import org.springframework.lang.Nullable;
 
 @Data
-public class RollerShutterDto {
+public class RollerShutterDto implements Identable {
 
   private String id;
   private String name;

@@ -8,7 +8,7 @@ import java.time.ZonedDateTime;
 import lombok.Data;
 
 @Data
-public class LightDto {
+public class LightDto implements Identable {
 
   private String id;
   private String name;

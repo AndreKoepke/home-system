@@ -1,9 +1,9 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
+import ch.akop.homesystem.controller.dtos.Identable;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.websocket.Session;
 import lombok.SneakyThrows;
@@ -15,7 +15,7 @@ public abstract class AbstractBaseSocket {
   abstract ObjectMapper getObjectMapper();
 
   private final Map<String, Session> sessions = new ConcurrentHashMap<>();
-  private final Map<String, Set<Integer>> sendHashCodes = new ConcurrentHashMap<>();
+  private final Map<String, Map<String, Integer>> sendHashCodes = new ConcurrentHashMap<>();
 
   public void registerSession(Session session) {
     sessions.put(session.getId(), session);
@@ -27,19 +27,20 @@ public abstract class AbstractBaseSocket {
     sendHashCodes.remove(sessionId);
   }
 
-  public void broadcast(Object message) {
+  public void broadcast(Identable message) {
     sessions.keySet().forEach(sessionId -> sendMessage(sessionId, message));
   }
 
   @SneakyThrows
-  public void sendMessage(String sessionId, Object message) {
+  public void sendMessage(String sessionId, Identable message) {
     var session = sessions.get(sessionId);
 
-    sendHashCodes.putIfAbsent(sessionId, new HashSet<>());
-    if (sendHashCodes.get(sessionId).contains(message.hashCode())) {
+    sendHashCodes.putIfAbsent(sessionId, new HashMap<>());
+    sendHashCodes.get(sessionId).putIfAbsent(message.getId(), 0);
+    if (sendHashCodes.get(sessionId).get(message.getId()).equals(message.hashCode())) {
       return;
     }
-    sendHashCodes.getOrDefault(sessionId, new HashSet<>()).add(message.hashCode());
+    sendHashCodes.get(sessionId).put(message.getId(), message.hashCode());
 
     var payload = getObjectMapper().writeValueAsString(message);
     session.getAsyncRemote().sendObject(payload, result -> {
