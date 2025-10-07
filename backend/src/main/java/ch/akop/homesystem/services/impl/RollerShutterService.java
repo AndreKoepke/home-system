@@ -342,8 +342,10 @@ public class RollerShutterService extends Activatable {
         .flatMap(name -> deviceService.findDeviceByName(name, RollerShutter.class).stream())
         .forEach(rollerShutter -> {
           if (rollerShutter.getConfig().getCloseAt() != null && rollerShutter.getConfig().getCloseAt().equals(time)) {
-            rollerShutter.close("time").subscribe();
-          } else {
+            if (isOkToClose(rollerShutter)) {
+              rollerShutter.close("time").subscribe();
+            }
+          } else if (isOkToOpen(rollerShutter)) {
             rollerShutter.open("time").subscribe();
           }
         });
