@@ -1,5 +1,6 @@
-<sbb-flip-card>
-  <sbb-flip-card-summary>
+<div class="card">
+
+  <div class="front-side">
     <div class="left-side">
       {{ rollerShutter().name }}
 
@@ -15,7 +16,7 @@
       }
     </div>
 
-    <div slot="image">
+    <div class="right-side">
       <div class="container">
         <div class="house">
           <div class="window">
@@ -27,14 +28,14 @@
         </div>
       </div>
     </div>
-  </sbb-flip-card-summary>
+  </div>
 
-  <sbb-flip-card-details>
+  <div class="back-side">
     @if (rollerShutter().config?.noAutomaticsUntil | isDateInFuturePipe | async) {
-      <sbb-button (click)="unblock.emit()" text="">Entsperren</sbb-button>
+      <sbb-button (click)="unblock.emit()">Entsperren</sbb-button>
     } @else {
-      <sbb-button (click)="block.emit()" text="">Sperren für 24h</sbb-button>
+      <sbb-button (click)="block.emit()">Sperren für 24h</sbb-button>
     }
-  </sbb-flip-card-details>
-</sbb-flip-card>
+  </div>
+</div>
 

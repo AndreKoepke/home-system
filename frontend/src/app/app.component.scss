@@ -10,6 +10,7 @@ sbb-clock {
   max-width: 300px;
   right: 10px;
   bottom: 10px;
+  z-index: 100;
 }
 
 .container {
@@ -19,6 +20,7 @@ sbb-clock {
 
 
 .navigation-trigger {
+  z-index: 100;
   position: fixed;
   left: 0;
   bottom: min(5vh, 10px);

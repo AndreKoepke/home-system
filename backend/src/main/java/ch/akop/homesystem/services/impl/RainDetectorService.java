@@ -9,6 +9,7 @@ import ch.akop.weathercloud.Weather;
 import io.quarkus.runtime.Startup;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class RainDetectorService {
 
   @Transactional
   public void updateDatabaseIfNecessary(final Weather weather) {
-    final var lastState = this.rainStatsRepository.findFirstByOrderByMeasuredAtDesc()
+    final var lastState = Optional.ofNullable(this.rainStatsRepository.findFirstByOrderByMeasuredAtDesc())
         .map(RainStats::isRaining)
         .orElse(false);
 
@@ -36,7 +37,7 @@ public class RainDetectorService {
 
   @Transactional
   public Duration noRainFor() {
-    final var lastRainDate = this.rainStatsRepository.findFirstByOrderByMeasuredAtDesc()
+    final var lastRainDate = Optional.ofNullable(this.rainStatsRepository.findFirstByOrderByMeasuredAtDesc())
         .filter(rainStats -> !rainStats.isRaining())
         .map(RainStats::getMeasuredAt)
         .orElse(LocalDateTime.now());
