@@ -49,4 +49,16 @@ public class RollerShutterController {
   public void startCalculatingAgain(@PathParam("id") String id) {
     rollerShutterService.unblock(id);
   }
+
+  @POST
+  @Path("{id}/lift/to/{lift}")
+  public void setLift(@PathParam("id") String id, @PathParam("lift") int lift) {
+    rollerShutterService.setLift(id, lift);
+  }
+
+  @POST
+  @Path("{id}/lift/to/{tilt}")
+  public void setTilt(@PathParam("id") String id, @PathParam("tilt") int tilt) {
+    rollerShutterService.setTilt(id, tilt);
+  }
 }

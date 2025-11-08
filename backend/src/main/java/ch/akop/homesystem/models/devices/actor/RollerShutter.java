@@ -130,6 +130,14 @@ public class RollerShutter extends Actor<RollerShutter> {
         .doFinally(() -> automaticTiltTarget = null);
   }
 
+  public void setTilt(Integer tilt) {
+    functionToSetTilt.accept(tilt);
+  }
+
+  public void setLift(Integer lift) {
+    functionToSetLift.accept(lift);
+  }
+
   /**
    * Opens the rollerShutters to maximum value
    */

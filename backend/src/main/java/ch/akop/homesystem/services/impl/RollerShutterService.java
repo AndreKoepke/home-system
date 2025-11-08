@@ -354,4 +354,12 @@ public class RollerShutterService extends Activatable {
         .min(Comparator.comparing(value -> Math.abs(value.getDirection() - sunDirection.azimuth())))
         .orElseThrow(() -> new NoSuchElementException("Can't resolve direction for %s".formatted(sunDirection)));
   }
+
+  public void setLift(String id, int lift) {
+    deviceService.findDeviceById(id, RollerShutter.class).ifPresent(rollerShutter -> rollerShutter.setLift(lift));
+  }
+
+  public void setTilt(String id, int tilt) {
+    deviceService.findDeviceById(id, RollerShutter.class).ifPresent(rollerShutter -> rollerShutter.setTilt(tilt));
+  }
 }
