@@ -1,6 +1,5 @@
-<div class="card">
-
-  <div class="front-side">
+<sbb-flip-card class="sbb-dark">
+  <sbb-flip-card-summary>
     <div class="left-side">
       {{ rollerShutter().name }}
 
@@ -16,7 +15,7 @@
       }
     </div>
 
-    <div class="right-side">
+    <div slot="image">
       <div class="container">
         <div class="house">
           <div class="window">
@@ -28,14 +27,36 @@
         </div>
       </div>
     </div>
-  </div>
+  </sbb-flip-card-summary>
 
-  <div class="back-side">
+  <sbb-flip-card-details>
+    <sbb-form-field negative>
+      <label>Höhe</label>
+      <sbb-slider name="height"
+                  start-icon="fog-small"
+                  end-icon="sunshine-small"
+                  [valueAsNumber]="rollerShutter().currentLift"
+                  (input)="updateLift($event)"
+                  min="0"
+                  max="100"></sbb-slider>
+    </sbb-form-field>
+
+    <sbb-form-field negative>
+      <label>Winkel</label>
+      <sbb-slider name="height"
+                  start-icon="fog-small"
+                  end-icon="sunshine-small"
+                  [valueAsNumber]="rollerShutter().currentTilt"
+                  (input)="updateTilt($event)"
+                  min="0"
+                  max="100"></sbb-slider>
+    </sbb-form-field>
+
     @if (rollerShutter().config?.noAutomaticsUntil | isDateInFuturePipe | async) {
       <sbb-button (click)="unblock.emit()">Entsperren</sbb-button>
     } @else {
       <sbb-button (click)="block.emit()">Sperren für 24h</sbb-button>
     }
-  </div>
-</div>
+  </sbb-flip-card-details>
+</sbb-flip-card>
 

@@ -19,6 +19,8 @@ import {RollerShutterService} from "../../services/roller-shutter.service";
                                (calcAgain)="rollerShutterService.calcAgain().subscribe()"
                                (block)="rollerShutterService.block($event).subscribe()"
                                (unblock)="rollerShutterService.unblock($event).subscribe()"
+                               (lift)="rollerShutterService.setLift$($event.rollerShutterId, $event.lift).subscribe()"
+                               (tilt)="rollerShutterService.setTilt$($event.rollerShutterId, $event.tilt).subscribe()"
       />
     }`,
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -8,6 +8,9 @@
   @for (rollerShutter of rollerShutters(); track rollerShutter.id) {
     <app-roller-shutter-cell [rollerShutter]="rollerShutter"
                              (block)="block.emit(rollerShutter.id)"
-                             (unblock)="unblock.emit(rollerShutter.id)"/>
+                             (unblock)="unblock.emit(rollerShutter.id)"
+                             (liftUpdate)="lift.emit({rollerShutterId: rollerShutter.id, lift: $event})"
+                             (tiltUpdate)="tilt.emit({rollerShutterId: rollerShutter.id, tilt: $event})"
+    />
   }
 </div>
