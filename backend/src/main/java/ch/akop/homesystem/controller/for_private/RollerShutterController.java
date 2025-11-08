@@ -57,7 +57,7 @@ public class RollerShutterController {
   }
 
   @POST
-  @Path("{id}/lift/to/{tilt}")
+  @Path("{id}/tilt/to/{tilt}")
   public void setTilt(@PathParam("id") String id, @PathParam("tilt") int tilt) {
     rollerShutterService.setTilt(id, tilt);
   }
