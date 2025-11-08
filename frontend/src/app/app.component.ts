@@ -68,6 +68,11 @@ export class AppComponent {
     this.nextMenuSubscription = timer(this.intervalForNextMenu).subscribe(() => this.nextMenuByTimer());
   }
 
+  public interacted(): void {
+    this.nextMenuSubscription?.unsubscribe();
+    this.nextMenuSubscription = timer(this.intervalForNextMenu * 2).subscribe(() => this.nextMenuByTimer());
+  }
+
   private getLinkToNextMenuItem(current: number): string {
     return this.routes[(current + 1) % this.routes.length].link;
   }
