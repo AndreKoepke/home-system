@@ -11,6 +11,7 @@ import {SbbFormField} from "@sbb-esta/lyne-angular/form-field/form-field";
 import {SbbSlider} from "@sbb-esta/lyne-angular/slider";
 import {debounceTime, ReplaySubject} from "rxjs";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
+import {SbbIcon} from "@sbb-esta/lyne-angular/icon";
 
 @Component({
   selector: 'app-roller-shutter-cell',
@@ -26,6 +27,7 @@ import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
     SbbFlipCardDetails,
     SbbFormField,
     SbbSlider,
+    SbbIcon,
   ],
   templateUrl: './roller-shutter-cell.component.html',
   styleUrl: './roller-shutter-cell.component.scss'

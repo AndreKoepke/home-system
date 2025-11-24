@@ -32,24 +32,24 @@
   <sbb-flip-card-details>
     <sbb-form-field negative>
       <label>Höhe</label>
+      <sbb-icon slot="prefix" name="fog-medium"></sbb-icon>
       <sbb-slider name="height"
-                  start-icon="fog-small"
-                  end-icon="sunshine-small"
                   [valueAsNumber]="rollerShutter().currentLift"
                   (input)="updateLift($event)"
                   min="0"
                   max="100"></sbb-slider>
+      <sbb-icon slot="suffix" name="sunshine-medium"></sbb-icon>
     </sbb-form-field>
 
     <sbb-form-field negative>
+      <sbb-icon slot="prefix" name="fog-medium"></sbb-icon>
       <label>Winkel</label>
       <sbb-slider name="height"
-                  start-icon="fog-small"
-                  end-icon="sunshine-small"
                   [valueAsNumber]="rollerShutter().currentTilt"
                   (input)="updateTilt($event)"
                   min="0"
                   max="100"></sbb-slider>
+      <sbb-icon slot="suffix" name="sunshine-medium"></sbb-icon>
     </sbb-form-field>
 
     @if (rollerShutter().config?.noAutomaticsUntil | isDateInFuturePipe | async) {
