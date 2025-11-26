@@ -1,22 +1,15 @@
-
-.container {
-  display: grid;
-  grid-template-columns: 130px 5fr 1fr;
-  align-items: center;
-  border: #555555 solid 1px;
-  border-radius: 10px;
-  height: 100px;
-  width: 400px;
-  margin: 15px;
-  padding-right: 15px;
+.left-side {
+  text-align: left;
+  margin: auto;
+  vertical-align: middle;
+  padding-right: 10px;
 }
 
 #wrapper {
   margin-left: 5px;
-  width: 100px;
-  height: 80px;
+  height: 100%;
   border: #555555 1px solid;
-  position: relative;
+  vertical-align: middle;
 }
 
 .stripe {
@@ -39,8 +32,118 @@
   transition: height 500ms ease-in-out;
 }
 
+sbb-slider {
+  margin-bottom: 5%;
+}
+
 .stripe:first-child {
   border-bottom: 1px solid transparent;
   top: 0;
 }
 
+
+.container {
+  height: 450px;
+  width: 400px;
+  position: relative;
+}
+
+.container * {
+  position: absolute;
+}
+
+.house {
+  top: 50%;
+  left: 75px;
+  height: 200px;
+  width: 260px;
+  background: #FFF;
+}
+
+.house::before {
+  content: '';
+  position: absolute;
+  top: -95px;
+  left: 33px;
+  height: 183px;
+  width: 183.5px;
+  background: white;
+  transform: rotate(45deg);
+  border-top: 10px solid blue;
+  border-left: 10px solid blue;
+  z-index: 2
+}
+
+.house::after {
+  content: '';
+  position: absolute;
+  top: -70px;
+  left: 15px;
+  height: 70px;
+  width: 30px;
+  background: blue;
+  z-index: 1;
+  border-top: 7px solid rgba(0, 0, 0, .3);
+}
+
+.window {
+  top: 35px;
+  left: 25px;
+  height: 80px;
+  width: 70px;
+  background: #96ebff;
+  z-index: 3;
+  border-top: 7px solid blue;
+}
+
+.window::before,
+.window::after {
+  content: '';
+  position: absolute;
+  background: silver;
+}
+
+.window::before {
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: 1px;
+}
+
+.window::after {
+  top: 50%;
+  height: 1px;
+  width: 100%;
+}
+
+.flower {
+  bottom: 0;
+  height: 60px;
+  width: 60px;
+  background: green;
+  z-index: 4;
+  border-radius: 30px 30px 3px 0;
+  box-shadow: 1px -1px 7px rgba(0, 0, 0, .5);
+}
+
+.flower::before {
+  content: '';
+  position: absolute;
+  bottom: -0px;
+  left: 40px;
+  height: 40px;
+  width: 50px;
+  background: green;
+  border-radius: 50% 50% 0 0;
+}
+
+.flower::after {
+  content: '';
+  position: absolute;
+  bottom: -0px;
+  left: 80px;
+  height: 40px;
+  width: 50px;
+  background: green;
+  border-radius: 50% 50% 15% 0;
+}

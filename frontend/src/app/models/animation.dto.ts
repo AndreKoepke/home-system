@@ -1,3 +1,4 @@
+
 export interface AnimationDto {
   id: string;
   name: string | undefined;
@@ -9,4 +10,5 @@ export interface Step {
   sortOrder: number;
   actionDescription: string;
   affectedLight?: string;
+  runTime: number
 }

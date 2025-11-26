@@ -19,6 +19,8 @@ import {RollerShutterService} from "../../services/roller-shutter.service";
                                (calcAgain)="rollerShutterService.calcAgain().subscribe()"
                                (block)="rollerShutterService.block($event).subscribe()"
                                (unblock)="rollerShutterService.unblock($event).subscribe()"
+                               (lift)="rollerShutterService.setLift$($event.rollerShutterId, $event.lift).subscribe()"
+                               (tilt)="rollerShutterService.setTilt$($event.rollerShutterId, $event.tilt).subscribe()"
       />
     }`,
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -28,6 +30,12 @@ export class RollerShutterPageContainerComponent {
   rollerShutters$: Observable<RollerShutter[]>;
 
   constructor(public rollerShutterService: RollerShutterService) {
-    this.rollerShutters$ = rollerShutterService.rollerShutters$.pipe(map(deviceMap => [...deviceMap.values()]));
+    this.rollerShutters$ = rollerShutterService.rollerShutters$.pipe(
+      map(deviceMap => [...deviceMap.values()]),
+      map(rollerShutters => rollerShutters.sort(this.sortByName)));
+  }
+
+  private sortByName(left: RollerShutter, right: RollerShutter): number {
+    return left.name.localeCompare(right.name);
   }
 }

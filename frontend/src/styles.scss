@@ -1,10 +1,7 @@
-/* You can add global styles to this file, and also import other style files */
-@use '@angular/material' as mat;
-@import '@angular/material/prebuilt-themes/indigo-pink.css';
-
+@import '@sbb-esta/lyne-elements/standard-theme.css';
 
 :root {
-  --primary-color: #499ae6;
+  --primary-color: #272d33;
   --primary-background-color: #00253c;
   --small-device-width-border: 1000px;
 }
@@ -13,3 +10,11 @@ body {
   background-color: var(--primary-background-color);
   color: var(--primary-color);
 }
+
+
+@media screen and (max-width: 1023px) {
+  .img {
+    max-height: 20vh;
+  }
+}
+

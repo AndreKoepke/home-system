@@ -1,13 +1,16 @@
-<div class="controls">
-  <app-circle-button text="Alles auf" (triggered)="openAll.emit()"/>
-  <app-circle-button text="Alles zu" (triggered)="closeAll.emit()"/>
-  <app-circle-button text="Berechne wieder" (triggered)="calcAgain.emit()"/>
-</div>
+<sbb-action-group align-group="start" orientation="horizontal" horizontal-from="unset" button-size="s" link-size="m">
+  <sbb-button (click)="openAll.emit()">Alles auf</sbb-button>
+  <sbb-button (click)="closeAll.emit()">Alles zu</sbb-button>
+  <sbb-button (click)="calcAgain.emit()">Berechne wieder</sbb-button>
+</sbb-action-group>
 
 <div class="shutter-tiles">
   @for (rollerShutter of rollerShutters(); track rollerShutter.id) {
     <app-roller-shutter-cell [rollerShutter]="rollerShutter"
                              (block)="block.emit(rollerShutter.id)"
-                             (unblock)="unblock.emit(rollerShutter.id)"/>
+                             (unblock)="unblock.emit(rollerShutter.id)"
+                             (liftUpdate)="lift.emit({rollerShutterId: rollerShutter.id, lift: $event})"
+                             (tiltUpdate)="tilt.emit({rollerShutterId: rollerShutter.id, tilt: $event})"
+    />
   }
 </div>

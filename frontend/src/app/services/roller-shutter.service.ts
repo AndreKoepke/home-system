@@ -41,6 +41,16 @@ export class RollerShutterService {
       .pipe(mergeMap(() => EMPTY));
   }
 
+  public setLift$(id: string, lift: number): Observable<never> {
+    return this.httpClient.post(`${getHttpBaseUrl()}v1/devices/roller-shutters/${id}/lift/to/${lift}`, null)
+      .pipe(mergeMap(() => EMPTY));
+  }
+
+  public setTilt$(id: string, tilt: number): Observable<never> {
+    return this.httpClient.post(`${getHttpBaseUrl()}v1/devices/roller-shutters/${id}/tilt/to/${tilt}`, null)
+      .pipe(mergeMap(() => EMPTY));
+  }
+
   public get rollerShutters$(): Observable<Map<string, RollerShutter>> {
     return this.rollerShutterListener.subject$;
   }
