@@ -1,12 +1,12 @@
 package ch.akop.homesystem.persistence.conveter;
 
 import ch.akop.homesystem.models.CompassDirection;
+import jakarta.annotation.Nullable;
+import jakarta.persistence.AttributeConverter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
-import javax.persistence.AttributeConverter;
 import lombok.NonNull;
 import org.springframework.util.StringUtils;
 

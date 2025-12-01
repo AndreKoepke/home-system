@@ -1,10 +1,10 @@
 package ch.akop.homesystem.models.color;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
 import lombok.Data;
 
 /**

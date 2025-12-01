@@ -2,8 +2,8 @@ package ch.akop.homesystem.external.mastodon;
 
 import ch.akop.homesystem.persistence.model.config.MastodonConfig;
 import ch.akop.homesystem.persistence.repository.config.MastodonConfigRepository;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 

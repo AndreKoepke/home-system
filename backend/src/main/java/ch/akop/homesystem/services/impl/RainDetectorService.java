@@ -7,11 +7,11 @@ import ch.akop.homesystem.persistence.model.RainStats;
 import ch.akop.homesystem.persistence.repository.RainStatsRepository;
 import ch.akop.weathercloud.Weather;
 import io.quarkus.runtime.Startup;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor

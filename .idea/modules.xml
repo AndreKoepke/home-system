@@ -3,11 +3,11 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.github/.github.iml" filepath="$PROJECT_DIR$/.github/.github.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend.main.iml" filepath="$PROJECT_DIR$/.idea/modules/backend.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/backend.test.iml" filepath="$PROJECT_DIR$/.idea/modules/backend.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/ch.akop.backend.main.iml" filepath="$PROJECT_DIR$/.idea/modules/ch.akop.backend.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/deploy/deploy.iml" filepath="$PROJECT_DIR$/deploy/deploy.iml" />
       <module fileurl="file://$PROJECT_DIR$/frontend/frontend.iml" filepath="$PROJECT_DIR$/frontend/frontend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/home-system.main.iml" filepath="$PROJECT_DIR$/.idea/modules/home-system.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/home-system.test.iml" filepath="$PROJECT_DIR$/.idea/modules/home-system.test.iml" />
     </modules>
   </component>
 </project>

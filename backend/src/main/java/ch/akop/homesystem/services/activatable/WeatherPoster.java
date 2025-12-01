@@ -6,8 +6,8 @@ import ch.akop.homesystem.services.impl.TelegramMessageService;
 import ch.akop.homesystem.services.impl.WeatherService;
 import ch.akop.weathercloud.Weather;
 import io.quarkus.runtime.Startup;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.math.BigDecimal;
-import javax.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 
 @Startup

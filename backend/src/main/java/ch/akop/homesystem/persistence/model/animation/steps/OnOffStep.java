@@ -3,17 +3,16 @@ package ch.akop.homesystem.persistence.model.animation.steps;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.persistence.model.animation.Animation;
 import ch.akop.homesystem.services.impl.DeviceService;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.util.UUID;
-import javax.persistence.Entity;
-import javax.persistence.EntityNotFoundException;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.hibernate.annotations.GenericGenerator;
 
 @Entity
 @Table(name = "animation_step_on_off")
@@ -22,8 +21,7 @@ import org.hibernate.annotations.GenericGenerator;
 public class OnOffStep implements Step {
 
   @Id
-  @GeneratedValue(generator = "UUID")
-  @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+  @GeneratedValue
   private UUID id;
 
   @NonNull

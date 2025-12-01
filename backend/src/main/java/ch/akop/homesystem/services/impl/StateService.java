@@ -7,10 +7,10 @@ import ch.akop.homesystem.states.NormalState;
 import ch.akop.homesystem.states.State;
 import io.quarkus.runtime.Startup;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import java.util.HashMap;
 import java.util.Map;
-import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ public class StateService {
   private State currentState;
 
   @Getter
-  private ReplaySubject<String> currrentState$ = ReplaySubject.createWithSize(1);
+  private final ReplaySubject<String> currentState$ = ReplaySubject.createWithSize(1);
 
 
   @Transactional
@@ -86,7 +86,7 @@ public class StateService {
       }
     }
 
-    currrentState$.onNext(className);
+    currentState$.onNext(className);
   }
 
   private void leaveCurrentState() {

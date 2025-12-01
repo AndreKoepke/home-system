@@ -2,12 +2,12 @@ package ch.akop.homesystem.controller.for_private;
 
 import ch.akop.homesystem.controller.dtos.AnimationDto;
 import ch.akop.homesystem.services.impl.AnimationService;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import java.util.UUID;
 import java.util.stream.Stream;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import lombok.RequiredArgsConstructor;
 
 @Path("secured/v1/animations")

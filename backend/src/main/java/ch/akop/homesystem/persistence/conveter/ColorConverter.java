@@ -2,8 +2,8 @@ package ch.akop.homesystem.persistence.conveter;
 
 import ch.akop.homesystem.models.color.Color;
 import io.quarkus.runtime.util.StringUtil;
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 
 @Converter
 public class ColorConverter implements AttributeConverter<Color, String> {

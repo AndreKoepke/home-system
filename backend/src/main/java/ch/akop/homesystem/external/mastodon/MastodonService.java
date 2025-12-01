@@ -1,9 +1,9 @@
 package ch.akop.homesystem.external.mastodon;
 
 import ch.akop.homesystem.persistence.repository.config.MastodonConfigRepository;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.net.URI;
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;

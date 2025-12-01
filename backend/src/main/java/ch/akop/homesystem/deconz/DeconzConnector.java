@@ -30,16 +30,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
 import io.vertx.core.eventbus.EventBus;
-import java.net.URL;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.transaction.Transactional;
+import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import javax.annotation.Priority;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -94,9 +94,9 @@ public class DeconzConnector {
   @SneakyThrows
   private void connectToDeconz(DeconzConfig config) {
     deconzService = RestClientBuilder.newBuilder()
-        .baseUrl(new URL("http://%s:%d/api/%s/".formatted(config.getHost(),
+        .baseUrl(URI.create("http://%s:%d/api/%s/".formatted(config.getHost(),
             config.getPort(),
-            config.getApiKey())))
+            config.getApiKey())).toURL())
         .build(DeconzService.class);
 
     registerDevices();

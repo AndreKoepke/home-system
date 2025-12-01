@@ -2,9 +2,9 @@ package ch.akop.homesystem.external.openai;
 
 import ch.akop.homesystem.persistence.model.config.OpenAIConfig;
 import ch.akop.homesystem.persistence.repository.config.OpenAIConfigRepository;
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 

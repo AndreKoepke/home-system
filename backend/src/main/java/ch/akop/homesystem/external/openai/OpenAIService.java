@@ -4,12 +4,12 @@ import static java.util.Optional.empty;
 
 import ch.akop.homesystem.external.openai.TextGenerationParameter.Message;
 import ch.akop.homesystem.persistence.repository.config.OpenAIConfigRepository;
+import jakarta.annotation.Nullable;
+import jakarta.transaction.Transactional;
 import java.net.URI;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
-import javax.annotation.Nullable;
-import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
@@ -45,7 +45,7 @@ public class OpenAIService {
 
     log.info("Request a {} open-ai image for: {}", requestBody.getSize(), text);
 
-    return Base64.getDecoder().decode(apiWebClient.requestImage(requestBody).getData().get(0).getB64_json());
+    return Base64.getDecoder().decode(apiWebClient.requestImage(requestBody).getData().getFirst().getB64_json());
   }
 
   @Transactional
@@ -57,7 +57,7 @@ public class OpenAIService {
                   new Message("system", "Du bist ein irrer Wissenschaftler und liebst es verrückte Antworten zu geben. Antworte in wenigen Sätzen, am besten nur mit einem Satz."),
                   new Message("system", "Du sollst folgende Nachricht dem User überbringen: " + prompt)));
 
-          return apiWebClient.textCompletion(requestBody).getChoices().get(0).getMessage().getContent();
+          return apiWebClient.textCompletion(requestBody).getChoices().getFirst().getMessage().getContent();
         }).or(() -> {
           log.warn("Text requested, but openAI is not configured. Ignoring.");
           return empty();

@@ -1,12 +1,13 @@
 package ch.akop.homesystem.persistence.conveter;
 
+import static org.springframework.util.ObjectUtils.isEmpty;
+
+import jakarta.annotation.Nullable;
+import jakarta.persistence.AttributeConverter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Nullable;
-import javax.persistence.AttributeConverter;
 import lombok.NonNull;
-import org.springframework.util.StringUtils;
 
 public class ListOfStringsConverter implements AttributeConverter<List<String>, String> {
 
@@ -21,7 +22,7 @@ public class ListOfStringsConverter implements AttributeConverter<List<String>, 
   @NonNull
   @Override
   public List<String> convertToEntityAttribute(@Nullable String dbData) {
-    return StringUtils.isEmpty(dbData)
+    return isEmpty(dbData)
         ? new ArrayList<>()
         : Arrays.stream(dbData.split(";")).toList();
   }

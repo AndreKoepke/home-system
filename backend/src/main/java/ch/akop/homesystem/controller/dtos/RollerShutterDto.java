@@ -3,11 +3,11 @@ package ch.akop.homesystem.controller.dtos;
 import ch.akop.homesystem.models.CompassDirection;
 import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.persistence.model.config.RollerShutterConfig;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.lang.Nullable;
 

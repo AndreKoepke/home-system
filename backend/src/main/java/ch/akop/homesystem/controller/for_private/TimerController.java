@@ -2,10 +2,10 @@ package ch.akop.homesystem.controller.for_private;
 
 import ch.akop.homesystem.controller.dtos.TimerDto;
 import ch.akop.homesystem.services.impl.TimerService;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 import java.util.stream.Stream;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
 import lombok.RequiredArgsConstructor;
 
 @Path("secured/v1/timer")
