@@ -80,7 +80,7 @@
 # with temurin are builds to other platforms possible
 # but I changed to root image (because temurin make some weird actions at startup)
 # TODO: make it rootless again
-FROM registry.access.redhat.com/ubi9/openjdk-21:1.23
+FROM eclipse-temurin:21
 
 ENV LANGUAGE='en_US:en'
 
