@@ -1,10 +1,10 @@
 package ch.akop.homesystem.deconz.rest;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.Size;
 import lombok.Data;
 
 @Data

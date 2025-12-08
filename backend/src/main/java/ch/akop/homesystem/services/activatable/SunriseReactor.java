@@ -8,9 +8,9 @@ import ch.akop.homesystem.services.impl.DeviceService;
 import ch.akop.homesystem.services.impl.TelegramMessageService;
 import ch.akop.homesystem.services.impl.WeatherService;
 import io.quarkus.runtime.Startup;
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.control.RequestContextController;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.RequestContextController;
 import lombok.RequiredArgsConstructor;
 
 @Startup

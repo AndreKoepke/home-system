@@ -2,12 +2,12 @@ package ch.akop.homesystem.controller.for_public;
 
 
 import ch.akop.homesystem.services.impl.ImageCreatorService;
+import jakarta.annotation.security.PermitAll;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.core.MediaType;
 import java.time.Duration;
-import javax.annotation.security.PermitAll;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.CacheControl;
-import javax.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;

@@ -14,14 +14,14 @@ import io.quarkus.runtime.Startup;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.vertx.ConsumeEvent;
 import io.reactivex.rxjava3.core.Observable;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
 import lombok.RequiredArgsConstructor;
 
 @Startup

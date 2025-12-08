@@ -1,6 +1,7 @@
 package ch.akop.homesystem.services.impl;
 
 import static ch.akop.homesystem.util.EventConstants.CLOSE_CONTACT;
+import static org.springframework.util.ObjectUtils.isEmpty;
 
 import ch.akop.homesystem.models.devices.sensor.CloseContactState;
 import ch.akop.homesystem.models.events.CloseContactEvent;
@@ -8,11 +9,10 @@ import ch.akop.homesystem.persistence.repository.config.CloseContactConfigReposi
 import ch.akop.homesystem.states.SleepState;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;
-import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.Transactional;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +41,7 @@ public class CloseContactService {
 
     var config = configOpt.get();
 
-    if (!StringUtils.isEmpty(config.getMessageWhenTrigger())) {
+    if (!isEmpty(config.getMessageWhenTrigger())) {
       telegramMessageService.sendFunnyMessageToMainChannel(config.getMessageWhenTrigger());
     }
 

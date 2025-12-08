@@ -1,20 +1,6 @@
 plugins {
   id 'java'
-  id 'io.quarkus' version '2.16.4.Final'
-  id "com.gorylenko.gradle-git-properties" version "2.4.1"
-}
-
-group = 'ch.akop'
-version = '0.0.1-SNAPSHOT'
-
-java {
-  sourceCompatibility = JavaVersion.VERSION_17
-  targetCompatibility = JavaVersion.VERSION_17
-}
-
-try {
-  apply from: 'gradle-local.properties'
-} catch (Exception e) {
+  id 'io.quarkus'
 }
 
 repositories {
@@ -29,7 +15,16 @@ repositories {
   }
 }
 
+group = 'ch.akop'
+version = '0.0.1-SNAPSHOT'
+
+java {
+  sourceCompatibility = JavaVersion.VERSION_21
+  targetCompatibility = JavaVersion.VERSION_21
+}
+
 dependencies {
+  implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
 
   // lombok
   compileOnly 'org.projectlombok:lombok:1.18.34'
@@ -38,12 +33,10 @@ dependencies {
   testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 
   // quarkus
-  implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
   implementation 'io.quarkus:quarkus-hibernate-orm'
-  implementation 'io.quarkus:quarkus-rest-client-reactive'
-  implementation 'io.quarkus:quarkus-rest-client-reactive-jackson'
+  implementation 'io.quarkus:quarkus-rest-client'
+  implementation 'io.quarkus:quarkus-rest-client-jackson'
   implementation 'io.quarkus:quarkus-websockets'
-  implementation 'io.quarkus:quarkus-resteasy-reactive'
   implementation 'io.quarkus:quarkus-jdbc-postgresql'
   implementation 'io.quarkus:quarkus-arc'
   implementation 'io.quarkus:quarkus-config-yaml'
@@ -54,20 +47,18 @@ dependencies {
   testImplementation 'io.rest-assured:rest-assured'
   testImplementation 'org.assertj:assertj-core:3.24.2'
 
-
   // flyway
   implementation 'io.quarkus:quarkus-flyway'
 
   // misc
   runtimeOnly 'org.postgresql:postgresql'
-  implementation 'javax.validation:validation-api:2.0.1.Final'
+  implementation 'jakarta.validation:jakarta.validation-api:3.1.1'
   implementation 'com.github.pengrad:java-telegram-bot-api:7.1.0'
   implementation 'ch.akop:weathercloud:0.1.1'
   implementation 'net.e175.klaus:solarpositioning:2.0.2'
   implementation 'org.jetbrains:annotations:24.1.0'
   implementation 'com.squareup.okhttp3:okhttp:4.12.0'
   implementation 'com.google.code.findbugs:jsr305:3.0.2'
-
 
   // rxJava
   implementation 'io.reactivex.rxjava3:rxjava:3.1.8'
@@ -86,8 +77,4 @@ compileJava {
 
 compileTestJava {
   options.encoding = 'UTF-8'
-}
-
-gitProperties {
-  dateFormat = "yyyy-MM-dd'T'HH:mm"
 }

@@ -1,19 +1,17 @@
 package ch.akop.homesystem.persistence.model.config;
 
 import ch.akop.homesystem.persistence.model.animation.Animation;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.Set;
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
-import javax.persistence.MapKeyColumn;
-import javax.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.jetbrains.annotations.Nullable;
 
 @Entity
@@ -23,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 public class BasicConfig {
 
     @Id
-    @UpdateTimestamp
     private LocalDateTime modified = LocalDateTime.now();
 
     @Nullable
@@ -48,7 +45,6 @@ public class BasicConfig {
 
     @ElementCollection
     @CollectionTable(name = "config_basic_not_lights")
-    @MapKeyColumn(columnDefinition = "TEXT")
     @Column(columnDefinition = "TEXT")
     private Set<String> notLights;
 

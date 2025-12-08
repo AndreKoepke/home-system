@@ -12,10 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
-          java-version: 17
+          java-version: 21
           distribution: adopt
 
       - name: Setup Gradle
@@ -45,7 +45,7 @@ jobs:
         with:
           context: backend/
           file: backend/src/main/docker/Dockerfile.jvm
-          platforms: linux/amd64,linux/arm/v7,linux/arm64/v8
+          platforms: linux/amd64,linux/arm64/v8
           push: true
           pull: true
           tags: akop/home-system:latest

@@ -4,12 +4,12 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.PowerMeter;
 import ch.akop.homesystem.persistence.model.config.PowerMeterConfig;
 import ch.akop.homesystem.persistence.repository.config.PowerMeterConfigRepository;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

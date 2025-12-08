@@ -5,13 +5,12 @@ import ch.akop.homesystem.external.akop.Heartbeat;
 import ch.akop.homesystem.external.akop.TelemetryServer;
 import io.quarkus.runtime.Startup;
 import io.quarkus.scheduler.Scheduled;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.net.URI;
-import java.time.LocalDateTime;
-import java.util.Properties;
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
 @Startup
@@ -23,9 +22,6 @@ public class TelemetryService {
 
 
   private TelemetryServer telemetryServer;
-  private String gitBranch;
-  private String gitCommit;
-  private LocalDateTime gitCommitDate;
 
   @PostConstruct
   @SneakyThrows
@@ -33,12 +29,6 @@ public class TelemetryService {
     telemetryServer = RestClientBuilder.newBuilder()
         .baseUri(URI.create("https://home-system-telemetry.akop.online/"))
         .build(TelemetryServer.class);
-
-    var prop = new Properties();
-    prop.load(TelemetryService.class.getClassLoader().getResourceAsStream("git.properties"));
-    gitBranch = prop.getProperty("git.branch");
-    gitCommit = prop.getProperty("git.commit.id.abbrev");
-    gitCommitDate = LocalDateTime.parse(prop.getProperty("git.commit.time"));
 
     if (telemetryRepository.findAll().isEmpty()) {
       telemetryRepository.save(new TelemetryData().setId(telemetryServer.sync().getId()));
@@ -51,8 +41,6 @@ public class TelemetryService {
     telemetryRepository.findAll()
         .forEach(telemetryData -> telemetryServer.heartbeat(new Heartbeat()
             .setId(telemetryData.getId())
-            .setGitBranch(gitBranch)
-            .setGitCommit(gitCommit)
-            .setGitCommitDate(gitCommitDate)));
+            .setVersion(ConfigProvider.getConfig().getValue("quarkus.application.version", String.class))));
   }
 }

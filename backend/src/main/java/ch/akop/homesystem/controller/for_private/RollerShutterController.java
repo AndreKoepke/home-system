@@ -4,9 +4,9 @@ package ch.akop.homesystem.controller.for_private;
 import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.services.impl.DeviceService;
 import ch.akop.homesystem.services.impl.RollerShutterService;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import lombok.RequiredArgsConstructor;
 
 

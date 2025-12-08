@@ -9,12 +9,12 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Vertx;
 import io.vertx.rxjava3.RxHelper;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -42,7 +42,7 @@ public class AnimationService {
     }
 
     log.info("Start animation {}", animationId);
-    var freshAnimation = animationRepository.getOne(animationId);
+    var freshAnimation = animationRepository.getReferenceById(animationId);
     var animationSteps = freshAnimation.materializeSteps();
 
     runningAnimations.put(animationId, Observable.fromRunnable(() -> playAllAnimation(freshAnimation, animationSteps))
@@ -73,7 +73,7 @@ public class AnimationService {
       runningAnimations.remove(animationId);
     }
 
-    var lights = animationRepository.getOne(animationId).getLights();
+    var lights = animationRepository.getReferenceById(animationId).getLights();
     deviceService.getDevicesOfType(SimpleLight.class)
         .stream()
         .filter(light -> lights.contains(light.getName()))

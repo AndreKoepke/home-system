@@ -2,10 +2,10 @@ package ch.akop.homesystem.controller.for_private.websocket;
 
 import ch.akop.homesystem.controller.dtos.Identable;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.websocket.Session;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.websocket.Session;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 

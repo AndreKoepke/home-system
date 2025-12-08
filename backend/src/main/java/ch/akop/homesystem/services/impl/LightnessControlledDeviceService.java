@@ -8,8 +8,8 @@ import ch.akop.weathercloud.light.Light;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.vertx.core.Vertx;
 import io.vertx.rxjava3.RxHelper;
+import jakarta.transaction.Transactional;
 import java.util.function.Consumer;
-import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

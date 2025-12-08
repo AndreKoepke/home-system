@@ -23,14 +23,14 @@ import ch.akop.homesystem.persistence.repository.config.OffButtonConfigRepositor
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.Dependent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Priority;
-import javax.enterprise.context.Dependent;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;

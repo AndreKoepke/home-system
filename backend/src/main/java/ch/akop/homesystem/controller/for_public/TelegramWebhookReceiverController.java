@@ -2,10 +2,10 @@ package ch.akop.homesystem.controller.for_public;
 
 import ch.akop.homesystem.services.impl.TelegramMessageService;
 import com.pengrad.telegrambot.utility.BotUtils;
-import javax.annotation.security.PermitAll;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import jakarta.annotation.security.PermitAll;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

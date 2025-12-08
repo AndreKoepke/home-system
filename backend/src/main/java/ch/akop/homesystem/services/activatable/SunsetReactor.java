@@ -15,9 +15,9 @@ import ch.akop.homesystem.states.HolidayState;
 import ch.akop.homesystem.states.NormalState;
 import ch.akop.weathercloud.Weather;
 import io.quarkus.runtime.Startup;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.RequestContextController;
 import java.util.concurrent.TimeUnit;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.control.RequestContextController;
 import lombok.RequiredArgsConstructor;
 
 @Startup

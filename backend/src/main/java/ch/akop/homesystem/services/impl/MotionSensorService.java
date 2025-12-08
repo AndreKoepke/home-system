@@ -13,6 +13,9 @@ import ch.akop.homesystem.states.SleepState;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.vertx.core.eventbus.EventBus;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.Dependent;
+import jakarta.transaction.Transactional;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
@@ -22,9 +25,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Priority;
-import javax.enterprise.context.Dependent;
-import javax.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -104,7 +104,7 @@ public class MotionSensorService {
     }
 
     public void startListing() {
-      stateService.getCurrrentState$()
+      stateService.getCurrentState$()
           .skip(1)
           .subscribe(newState -> this.referencedLights = resolveLights());
 

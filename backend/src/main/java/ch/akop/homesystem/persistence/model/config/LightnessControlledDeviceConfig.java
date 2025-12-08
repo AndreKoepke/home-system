@@ -3,12 +3,12 @@ package ch.akop.homesystem.persistence.model.config;
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 
 import ch.akop.weathercloud.light.Light;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
