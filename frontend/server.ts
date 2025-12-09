@@ -30,6 +30,9 @@ export function app(): express.Express {
   server.get(/(.*)/, (req, res, next) => {
     const {protocol, originalUrl, baseUrl, headers} = req;
 
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+    console.log(`${new Date().toLocaleString()}: ${req.path} to ${ip}`);
+
     commonEngine
       .render({
         bootstrap,
@@ -49,7 +52,7 @@ function run(): void {
   const port = process.env['PORT'] || 4000;
 
   console.log(`Set ngssc`);
-  execSync('/usr/sbin/ngssc insert browser/')
+  execSync('ngssc insert -r .')
 
   // Start up the Node server
   const server = app();
