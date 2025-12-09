@@ -49,6 +49,9 @@ dependencies {
   testImplementation 'io.rest-assured:rest-assured'
   testImplementation 'org.assertj:assertj-core:3.24.2'
 
+  // test
+  testImplementation 'org.mockito:mockito-core:5.20.0'
+
   // flyway
   implementation 'io.quarkus:quarkus-flyway'
 
