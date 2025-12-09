@@ -52,7 +52,8 @@ function run(): void {
   const port = process.env['PORT'] || 4000;
 
   console.log(`Set ngssc`);
-  execSync('ngssc insert -r .')
+  execSync('cp browser/ngssc.json server/')
+  execSync('ngssc insert -r')
 
   // Start up the Node server
   const server = app();

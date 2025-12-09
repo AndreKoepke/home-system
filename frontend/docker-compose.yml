@@ -1,0 +1,9 @@
+services:
+
+  frontend:
+    build:
+      context: .
+      tags:
+        - home-system-fronted
+    network_mode: host
+
