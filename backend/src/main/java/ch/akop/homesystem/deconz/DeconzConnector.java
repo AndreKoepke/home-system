@@ -231,7 +231,7 @@ public class DeconzConnector {
     return switch (light.getType().toLowerCase()) {
       case "color light", "extended color light", "color dimmable light" -> Optional.of(createColorLight(id));
       case "dimmable light", "color temperature light" -> Optional.of(createDimmableLight(id));
-      case "on/off plug-in unit", "on/off light" -> Optional.of(registerSimpleLight(id));
+      case "on/off plug-in unit", "on/off light", "on/off output" -> Optional.of(registerSimpleLight(id));
       default -> Optional.empty();
     };
   }
