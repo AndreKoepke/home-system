@@ -1,5 +1,6 @@
 package ch.akop.homesystem.services.impl;
 
+import static ch.akop.weathercloud.scraper.weathercloud.Scraper.scrape$;
 import static java.time.temporal.ChronoUnit.MINUTES;
 
 import ch.akop.homesystem.persistence.model.config.BasicConfig;
@@ -7,6 +8,7 @@ import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.weathercloud.Weather;
 import ch.akop.weathercloud.light.LightUnit;
 import ch.akop.weathercloud.scraper.weathercloud.Scraper;
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import jakarta.annotation.PostConstruct;
@@ -16,6 +18,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +35,7 @@ public class WeatherService {
 
   private final BasicConfigRepository basicConfigRepository;
   private final RainDetectorService rainDetectorService;
+  private final TelegramMessageService telegramMessageService;
 
   @Getter
   private final ReplaySubject<Weather> weather = ReplaySubject.createWithSize(1);
@@ -39,6 +44,7 @@ public class WeatherService {
   private boolean active;
 
   private LocalDateTime gotDarkAt = LocalDateTime.MIN;
+  private final AtomicBoolean informedUserThatWeatherServiceIsDown = new AtomicBoolean(false);
 
 
   @PostConstruct
@@ -54,13 +60,10 @@ public class WeatherService {
     }
 
     active = true;
-    new Scraper()
-        .scrape$(nearestWeatherCloudStation, Duration.of(5, MINUTES))
+    scrape$(nearestWeatherCloudStation, Duration.of(5, MINUTES), new Scraper())
         .doOnError(throwable -> log.error("There was an error while scraping data from weather cloud", throwable))
-        .retryWhen(errors$ ->
-            errors$.delay(30, TimeUnit.SECONDS).retry()
-        )
-        .subscribe(weather::onNext);
+        .retryWhen(this::tryAgainAndInformUser)
+        .subscribe(this::handleWeatherUpdate);
 
     weather.subscribe(weatherUpdate -> {
       log.info("Got weather-update " + weatherUpdate);
@@ -125,5 +128,33 @@ public class WeatherService {
 
   public record CurrentAndPreviousWeather(Weather current, Weather previous) {
 
+
+  }
+
+  private Flowable<Long> tryAgainAndInformUser(Flowable<Throwable> errors$) {
+    var counter = new AtomicInteger();
+    return errors$
+        .doOnNext(e -> counter.getAndIncrement())
+        .flatMap(e -> {
+
+          if (counter.get() == 5) {
+            informUserThatSomethingIsWrong();
+          }
+
+          return Flowable.timer((int) Math.min(10L * counter.get(), 60L), TimeUnit.SECONDS);
+        });
+  }
+
+  private void informUserThatSomethingIsWrong() {
+    telegramMessageService.sendFunnyMessageToMainChannel("Houston, wir haben ein Problem. Ich kann derzeit nicht das aktuelle Wetter bestimmen. Ich sag Bescheid, wenn es wieder läuft.");
+    informedUserThatWeatherServiceIsDown.set(true);
+  }
+
+  private void handleWeatherUpdate(Weather update) {
+    if (informedUserThatWeatherServiceIsDown.getAndSet(false)) {
+      telegramMessageService.sendFunnyMessageToMainChannel("Gute Nachrichten. Ich kann wieder das Wetter bestimmen.");
+    }
+
+    weather.onNext(update);
   }
 }
