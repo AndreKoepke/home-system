@@ -45,6 +45,7 @@ public class WeatherService {
 
   private LocalDateTime gotDarkAt = null;
   private final AtomicBoolean informedUserThatWeatherServiceIsDown = new AtomicBoolean(false);
+  private final AtomicBoolean informedUserThatWeatherServiceIsDown = new AtomicBoolean(false);
 
 
   @PostConstruct
