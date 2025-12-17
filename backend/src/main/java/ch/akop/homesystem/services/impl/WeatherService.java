@@ -137,6 +137,10 @@ public class WeatherService {
         .doOnNext(e -> counter.getAndIncrement())
         .flatMap(e -> {
 
+          if (counter.get() == 1) {
+            log.error("Can't talk to the weather service", errors$.blockingFirst());
+          }
+
           if (counter.get() == 5) {
             informUserThatSomethingIsWrong();
           }
