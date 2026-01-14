@@ -35,7 +35,7 @@ public class DeviceService {
 
   private Set<String> ignoreLightIdsOrNamesForCentralFunctions;
 
-  @Startup
+  @Startup(100)
   @Transactional
   void setIgnoreLightIdsOrNamesForCentralFunctions() {
     ignoreLightIdsOrNamesForCentralFunctions = basicConfigRepository.findByOrderByModifiedDesc()
