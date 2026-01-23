@@ -80,7 +80,8 @@ public class DeviceService {
         .collect(Collectors.toSet());
   }
 
-  public void turnAllLightsOff() {
+  public void turnAllLightsOff(String reason) {
+    log.info("Turning every light off, because of " + reason);
     getDevicesOfType(SimpleLight.class).stream()
         .filter(this::isLightUsableForCentralFunctions)
         .filter(Device::isReachable)

@@ -120,8 +120,8 @@ public class NormalState extends Activatable implements State {
 
     super.disposeWhenClosed(userService.isAnyoneAtHome$()
         .switchMap(this::shouldLightsTurnedOff)
-        .filter(canTurnOff -> canTurnOff)
-        .subscribe(canTurnOff -> deviceService.turnAllLightsOff()));
+        .filter(Boolean.TRUE::equals)
+        .subscribe(canTurnOff -> deviceService.turnAllLightsOff("no one is at home")));
 
     super.disposeWhenClosed(messageService.waitForMessageOnce("sleep")
         .subscribe(message -> {

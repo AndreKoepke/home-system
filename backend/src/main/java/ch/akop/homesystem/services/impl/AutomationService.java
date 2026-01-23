@@ -131,7 +131,7 @@ public class AutomationService {
   @ConsumeEvent(value = BUTTON_INTERNAL, blocking = true)
   public void buttonWasPressed(ButtonPressInternalEvent internalEvent) {
     if (wasCentralOffPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
-      deviceService.turnAllLightsOff();
+      deviceService.turnAllLightsOff("central off button");
       eventPublisher.publish(GENERAL, Event.CENTRAL_OFF_PRESSED);
     } else if (wasGoodNightButtonPressed(internalEvent.getButtonName(), internalEvent.getButtonEvent())) {
       eventPublisher.publish(GENERAL, Event.GOOD_NIGHT_PRESSED);
