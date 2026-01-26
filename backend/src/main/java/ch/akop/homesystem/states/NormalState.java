@@ -198,10 +198,11 @@ public class NormalState extends Activatable implements State {
     return Observable.timer(10, TimeUnit.MINUTES)
         .doOnNext(ignore -> messageService.sendMessageToMainChannel("Es ist niemand zu Hause, "
             + "deswegen mache ich gleich die Lichter aus. Es sei denn, /lassAn"))
-        .switchMap(ignored -> messageService.waitForMessageOnce("lassAn"))
-        .doOnNext(message -> messageService.sendMessageToMainChannel("Ok, ich lasse die Lichter an."))
-        .map(s -> false)
-        .timeout(5, TimeUnit.MINUTES)
+        .switchMap(ignored -> messageService.waitForMessageOnce("lassAn")
+            .doOnNext(message -> messageService.sendMessageToMainChannel("Ok, ich lasse die Lichter an."))
+            .map(s -> false)
+            .timeout(5, TimeUnit.MINUTES)
+        )
         .onErrorReturn(throwable -> !userService.isAnyoneAtHome())
         .toFlowable(BackpressureStrategy.LATEST);
   }
