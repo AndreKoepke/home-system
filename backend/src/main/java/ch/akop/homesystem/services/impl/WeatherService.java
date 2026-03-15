@@ -43,8 +43,7 @@ public class WeatherService {
   @Getter
   private boolean active;
 
-  private LocalDateTime gotDarkAt = null;
-  private final AtomicBoolean informedUserThatWeatherServiceIsDown = new AtomicBoolean(false);
+  private LocalDateTime gotDarkAt = LocalDateTime.MIN;
   private final AtomicBoolean informedUserThatWeatherServiceIsDown = new AtomicBoolean(false);
 
 
