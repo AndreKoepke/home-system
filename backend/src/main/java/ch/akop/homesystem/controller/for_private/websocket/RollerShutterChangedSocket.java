@@ -25,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 public class RollerShutterChangedSocket extends AbstractBaseSocket {
 
   private final DeviceService deviceService;
+
+  @Getter
   private final AuthenticationService authenticationService;
 
   @Getter
@@ -43,9 +45,8 @@ public class RollerShutterChangedSocket extends AbstractBaseSocket {
   }
 
   @OnMessage
-  public void onMessage(String message, Session session) {
-    if (authenticationService.isAuthenticated(message)) {
-      registerSession(session);
+  public void onMessage(byte[] message, Session session) {
+    if (registerSession(session, message)) {
       sendAllRollerShuttersToSession(session.getId());
     }
   }

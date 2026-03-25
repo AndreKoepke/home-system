@@ -1,5 +1,6 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
+import ch.akop.homesystem.authentication.AuthenticationService;
 import ch.akop.homesystem.controller.dtos.Identable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.websocket.Session;
@@ -14,11 +15,25 @@ public abstract class AbstractBaseSocket {
 
   abstract ObjectMapper getObjectMapper();
 
+  abstract AuthenticationService getAuthenticationService();
+
   private final Map<String, Session> sessions = new ConcurrentHashMap<>();
   private final Map<String, Map<String, Integer>> sendHashCodes = new ConcurrentHashMap<>();
 
-  public void registerSession(Session session) {
-    sessions.put(session.getId(), session);
+  private record ControlMessage(String token) {
+
+  }
+
+  @SneakyThrows
+  public boolean registerSession(Session session, byte[] loginMessageRaw) {
+    var loginMessage = getObjectMapper().readValue(loginMessageRaw, ControlMessage.class);
+    if (getAuthenticationService().isAuthenticated(loginMessage.token)) {
+
+      sessions.put(session.getId(), session);
+      return true;
+    }
+
+    return false;
   }
 
   @SneakyThrows

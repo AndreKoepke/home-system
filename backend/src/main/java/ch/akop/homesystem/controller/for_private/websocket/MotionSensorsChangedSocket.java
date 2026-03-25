@@ -27,6 +27,8 @@ public class MotionSensorsChangedSocket extends AbstractBaseSocket {
 
   private final DeviceService deviceService;
   private final MotionSensorConfigRepository motionSensorConfigRepository;
+
+  @Getter
   private final AuthenticationService authenticationService;
 
   @Getter
@@ -48,9 +50,8 @@ public class MotionSensorsChangedSocket extends AbstractBaseSocket {
   }
 
   @OnMessage
-  public void onMessage(String message, Session session) {
-    if (authenticationService.isAuthenticated(message)) {
-      registerSession(session);
+  public void onMessage(byte[] message, Session session) {
+    if (registerSession(session, message)) {
       sendAllSensorsToSession(session.getId());
     }
   }
