@@ -59,7 +59,7 @@ dependencies {
   runtimeOnly 'org.postgresql:postgresql'
   implementation 'jakarta.validation:jakarta.validation-api:3.1.1'
   implementation 'com.github.pengrad:java-telegram-bot-api:7.1.0'
-  implementation 'ch.akop:weathercloud:0.1.1'
+  implementation 'ch.akop:weathercloud:0.1.2'
   implementation 'net.e175.klaus:solarpositioning:2.0.2'
   implementation 'org.jetbrains:annotations:24.1.0'
   implementation 'com.squareup.okhttp3:okhttp:4.12.0'

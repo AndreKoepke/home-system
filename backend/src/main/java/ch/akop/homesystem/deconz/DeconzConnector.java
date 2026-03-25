@@ -28,11 +28,8 @@ import ch.akop.homesystem.services.impl.AutomationService;
 import ch.akop.homesystem.services.impl.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.Startup;
-import io.quarkus.runtime.StartupEvent;
 import io.vertx.core.eventbus.EventBus;
-import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.transaction.Transactional;
 import java.net.URI;
 import java.time.Duration;
@@ -51,7 +48,6 @@ import org.springframework.lang.Nullable;
 @ApplicationScoped
 @Slf4j
 @RequiredArgsConstructor
-@Startup
 public class DeconzConnector {
 
   private final DeviceService deviceService;
@@ -73,9 +69,9 @@ public class DeconzConnector {
 
   }
 
-
   @Transactional
-  void tryToStart(@Observes @Priority(500) StartupEvent event) {
+  @Startup(250)
+  void tryToStart() {
     // TODO restart when config changes
     var config = deconzConfigRepository.getFirstByOrderByModifiedDesc();
 
@@ -90,6 +86,7 @@ public class DeconzConnector {
       log.error("Cannot connect to deconz", e);
     }
   }
+
 
   @SneakyThrows
   private void connectToDeconz(DeconzConfig config) {

@@ -58,7 +58,7 @@ public class HolidayState extends Activatable implements State {
     var durationToLightOffTime = Duration.between(ZonedDateTime.now(), getLightOffTime()).toSeconds();
     disposeWhenClosed(
         Observable.interval(durationToLightOffTime, ONE_DAY_AS_SECONDS, TimeUnit.SECONDS)
-            .subscribe(ignore -> deviceService.turnAllLightsOff()));
+            .subscribe(ignore -> deviceService.turnAllLightsOff("holiday off")));
 
     disposeWhenClosed(sunsetReactor.start());
     disposeWhenClosed(userService.getPresenceMap$()

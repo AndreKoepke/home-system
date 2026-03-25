@@ -10,7 +10,7 @@ import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.homesystem.util.SleepUtil;
-import jakarta.annotation.PostConstruct;
+import io.quarkus.runtime.Startup;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.time.Duration;
@@ -35,7 +35,7 @@ public class DeviceService {
 
   private Set<String> ignoreLightIdsOrNamesForCentralFunctions;
 
-  @PostConstruct
+  @Startup(100)
   @Transactional
   void setIgnoreLightIdsOrNamesForCentralFunctions() {
     ignoreLightIdsOrNamesForCentralFunctions = basicConfigRepository.findByOrderByModifiedDesc()
@@ -80,7 +80,8 @@ public class DeviceService {
         .collect(Collectors.toSet());
   }
 
-  public void turnAllLightsOff() {
+  public void turnAllLightsOff(String reason) {
+    log.info("Turning every light off, because of " + reason);
     getDevicesOfType(SimpleLight.class).stream()
         .filter(this::isLightUsableForCentralFunctions)
         .filter(Device::isReachable)
