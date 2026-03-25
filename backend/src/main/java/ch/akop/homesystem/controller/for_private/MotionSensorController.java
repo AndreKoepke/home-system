@@ -13,8 +13,8 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-@Path("sensors/motion-sensors")
-public class MotionSensorService {
+@Path("secured/v1/devices/sensors/motion-sensors")
+public class MotionSensorController {
 
   private final DeviceService deviceService;
   private final MotionSensorConfigRepository motionSensorConfigRepository;
