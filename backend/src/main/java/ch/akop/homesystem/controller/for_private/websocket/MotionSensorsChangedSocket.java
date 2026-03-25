@@ -2,6 +2,7 @@ package ch.akop.homesystem.controller.for_private.websocket;
 
 import ch.akop.homesystem.controller.dtos.SensorDto;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
+import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigRepository;
 import ch.akop.homesystem.services.impl.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.ConsumeEvent;
@@ -18,11 +19,12 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ApplicationScoped
-@ServerEndpoint("/secured/ws/v1/devices/sensors")
+@ServerEndpoint("/secured/ws/v1/devices/sensors/motion-sensors")
 @RequiredArgsConstructor
-public class SensorsChangedSocket extends AbstractBaseSocket {
+public class MotionSensorsChangedSocket extends AbstractBaseSocket {
 
   private final DeviceService deviceService;
+  private final MotionSensorConfigRepository motionSensorConfigRepository;
 
   @Getter
   private final ObjectMapper objectMapper;
@@ -31,6 +33,9 @@ public class SensorsChangedSocket extends AbstractBaseSocket {
   void updateSensor(String updatedDeviceId) {
     deviceService.findDeviceById(updatedDeviceId, MotionSensor.class)
         .map(SensorDto::from)
+        .map(sensorDto -> motionSensorConfigRepository
+            .findById(sensorDto.getName()).map(sensorDto::appendConfig)
+            .orElse(sensorDto))
         .ifPresent(this::broadcast);
   }
 
@@ -56,6 +61,9 @@ public class SensorsChangedSocket extends AbstractBaseSocket {
     deviceService.getDevicesOfType(MotionSensor.class)
         .stream()
         .map(SensorDto::from)
+        .map(sensorDto -> motionSensorConfigRepository
+            .findById(sensorDto.getName()).map(sensorDto::appendConfig)
+            .orElse(sensorDto))
         .forEach(motionSensor -> sendMessage(sessionId, motionSensor));
   }
 }
