@@ -1,5 +1,6 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
+import ch.akop.homesystem.authentication.AuthenticationService;
 import ch.akop.homesystem.controller.dtos.LightDto;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.services.impl.DeviceService;
@@ -8,6 +9,7 @@ import io.quarkus.vertx.ConsumeEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
+import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
@@ -23,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 public class LightsChangedSocket extends AbstractBaseSocket {
 
   private final DeviceService deviceService;
+  private final AuthenticationService authenticationService;
 
   @Getter
   private final ObjectMapper objectMapper;
@@ -36,8 +39,15 @@ public class LightsChangedSocket extends AbstractBaseSocket {
 
   @OnOpen
   public void onOpen(Session session) {
-    registerSession(session);
-    sendAllLightsToSession(session.getId());
+
+  }
+
+  @OnMessage
+  public void onMessage(String message, Session session) {
+    if (authenticationService.isAuthenticated(message)) {
+      registerSession(session);
+      sendAllLightsToSession(session.getId());
+    }
   }
 
   @OnClose

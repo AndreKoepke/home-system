@@ -1,5 +1,6 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
+import ch.akop.homesystem.authentication.AuthenticationService;
 import ch.akop.homesystem.controller.dtos.SensorDto;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigRepository;
@@ -9,6 +10,7 @@ import io.quarkus.vertx.ConsumeEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
+import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
@@ -25,6 +27,7 @@ public class MotionSensorsChangedSocket extends AbstractBaseSocket {
 
   private final DeviceService deviceService;
   private final MotionSensorConfigRepository motionSensorConfigRepository;
+  private final AuthenticationService authenticationService;
 
   @Getter
   private final ObjectMapper objectMapper;
@@ -41,8 +44,15 @@ public class MotionSensorsChangedSocket extends AbstractBaseSocket {
 
   @OnOpen
   public void onOpen(Session session) {
-    registerSession(session);
-    sendAllSensorsToSession(session.getId());
+
+  }
+
+  @OnMessage
+  public void onMessage(String message, Session session) {
+    if (authenticationService.isAuthenticated(message)) {
+      registerSession(session);
+      sendAllSensorsToSession(session.getId());
+    }
   }
 
   @OnClose

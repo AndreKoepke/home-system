@@ -1,5 +1,6 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
+import ch.akop.homesystem.authentication.AuthenticationService;
 import ch.akop.homesystem.controller.dtos.WeatherDto;
 import ch.akop.homesystem.services.impl.WeatherService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,6 +8,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnError;
+import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
@@ -25,6 +27,7 @@ public class WeatherChangedSocket {
 
   private final WeatherService weatherService;
   private final ObjectMapper objectMapper;
+  private final AuthenticationService authenticationService;
 
   private String currentWeatherJsonPayload;
 
@@ -43,8 +46,15 @@ public class WeatherChangedSocket {
 
   @OnOpen
   public void onOpen(Session session) {
-    sessions.put(session.getId(), session);
-    sendWeatherToSession(session.getAsyncRemote());
+
+  }
+
+  @OnMessage
+  public void onMessage(String message, Session session) {
+    if (authenticationService.isAuthenticated(message)) {
+      sessions.put(session.getId(), session);
+      sendWeatherToSession(session.getAsyncRemote());
+    }
   }
 
   @OnClose
