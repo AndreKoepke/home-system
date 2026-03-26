@@ -7,13 +7,14 @@ import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigReposi
 import ch.akop.homesystem.services.impl.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.ConsumeEvent;
+import io.quarkus.websockets.next.OnClose;
+import io.quarkus.websockets.next.OnError;
+import io.quarkus.websockets.next.OnOpen;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+import io.quarkus.websockets.next.WebSocketConnection;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.websocket.OnClose;
-import jakarta.websocket.OnError;
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.OnOpen;
-import jakarta.websocket.Session;
-import jakarta.websocket.server.ServerEndpoint;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -21,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ApplicationScoped
-@ServerEndpoint("/secured/ws/v1/devices/sensors/motion-sensors")
+@WebSocket(path = "/secured/ws/v1/devices/sensors/motion-sensors")
 @RequiredArgsConstructor
 public class MotionSensorsChangedSocket extends AbstractBaseSocket {
 
@@ -34,37 +35,40 @@ public class MotionSensorsChangedSocket extends AbstractBaseSocket {
   @Getter
   private final ObjectMapper objectMapper;
 
+  @Transactional
   @ConsumeEvent(value = "devices/sensors/update", blocking = true)
   void updateSensor(String updatedDeviceId) {
     deviceService.findDeviceById(updatedDeviceId, MotionSensor.class)
         .map(SensorDto::from)
         .map(sensorDto -> motionSensorConfigRepository
-            .findById(sensorDto.getName()).map(sensorDto::appendConfig)
+            .findByName(sensorDto.getName())
+            .map(sensorDto::appendConfig)
             .orElse(sensorDto))
         .ifPresent(this::broadcast);
   }
 
   @OnOpen
-  public void onOpen(Session session) {
+  public void onOpen(WebSocketConnection session) {
 
   }
 
-  @OnMessage
-  public void onMessage(byte[] message, Session session) {
+  @OnTextMessage
+  @Transactional
+  public void onMessage(String message, WebSocketConnection session) {
     if (registerSession(session, message)) {
-      sendAllSensorsToSession(session.getId());
+      sendAllSensorsToSession(session.id());
     }
   }
 
   @OnClose
-  public void onClose(Session session) {
-    deregisterSession(session.getId());
+  public void onClose(WebSocketConnection session) {
+    deregisterSession(session.id());
   }
 
   @OnError
-  public void onError(Session session, Throwable throwable) {
-    log.error("Error on session: {}", session.getId(), throwable);
-    deregisterSession(session.getId());
+  public void onError(WebSocketConnection session, Throwable throwable) {
+    log.error("Error on session: {}", session.id(), throwable);
+    deregisterSession(session.id());
   }
 
   @SneakyThrows
@@ -73,7 +77,8 @@ public class MotionSensorsChangedSocket extends AbstractBaseSocket {
         .stream()
         .map(SensorDto::from)
         .map(sensorDto -> motionSensorConfigRepository
-            .findById(sensorDto.getName()).map(sensorDto::appendConfig)
+            .findByName(sensorDto.getName())
+            .map(sensorDto::appendConfig)
             .orElse(sensorDto))
         .forEach(motionSensor -> sendMessage(sessionId, motionSensor));
   }

@@ -3,7 +3,8 @@ package ch.akop.homesystem.controller.for_private.websocket;
 import ch.akop.homesystem.authentication.AuthenticationService;
 import ch.akop.homesystem.controller.dtos.Identable;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.websocket.Session;
+import io.quarkus.websockets.next.CloseReason;
+import io.quarkus.websockets.next.WebSocketConnection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +18,7 @@ public abstract class AbstractBaseSocket {
 
   abstract AuthenticationService getAuthenticationService();
 
-  private final Map<String, Session> sessions = new ConcurrentHashMap<>();
+  private final Map<String, WebSocketConnection> connections = new ConcurrentHashMap<>();
   private final Map<String, Map<String, Integer>> sendHashCodes = new ConcurrentHashMap<>();
 
   private record ControlMessage(String token) {
@@ -25,12 +26,13 @@ public abstract class AbstractBaseSocket {
   }
 
   @SneakyThrows
-  public boolean registerSession(Session session, byte[] loginMessageRaw) {
+  public boolean registerSession(WebSocketConnection connection, String loginMessageRaw) {
     var loginMessage = getObjectMapper().readValue(loginMessageRaw, ControlMessage.class);
     if (getAuthenticationService().isAuthenticated(loginMessage.token)) {
-
-      sessions.put(session.getId(), session);
+      connections.put(connection.id(), connection);
       return true;
+    } else {
+      connection.closeAndAwait(CloseReason.NORMAL);
     }
 
     return false;
@@ -38,17 +40,17 @@ public abstract class AbstractBaseSocket {
 
   @SneakyThrows
   public void deregisterSession(String sessionId) {
-    sessions.remove(sessionId);
+    connections.remove(sessionId);
     sendHashCodes.remove(sessionId);
   }
 
   public void broadcast(Identable message) {
-    sessions.keySet().forEach(sessionId -> sendMessage(sessionId, message));
+    connections.keySet().forEach(sessionId -> sendMessage(sessionId, message));
   }
 
   @SneakyThrows
   public void sendMessage(String sessionId, Identable message) {
-    var session = sessions.get(sessionId);
+    var session = connections.get(sessionId);
 
     sendHashCodes.putIfAbsent(sessionId, new HashMap<>());
     sendHashCodes.get(sessionId).putIfAbsent(message.getId(), 0);
@@ -58,10 +60,6 @@ public abstract class AbstractBaseSocket {
     sendHashCodes.get(sessionId).put(message.getId(), message.hashCode());
 
     var payload = getObjectMapper().writeValueAsString(message);
-    session.getAsyncRemote().sendObject(payload, result -> {
-      if (result.getException() != null) {
-        log.error("Error while sending message", result.getException());
-      }
-    });
+    session.sendTextAndAwait(payload);
   }
 }

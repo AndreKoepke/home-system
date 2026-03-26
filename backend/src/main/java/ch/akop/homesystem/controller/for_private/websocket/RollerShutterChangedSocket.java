@@ -6,13 +6,13 @@ import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.services.impl.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.ConsumeEvent;
+import io.quarkus.websockets.next.OnClose;
+import io.quarkus.websockets.next.OnError;
+import io.quarkus.websockets.next.OnOpen;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+import io.quarkus.websockets.next.WebSocketConnection;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.websocket.OnClose;
-import jakarta.websocket.OnError;
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.OnOpen;
-import jakarta.websocket.Session;
-import jakarta.websocket.server.ServerEndpoint;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ApplicationScoped
-@ServerEndpoint("/secured/ws/v1/devices/roller-shutters")
+@WebSocket(path = "/secured/ws/v1/devices/roller-shutters")
 @RequiredArgsConstructor
 public class RollerShutterChangedSocket extends AbstractBaseSocket {
 
@@ -40,26 +40,26 @@ public class RollerShutterChangedSocket extends AbstractBaseSocket {
   }
 
   @OnOpen
-  public void onOpen(Session session) {
+  public void onOpen(WebSocketConnection session) {
 
   }
 
-  @OnMessage
-  public void onMessage(byte[] message, Session session) {
+  @OnTextMessage
+  public void onMessage(String message, WebSocketConnection session) {
     if (registerSession(session, message)) {
-      sendAllRollerShuttersToSession(session.getId());
+      sendAllRollerShuttersToSession(session.id());
     }
   }
 
   @OnClose
-  public void onClose(Session session) {
-    deregisterSession(session.getId());
+  public void onClose(WebSocketConnection session) {
+    deregisterSession(session.id());
   }
 
   @OnError
-  public void onError(Session session, Throwable throwable) {
-    log.error("Error on session: {}", session.getId(), throwable);
-    deregisterSession(session.getId());
+  public void onError(WebSocketConnection session, Throwable throwable) {
+    log.error("Error on session: {}", session.id(), throwable);
+    deregisterSession(session.id());
   }
 
   @SneakyThrows
