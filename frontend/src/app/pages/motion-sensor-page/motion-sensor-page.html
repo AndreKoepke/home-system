@@ -1,0 +1,12 @@
+<sbb-accordion>
+  @for (motionSensor of motionSensors().values(); track motionSensor.name) {
+    <sbb-expansion-panel>
+      <sbb-expansion-panel-header [iconName]="motionSensor.presence ? 'run-medium' : 'cross-medium'">
+        <span class="label">{{ motionSensor.name }}</span>
+      </sbb-expansion-panel-header>
+      <sbb-expansion-panel-content>
+        <app-motion-sensor-form [sensor]="motionSensor" (onSave)="save.emit($event)"/>
+      </sbb-expansion-panel-content>
+    </sbb-expansion-panel>
+  }
+</sbb-accordion>

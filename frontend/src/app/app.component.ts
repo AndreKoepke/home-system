@@ -24,6 +24,7 @@ export class AppComponent {
     {text: 'Home', link: '/'},
     {text: 'Animationen', link: '/animation'},
     {text: 'Störe', link: '/roller-shutter'},
+    {text: 'Bewegungsmelder', link: '/motion-sensor'},
     {text: 'Zug', link: '/train'},
     {text: 'Wetter', link: '/weather'},
     {text: 'Roggen', link: '/livecam'},

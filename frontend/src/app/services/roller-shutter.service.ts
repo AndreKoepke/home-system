@@ -10,7 +10,7 @@ import {getHttpBaseUrl} from "../url-resolver";
 })
 export class RollerShutterService {
 
-  private readonly rollerShutterListener = new Listener<RollerShutter>('roller-shutters', this.destroyRef);
+  private readonly rollerShutterListener = new Listener<RollerShutter>('devices/roller-shutters', this.destroyRef);
 
   constructor(private readonly destroyRef: DestroyRef,
               private readonly httpClient: HttpClient) {
