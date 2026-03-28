@@ -35,5 +35,6 @@ quarkus:
       origins: "*"
       methods: "GET,OPTIONS"
       exposed-headers: "prompt"
+      enabled: true
 
     root-path: backend
