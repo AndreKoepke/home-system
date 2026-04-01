@@ -2,6 +2,7 @@ package ch.akop.homesystem.controller.dtos;
 
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.Sensor;
+import ch.akop.homesystem.persistence.model.animation.Animation;
 import ch.akop.homesystem.persistence.model.config.MotionSensorConfig;
 import jakarta.annotation.Nullable;
 import java.time.Duration;
@@ -10,6 +11,7 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -30,15 +32,15 @@ public class SensorDto implements Identable {
   private boolean presence;
 
   @Nullable
-  private Config config;
+  private ConfigDto config;
 
   public SensorDto appendConfig(MotionSensorConfig config) {
-    return setConfig(Config.from(config));
+    return setConfig(ConfigDto.from(config));
   }
 
   @Data
   @Builder
-  public static class Config {
+  public static class ConfigDto {
 
     private String name;
     private Collection<String> lights;
@@ -52,12 +54,12 @@ public class SensorDto implements Identable {
     @Nullable
     private LocalTime notBefore;
     @Nullable
-    private AnimationDto animation;
+    private UUID animationId;
     @Nullable
-    private AnimationDto animationAtNight;
+    private UUID animationAtNightId;
 
-    public static Config from(MotionSensorConfig config) {
-      return Config.builder()
+    public static ConfigDto from(MotionSensorConfig config) {
+      return ConfigDto.builder()
           .name(config.getName())
           .lights(config.getLights())
           .lightsAtNight(config.getLightsAtNight())
@@ -66,8 +68,8 @@ public class SensorDto implements Identable {
           .selfLightNoise(config.getSelfLightNoise())
           .turnLightOnWhenMovement(config.isTurnLightOnWhenMovement())
           .notBefore(config.getNotBefore())
-          .animation(Optional.ofNullable(config.getAnimation()).map(AnimationDto::from).orElse(null))
-          .animationAtNight(Optional.ofNullable(config.getAnimationNight()).map(AnimationDto::from).orElse(null))
+          .animationId(Optional.ofNullable(config.getAnimation()).map(Animation::getId).orElse(null))
+          .animationAtNightId(Optional.ofNullable(config.getAnimationNight()).map(Animation::getId).orElse(null))
           .build();
     }
   }
