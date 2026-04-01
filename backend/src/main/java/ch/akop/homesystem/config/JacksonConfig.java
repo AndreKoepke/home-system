@@ -15,6 +15,7 @@ public class JacksonConfig implements ObjectMapperCustomizer {
     objectMapper
         .setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL)
         .registerModule(new JavaTimeModule())
-        .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+        .configure(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS, false);
   }
 }
