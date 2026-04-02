@@ -2,6 +2,7 @@ package ch.akop.homesystem.services.impl;
 
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
 
+import ch.akop.homesystem.controller.dtos.MotionSensorDto.ConfigDto;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
@@ -20,11 +21,13 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -36,16 +39,18 @@ import org.hibernate.Hibernate;
 public class MotionSensorService {
 
   private final MotionSensorConfigRepository motionSensorConfigRepository;
+  private final AnimationService animationService;
   private final DeviceService deviceService;
   private final StateService stateService;
   private final WeatherService weatherService;
   private final EventBus eventBus;
   private final Set<String> sensorsWithHigherTimeout = new HashSet<>();
 
+  private Map<String, ConfigWithLights> sensors;
+
   @Transactional
   public void init() {
-    // TODO restart when config changes
-    motionSensorConfigRepository.findAll().stream()
+    sensors = motionSensorConfigRepository.findAll().stream()
         .filter(config -> {
           var foundMovementSensor = deviceService.findDeviceByName(config.getName(), MotionSensor.class).isPresent();
           if (!foundMovementSensor) {
@@ -55,7 +60,11 @@ public class MotionSensorService {
           return true;
         })
         .map(ConfigWithLights::new)
-        .forEach(ConfigWithLights::startListing);
+        .collect(Collectors.toMap(
+            configWithLights -> configWithLights.config.getName(),
+            Function.identity()));
+
+    sensors.values().forEach(ConfigWithLights::startListing);
   }
 
   public void requestHigherTimeout(String sensorName) {
@@ -66,18 +75,40 @@ public class MotionSensorService {
     return sensorsWithHigherTimeout.contains(motionSensorConfig.getName().toLowerCase());
   }
 
+  public void update(ConfigDto configDto) {
+    var config = dtoToInternal(configDto);
+    motionSensorConfigRepository.save(config);
+    sensors.get(config.getName()).config = config;
+  }
+
+  private MotionSensorConfig dtoToInternal(ConfigDto config) {
+    return MotionSensorConfig.builder()
+        .name(config.getName())
+        .lights(config.getLights())
+        .lightsAtNight(config.getLightsAtNight())
+        .keepMovingFor(config.getKeepMovingFor())
+        .onlyTurnOnWhenDarkerAs(config.getOnlyTurnOnWhenDarkerAs())
+        .selfLightNoise(config.getSelfLightNoise())
+        .turnLightOnWhenMovement(config.isTurnLightOnWhenMovement())
+        .notBefore(config.getNotBefore())
+        .animation(Optional.ofNullable(config.getAnimationId())
+            .flatMap(animationService::findById)
+            .orElse(null))
+        .animationNight(Optional.ofNullable(config.getAnimationAtNightId())
+            .flatMap(animationService::findById)
+            .orElse(null))
+        .build();
+  }
 
   public class ConfigWithLights {
 
     private final MotionSensor sensor;
-    private final MotionSensorConfig config;
-    private List<SimpleLight> referencedLights;
+    private MotionSensorConfig config;
     private boolean movementDetected = false;
 
     public ConfigWithLights(MotionSensorConfig config) {
       this.config = config;
       eagerFetchAllLazyCollections(config);
-      this.referencedLights = resolveLights();
       this.sensor = MotionSensorService.this.deviceService.findDeviceByName(config.getName(), MotionSensor.class)
           .orElseThrow(() -> new NoSuchElementException("MotionSensor '" + config.getName() + "' not found"));
     }
@@ -96,18 +127,7 @@ public class MotionSensorService {
       Hibernate.initialize(animation.getOnOffSteps());
     }
 
-    private List<SimpleLight> resolveLights() {
-      return config.getAffectedLightNames(stateService.isState(SleepState.class))
-          .stream()
-          .flatMap(lightName -> MotionSensorService.this.deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
-          .toList();
-    }
-
     public void startListing() {
-      stateService.getCurrentState$()
-          .skip(1)
-          .subscribe(newState -> this.referencedLights = resolveLights());
-
       sensor.getIsMoving$()
           .subscribeOn(Schedulers.io())
           .withLatestFrom(getIsBright$(), MovementAndLux::new)
@@ -131,13 +151,27 @@ public class MotionSensorService {
     }
 
     public void turnAllLightsOff() {
-      referencedLights
-          .stream().filter(SimpleLight::isCurrentStateIsOn)
-          .forEach(SimpleLight::turnOff);
+      var lightNames = stateService.isState(SleepState.class)
+          ? config.getLights()
+          : config.getLightsAtNight();
+
+      lightNames.forEach(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).ifPresentOrElse(
+          simpleLight -> {
+            if (simpleLight.isCurrentStateIsOn()) {
+              simpleLight.turnOff();
+            }
+          },
+          () -> log.warn("Can't turn off light '" + lightName + "' because it can't be found")
+      ));
     }
 
     private void turnAllLightsOn() {
-      referencedLights.stream()
+      var lightNames = stateService.isState(SleepState.class)
+          ? config.getLights()
+          : config.getLightsAtNight();
+
+      lightNames.stream()
+          .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
           .filter(simpleLight -> !simpleLight.isCurrentStateIsOn())
           .forEach(light -> {
             if (light instanceof DimmableLight dimmable) {
@@ -176,7 +210,13 @@ public class MotionSensorService {
         return true;
       }
 
-      if (config.getSelfLightNoise() != null && referencedLights.stream().anyMatch(SimpleLight::isCurrentStateIsOn)) {
+      var lightNames = stateService.isState(SleepState.class)
+          ? config.getLights()
+          : config.getLightsAtNight();
+
+      if (config.getSelfLightNoise() != null && lightNames.stream()
+          .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
+          .anyMatch(SimpleLight::isCurrentStateIsOn)) {
         lux -= config.getSelfLightNoise();
       }
 
@@ -200,7 +240,7 @@ public class MotionSensorService {
     }
 
     public Observable<MovementAndLux> delayWhenNoMovement(MovementAndLux update) {
-      if (Boolean.TRUE.equals(update.isMoving()) || config.getKeepMovingFor() == null) {
+      if (update.isMoving() || config.getKeepMovingFor() == null) {
         // no delay
         return Observable.just(update);
       }

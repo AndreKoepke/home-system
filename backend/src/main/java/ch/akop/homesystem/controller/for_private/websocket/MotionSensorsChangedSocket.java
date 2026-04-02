@@ -1,7 +1,7 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
 import ch.akop.homesystem.authentication.AuthenticationService;
-import ch.akop.homesystem.controller.dtos.SensorDto;
+import ch.akop.homesystem.controller.dtos.MotionSensorDto;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigRepository;
 import ch.akop.homesystem.services.impl.DeviceService;
@@ -39,11 +39,11 @@ public class MotionSensorsChangedSocket extends AbstractBaseSocket {
   @ConsumeEvent(value = "devices/sensors/update", blocking = true)
   void updateSensor(String updatedDeviceId) {
     deviceService.findDeviceById(updatedDeviceId, MotionSensor.class)
-        .map(SensorDto::from)
-        .map(sensorDto -> motionSensorConfigRepository
-            .findByName(sensorDto.getName())
-            .map(sensorDto::appendConfig)
-            .orElse(sensorDto))
+            .map(MotionSensorDto::from)
+            .map(motionSensorDto -> motionSensorConfigRepository
+                    .findByName(motionSensorDto.getName())
+                    .map(motionSensorDto::appendConfig)
+                    .orElse(motionSensorDto))
         .ifPresent(this::broadcast);
   }
 
@@ -75,11 +75,11 @@ public class MotionSensorsChangedSocket extends AbstractBaseSocket {
   private void sendAllSensorsToSession(String sessionId) {
     deviceService.getDevicesOfType(MotionSensor.class)
         .stream()
-        .map(SensorDto::from)
-        .map(sensorDto -> motionSensorConfigRepository
-            .findByName(sensorDto.getName())
-            .map(sensorDto::appendConfig)
-            .orElse(sensorDto))
+            .map(MotionSensorDto::from)
+            .map(motionSensorDto -> motionSensorConfigRepository
+                    .findByName(motionSensorDto.getName())
+                    .map(motionSensorDto::appendConfig)
+                    .orElse(motionSensorDto))
         .forEach(motionSensor -> sendMessage(sessionId, motionSensor));
   }
 }

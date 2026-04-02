@@ -1,6 +1,7 @@
 package ch.akop.homesystem.models.devices.sensor;
 
 import ch.akop.homesystem.deconz.rest.State;
+import ch.akop.homesystem.persistence.model.config.MotionSensorConfig;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.time.LocalDateTime;
@@ -23,6 +24,8 @@ public class MotionSensor extends Sensor<MotionSensor> {
   private boolean dark;
   private Integer targetDistance;
   private LocalDateTime movingChangedAt;
+
+  private MotionSensorConfig config;
 
   @EqualsAndHashCode.Exclude
   @ToString.Exclude

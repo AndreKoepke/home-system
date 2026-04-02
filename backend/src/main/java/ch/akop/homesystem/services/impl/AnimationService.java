@@ -13,6 +13,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,10 @@ public class AnimationService {
 
   public List<Animation> getAllAnimations() {
     return animationRepository.findAll();
+  }
+
+  public Optional<Animation> findById(UUID id) {
+    return animationRepository.findById(id);
   }
 
   @Transactional

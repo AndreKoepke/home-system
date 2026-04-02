@@ -9,15 +9,15 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
-import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
-public class SensorDto implements Identable {
+public class MotionSensorDto implements Identable {
 
   private String id;
   private String name;
@@ -30,11 +30,13 @@ public class SensorDto implements Identable {
   private LocalDateTime presenceChangedAt;
   private boolean reachable;
   private boolean presence;
+  private boolean dark;
+  private Integer brightness;
 
   @Nullable
   private ConfigDto config;
 
-  public SensorDto appendConfig(MotionSensorConfig config) {
+  public MotionSensorDto appendConfig(MotionSensorConfig config) {
     return setConfig(ConfigDto.from(config));
   }
 
@@ -43,8 +45,8 @@ public class SensorDto implements Identable {
   public static class ConfigDto {
 
     private String name;
-    private Collection<String> lights;
-    private Collection<String> lightsAtNight;
+    private Set<String> lights;
+    private Set<String> lightsAtNight;
     private Duration keepMovingFor;
     @Nullable
     private Integer onlyTurnOnWhenDarkerAs;
@@ -74,18 +76,19 @@ public class SensorDto implements Identable {
     }
   }
 
-
-  public static SensorDto from(Sensor<?> sensor) {
-    return new SensorDto()
+  public static MotionSensorDto from(Sensor<?> sensor) {
+    return new MotionSensorDto()
         .setId(sensor.getId())
         .setName(sensor.getName())
         .setReachable(sensor.isReachable())
         .setLastUpdate(sensor.getLastUpdated());
   }
 
-  public static SensorDto from(MotionSensor motionSensor) {
+  public static MotionSensorDto from(MotionSensor motionSensor) {
     return from((Sensor<?>) motionSensor)
         .setPresenceChangedAt(motionSensor.getMovingChangedAt())
-        .setPresence(motionSensor.isMoving());
+        .setPresence(motionSensor.isMoving())
+        .setDark(motionSensor.isDark())
+        .setBrightness(motionSensor.getLightLevel().getLux$().getValue());
   }
 }
