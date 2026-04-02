@@ -1,9 +1,11 @@
 package ch.akop.homesystem.controller.dtos;
 
+import ch.akop.homesystem.models.devices.sensor.LightLevel;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.models.devices.sensor.Sensor;
 import ch.akop.homesystem.persistence.model.animation.Animation;
 import ch.akop.homesystem.persistence.model.config.MotionSensorConfig;
+import io.reactivex.rxjava3.subjects.ReplaySubject;
 import jakarta.annotation.Nullable;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -89,6 +91,9 @@ public class MotionSensorDto implements Identable {
         .setPresenceChangedAt(motionSensor.getMovingChangedAt())
         .setPresence(motionSensor.isMoving())
         .setDark(motionSensor.isDark())
-        .setBrightness(motionSensor.getLightLevel().getLux$().getValue());
+        .setBrightness(Optional.ofNullable(motionSensor.getLightLevel())
+            .map(LightLevel::getLux$)
+            .map(ReplaySubject::getValue)
+            .orElse(null));
   }
 }
