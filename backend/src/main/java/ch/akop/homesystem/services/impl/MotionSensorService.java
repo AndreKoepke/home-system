@@ -15,7 +15,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.vertx.core.eventbus.EventBus;
 import jakarta.annotation.Priority;
-import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 import java.time.Duration;
 import java.time.LocalTime;
@@ -34,7 +34,7 @@ import org.hibernate.Hibernate;
 
 @RequiredArgsConstructor
 @Priority(500)
-@Dependent
+@Singleton
 @Slf4j
 public class MotionSensorService {
 
