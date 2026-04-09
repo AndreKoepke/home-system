@@ -152,8 +152,8 @@ public class MotionSensorService {
 
     public void turnAllLightsOff() {
       var lightNames = stateService.isState(SleepState.class)
-          ? config.getLights()
-          : config.getLightsAtNight();
+          ? config.getLightsAtNight()
+          : config.getLights();
 
       lightNames.forEach(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).ifPresentOrElse(
           simpleLight -> {
@@ -167,8 +167,8 @@ public class MotionSensorService {
 
     private void turnAllLightsOn() {
       var lightNames = stateService.isState(SleepState.class)
-          ? config.getLights()
-          : config.getLightsAtNight();
+          ? config.getLightsAtNight()
+          : config.getLights();
 
       lightNames.stream()
           .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
@@ -211,8 +211,8 @@ public class MotionSensorService {
       }
 
       var lightNames = stateService.isState(SleepState.class)
-          ? config.getLights()
-          : config.getLightsAtNight();
+          ? config.getLightsAtNight()
+          : config.getLights();
 
       if (config.getSelfLightNoise() != null && lightNames.stream()
           .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
