@@ -1,8 +1,6 @@
 import {ChangeDetectionStrategy, Component, effect, inject, input, LOCALE_ID, output} from '@angular/core';
-import {SbbFormField} from "@sbb-esta/lyne-angular/form-field/form-field";
 import {SbbTimeInput} from "@sbb-esta/lyne-angular/time-input";
 import {Light} from "../../../models/devices/light.dto";
-import {SbbOption} from "@sbb-esta/lyne-angular/option/option";
 import {SbbSelect} from "@sbb-esta/lyne-angular/select";
 import {FormControl, FormGroup, ReactiveFormsModule} from "@angular/forms";
 import {TimerConfig} from "../../../models/timer-config.dto";
@@ -11,6 +9,8 @@ import {SbbActionGroup} from "@sbb-esta/lyne-angular/action-group";
 import {DatePipe} from "@angular/common";
 import {v4 as uuidV4} from 'uuid';
 import {SbbMiniButton} from "@sbb-esta/lyne-angular/button/mini-button";
+import {SbbFormField} from "@sbb-esta/lyne-angular/form-field";
+import {SbbOption} from "@sbb-esta/lyne-angular/option";
 
 @Component({
   selector: 'app-timer-form',

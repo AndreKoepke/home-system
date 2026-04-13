@@ -2,9 +2,11 @@ import {Component, input, Output, OutputEmitterRef} from '@angular/core';
 import {AnimationDto} from "../../models/animation.dto";
 import {SbbMiniButton} from "@sbb-esta/lyne-angular/button/mini-button";
 import {SbbAccordion} from "@sbb-esta/lyne-angular/accordion";
-import {SbbExpansionPanelHeader} from "@sbb-esta/lyne-angular/expansion-panel/expansion-panel-header";
-import {SbbExpansionPanelContent} from "@sbb-esta/lyne-angular/expansion-panel/expansion-panel-content";
-import {SbbExpansionPanel} from "@sbb-esta/lyne-angular/expansion-panel/expansion-panel";
+import {
+  SbbExpansionPanel,
+  SbbExpansionPanelContent,
+  SbbExpansionPanelHeader
+} from "@sbb-esta/lyne-angular/expansion-panel";
 
 @Component({
   selector: 'app-animation-page',

@@ -5,7 +5,7 @@ import {DevicesService} from "../../services/devices.service";
 import {map, Observable} from "rxjs";
 import {Light} from "../../models/devices/light.dto";
 import {WeatherService} from "../../services/weather.service";
-import {MotionSensor} from "../../models/devices/sensor.dto";
+import {MotionSensor} from "../../models/devices/motion-sensor.dto";
 import {MotionSensorService} from "../../services/motion-sensor.service";
 
 @Component({

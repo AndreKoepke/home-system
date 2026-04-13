@@ -1,11 +1,13 @@
 import {Component, input, output} from '@angular/core';
 import {TimerConfig} from "../../models/timer-config.dto";
 import {SbbAccordion} from "@sbb-esta/lyne-angular/accordion";
-import {SbbExpansionPanelContent} from "@sbb-esta/lyne-angular/expansion-panel/expansion-panel-content";
-import {SbbExpansionPanelHeader} from "@sbb-esta/lyne-angular/expansion-panel/expansion-panel-header";
-import {SbbExpansionPanel} from "@sbb-esta/lyne-angular/expansion-panel/expansion-panel";
 import {TimerFormComponent} from "./timer-form/timer-form.component";
 import {Light} from "../../models/devices/light.dto";
+import {
+  SbbExpansionPanel,
+  SbbExpansionPanelContent,
+  SbbExpansionPanelHeader
+} from "@sbb-esta/lyne-angular/expansion-panel";
 
 @Component({
   selector: 'app-timer-page',

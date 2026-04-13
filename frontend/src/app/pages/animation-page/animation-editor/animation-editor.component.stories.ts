@@ -16,14 +16,14 @@ type Story = StoryObj<AnimationEditorComponent>;
 
 export const EmptyAnimation: Story = {
   args: {
-    animation: {id: 'empty', steps: [], name: 'test'} as AnimationDto
+    animationId: {id: 'empty', steps: [], name: 'test'} as AnimationDto
   },
 };
 
 
 export const SingleStep: Story = {
   args: {
-    animation: {
+    animationId: {
       id: 'empty',
       name: 'test',
       steps: [{

@@ -5,6 +5,8 @@ import {MotionSensorService} from "../../services/motion-sensor.service";
 import {WeatherService} from "../../services/weather.service";
 import {MotionSensorPage} from "./motion-sensor-page";
 import {combineLatestWith, map} from "rxjs";
+import {DevicesService} from "../../services/devices.service";
+import {AnimationService} from "../../services/animation.service";
 
 
 @Component({
@@ -19,6 +21,9 @@ import {combineLatestWith, map} from "rxjs";
       <app-motion-sensor-page
         [motionSensors]="container.sensors"
         [currentWeather]="container.weather"
+        [devices]="container.lights"
+        [animations]="container.animations"
+        (save)="motionSensorService.saveConfig($event)"
       />
     } @else {
       <sbb-loading-indicator-circle/>
@@ -27,13 +32,17 @@ import {combineLatestWith, map} from "rxjs";
 })
 export class MotionSensorContainer {
 
-  private motionSensorService = inject(MotionSensorService);
+  public motionSensorService = inject(MotionSensorService);
   private weatherService = inject(WeatherService);
+  private deviceService = inject(DevicesService);
+  private animationService = inject(AnimationService);
 
   public container$ = this.motionSensorService.sensors$.pipe(
-    combineLatestWith(this.weatherService.weather$),
-    map(([sensors, weather]) => {
-      return {sensors, weather}
+    combineLatestWith(this.weatherService.weather$,
+      this.deviceService.lights$,
+      this.animationService.getAnimations$()),
+    map(([sensors, weather, lights, animations]) => {
+      return {sensors, weather, animations, lights: [...lights.values()]}
     }),
   )
 

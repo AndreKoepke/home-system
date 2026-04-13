@@ -1,11 +1,16 @@
 import {Component, input, output} from '@angular/core';
-import {MotionSensor} from "../../models/devices/sensor.dto";
+import {MotionSensor, MotionSensorConfig} from "../../models/devices/motion-sensor.dto";
 import {Weather} from "../../models/devices/weather.dto";
 import {MotionSensorForm} from "./motion-sensor-form/motion-sensor-form";
 import {SbbAccordion} from "@sbb-esta/lyne-angular/accordion";
-import {SbbExpansionPanel} from "@sbb-esta/lyne-angular/expansion-panel/expansion-panel";
-import {SbbExpansionPanelContent} from "@sbb-esta/lyne-angular/expansion-panel/expansion-panel-content";
-import {SbbExpansionPanelHeader} from "@sbb-esta/lyne-angular/expansion-panel/expansion-panel-header";
+import {Light} from "../../models/devices/light.dto";
+import {
+  SbbExpansionPanel,
+  SbbExpansionPanelContent,
+  SbbExpansionPanelHeader
+} from "@sbb-esta/lyne-angular/expansion-panel";
+import {AnimationDto} from "../../models/animation.dto";
+import {SbbIcon} from "@sbb-esta/lyne-angular/icon";
 
 @Component({
   selector: 'app-motion-sensor-page',
@@ -14,7 +19,8 @@ import {SbbExpansionPanelHeader} from "@sbb-esta/lyne-angular/expansion-panel/ex
     SbbExpansionPanel,
     SbbExpansionPanelContent,
     SbbExpansionPanelHeader,
-    MotionSensorForm
+    MotionSensorForm,
+    SbbIcon
   ],
   templateUrl: './motion-sensor-page.html',
   styleUrl: './motion-sensor-page.scss'
@@ -24,7 +30,9 @@ export class MotionSensorPage {
 
   motionSensors = input.required<Map<string, MotionSensor>>();
   currentWeather = input.required<Weather>();
+  devices = input.required<Light[]>();
+  animations = input.required<AnimationDto[]>();
 
-  save = output<MotionSensor>();
+  save = output<MotionSensorConfig>();
 
 }
