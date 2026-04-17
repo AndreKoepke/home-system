@@ -1,7 +1,7 @@
 @import '@sbb-esta/lyne-elements/standard-theme.css';
 
 :root {
-  --primary-color: #272d33;
+  --primary-color: white;
   --primary-background-color: #00253c;
   --small-device-width-border: 1000px;
 }
@@ -9,10 +9,6 @@
 body {
   background-color: var(--primary-background-color);
   color: var(--primary-color);
-}
-
-.gray {
-  color: white;
 }
 
 @media screen and (max-width: 1023px) {
