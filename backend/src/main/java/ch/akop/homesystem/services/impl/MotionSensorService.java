@@ -1,6 +1,7 @@
 package ch.akop.homesystem.services.impl;
 
 import static ch.akop.weathercloud.light.LightUnit.KILO_LUX;
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 import ch.akop.homesystem.controller.dtos.MotionSensorDto.ConfigDto;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
@@ -19,7 +20,6 @@ import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 import java.time.Duration;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -111,6 +112,18 @@ public class MotionSensorService {
       eagerFetchAllLazyCollections(config);
       this.sensor = MotionSensorService.this.deviceService.findDeviceByName(config.getName(), MotionSensor.class)
           .orElseThrow(() -> new NoSuchElementException("MotionSensor '" + config.getName() + "' not found"));
+
+      stateService.getCurrentState$()
+          .skip(1)
+          .map(ignore -> stateService.isState(SleepState.class))
+          .subscribe(this::handleStateChanged);
+    }
+
+    private void handleStateChanged(boolean isSleepState) {
+      if (movementDetected) {
+        turnOff(!isSleepState); // turn lights of previous state off
+        turnOn(isSleepState); // turn lights of new state on
+      }
     }
 
     private void eagerFetchAllLazyCollections(MotionSensorConfig motionSensorConfig) {
@@ -150,40 +163,13 @@ public class MotionSensorService {
           .map(this::isMatchingWeather);
     }
 
-    public void turnAllLightsOff() {
+    private Stream<SimpleLight> getAffectedLights() {
       var lightNames = stateService.isState(SleepState.class)
           ? config.getLightsAtNight()
           : config.getLights();
 
-      lightNames.forEach(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).ifPresentOrElse(
-          simpleLight -> {
-            if (simpleLight.isCurrentStateIsOn()) {
-              simpleLight.turnOff();
-            }
-          },
-          () -> log.warn("Can't turn off light '" + lightName + "' because it can't be found")
-      ));
-    }
-
-    private void turnAllLightsOn() {
-      var lightNames = stateService.isState(SleepState.class)
-          ? config.getLightsAtNight()
-          : config.getLights();
-
-      lightNames.stream()
-          .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
-          .filter(simpleLight -> !simpleLight.isCurrentStateIsOn())
-          .forEach(light -> {
-            if (light instanceof DimmableLight dimmable) {
-              if (stateService.getCurrentState() instanceof SleepState) {
-                dimmable.setBrightness(10, Duration.of(10, ChronoUnit.SECONDS));
-              } else {
-                dimmable.setBrightness(100, Duration.of(10, ChronoUnit.SECONDS));
-              }
-            } else {
-              light.turnOn();
-            }
-          });
+      return lightNames.stream()
+          .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream());
     }
 
     private boolean shouldIgnoreMotionEvent(MovementAndLux update) {
@@ -210,13 +196,8 @@ public class MotionSensorService {
         return true;
       }
 
-      var lightNames = stateService.isState(SleepState.class)
-          ? config.getLightsAtNight()
-          : config.getLights();
-
-      if (config.getSelfLightNoise() != null && lightNames.stream()
-          .flatMap(lightName -> deviceService.findDeviceByName(lightName, SimpleLight.class).stream())
-          .anyMatch(SimpleLight::isCurrentStateIsOn)) {
+      var anyLightOn = getAffectedLights().anyMatch(SimpleLight::isCurrentStateIsOn);
+      if (config.getSelfLightNoise() != null && anyLightOn) {
         lux -= config.getSelfLightNoise();
       }
 
@@ -265,7 +246,7 @@ public class MotionSensorService {
 
     private void handleMotionEvent(MovementAndLux update) {
       if (!update.shouldBeOnBecauseOfBrightness && movementDetected) {
-        turnOff();
+        turnOff(stateService.isState(SleepState.class));
         movementDetected = false;
         return;
       } else if (!update.shouldBeOnBecauseOfBrightness) {
@@ -278,34 +259,54 @@ public class MotionSensorService {
       movementDetected = update.isMoving;
 
       if (movementDetected) {
-        turnOn();
+        turnOn(stateService.isState(SleepState.class));
       } else {
-        turnOff();
+        turnOff(stateService.isState(SleepState.class));
       }
     }
 
-
-    private void turnOn() {
-      if (stateService.isState(SleepState.class) && config.getAnimationNight() != null) {
+    private void turnOn(boolean isSleepState) {
+      if (isSleepState && config.getAnimationNight() != null) {
         eventBus.publish("home/animation/play", config.getAnimationNight().getId());
-      } else if (!stateService.isState(SleepState.class) && config.getAnimation() != null) {
+      } else if (!isSleepState && config.getAnimation() != null) {
         eventBus.publish("home/animation/play", config.getAnimation().getId());
       } else {
-        turnAllLightsOn();
+        turnOnWithoutAnimation();
       }
     }
 
-    private void turnOff() {
-      if (stateService.isState(SleepState.class) && config.getAnimationNight() != null) {
+    private void turnOff(boolean isSleepState) {
+      if (isSleepState && config.getAnimationNight() != null) {
         eventBus.publish("home/animation/turn-off", config.getAnimationNight().getId());
-      } else if (!stateService.isState(SleepState.class) && config.getAnimation() != null) {
+      } else if (!isSleepState && config.getAnimation() != null) {
         eventBus.publish("home/animation/turn-off", config.getAnimation().getId());
       } else {
-        turnAllLightsOff();
+        turnOffWithoutAnimation();
         sensorsWithHigherTimeout.remove(config.getName().toLowerCase());
       }
     }
 
+    private void turnOnWithoutAnimation() {
+      getAffectedLights()
+          .filter(simpleLight -> !simpleLight.isCurrentStateIsOn())
+          .forEach(light -> {
+            if (light instanceof DimmableLight dimmable) {
+              if (stateService.isState(SleepState.class)) {
+                dimmable.setBrightness(10, Duration.of(10, SECONDS));
+              } else {
+                dimmable.setBrightness(100, Duration.of(10, SECONDS));
+              }
+            } else {
+              light.turnOn();
+            }
+          });
+    }
+
+    private void turnOffWithoutAnimation() {
+      getAffectedLights()
+          .filter(SimpleLight::isCurrentStateIsOn)
+          .forEach(SimpleLight::turnOff);
+    }
 
     public record MovementAndLux(
         boolean isMoving,

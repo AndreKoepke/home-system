@@ -47,7 +47,7 @@ public class StateService {
     }
   }
 
-  public boolean isState(Class<?> state) {
+  public <T extends State> boolean isState(Class<T> state) {
     return currentState != null && state.isAssignableFrom(currentState.getClass());
   }
 
@@ -63,7 +63,7 @@ public class StateService {
   }
 
   @Transactional
-  public void switchState(Class<?> toState) {
+  public <T extends State> void switchState(Class<T> toState) {
 
     if (isState(toState)) {
       // NOP
