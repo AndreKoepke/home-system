@@ -112,11 +112,6 @@ public class MotionSensorService {
       eagerFetchAllLazyCollections(config);
       this.sensor = MotionSensorService.this.deviceService.findDeviceByName(config.getName(), MotionSensor.class)
           .orElseThrow(() -> new NoSuchElementException("MotionSensor '" + config.getName() + "' not found"));
-
-      stateService.getCurrentState$()
-          .skip(1)
-          .map(ignore -> stateService.isState(SleepState.class))
-          .subscribe(this::handleStateChanged);
     }
 
     private void handleStateChanged(boolean isSleepState) {
@@ -149,6 +144,11 @@ public class MotionSensorService {
           .filter(this::blockMovingWhenNecessary)
           .switchMap(this::delayWhenNoMovement)
           .subscribe(this::handleMotionEvent);
+
+      stateService.getCurrentState$()
+          .skip(1)
+          .map(SleepState.class::isInstance)
+          .subscribe(this::handleStateChanged);
     }
 
     public Observable<Boolean> getIsBright$() {

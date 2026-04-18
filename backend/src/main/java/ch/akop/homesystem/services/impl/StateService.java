@@ -31,7 +31,7 @@ public class StateService {
   private State currentState;
 
   @Getter
-  private final ReplaySubject<String> currentState$ = ReplaySubject.createWithSize(1);
+  private final ReplaySubject<State> currentState$ = ReplaySubject.createWithSize(1);
 
 
   @Transactional
@@ -60,6 +60,7 @@ public class StateService {
     newState.entered(true);
     stateRepository.save(new ch.akop.homesystem.persistence.model.State()
         .setClassName(clazz.getSimpleName()));
+    currentState$.onNext(newState);
   }
 
   @Transactional
@@ -81,12 +82,11 @@ public class StateService {
     if (currentState != null) {
       try {
         currentState.entered(false);
+        currentState$.onNext(currentState);
       } catch (Exception e) {
         log.error("There was an exception in the 'entered'-method of {}", className, e);
       }
     }
-
-    currentState$.onNext(className);
   }
 
   private void leaveCurrentState() {
