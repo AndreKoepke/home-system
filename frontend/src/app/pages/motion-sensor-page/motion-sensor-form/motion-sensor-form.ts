@@ -1,4 +1,4 @@
-import {Component, effect, input, output} from '@angular/core';
+import {ChangeDetectionStrategy, Component, effect, input, output} from '@angular/core';
 import {MotionSensor, MotionSensorConfig} from "../../../models/devices/motion-sensor.dto";
 import {FormControl, FormGroup, FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {SbbSelect} from "@sbb-esta/lyne-angular/select";
@@ -16,6 +16,7 @@ import {takeUntilDestroyed, toObservable} from "@angular/core/rxjs-interop";
 import {SbbTab, SbbTabGroup, SbbTabLabel} from "@sbb-esta/lyne-angular/tabs";
 import {SbbSelectionExpansionPanel} from "@sbb-esta/lyne-angular/selection-expansion-panel";
 import {SbbCheckboxPanel} from "@sbb-esta/lyne-angular/checkbox/checkbox-panel";
+import {RollerShutter} from "../../../models/devices/roller-shutter.dto";
 
 @Component({
   selector: 'app-motion-sensor-form',
@@ -36,12 +37,14 @@ import {SbbCheckboxPanel} from "@sbb-esta/lyne-angular/checkbox/checkbox-panel";
   ],
   templateUrl: './motion-sensor-form.html',
   standalone: true,
-  styleUrl: './motion-sensor-form.scss'
+  styleUrl: './motion-sensor-form.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MotionSensorForm {
 
   sensor = input.required<MotionSensor>()
   devices = input.required<Light[]>();
+  rollerShutters = input.required<RollerShutter[]>();
   animations = input.required<AnimationDto[]>();
   weather = input.required<Weather>();
   onSave = output<MotionSensorConfig>();
@@ -55,6 +58,7 @@ export class MotionSensorForm {
       keepMovingForSeconds: new FormControl<number | undefined>(undefined),
       turnLightOnWhenMovement: new FormControl<boolean>(false),
       onlyTurnOnWhenDarkerAs: new FormControl<number | undefined>(undefined),
+      turnOnWhenRollerShutterIsClosed: new FormControl<string | undefined>(undefined),
       selfLightNoise: new FormControl<number | undefined>(undefined),
       notBefore: new FormControl<string | undefined>(undefined),
       animationId: new FormControl<string | undefined>(undefined),

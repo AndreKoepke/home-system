@@ -5,6 +5,7 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 
 import ch.akop.homesystem.controller.dtos.MotionSensorDto.ConfigDto;
 import ch.akop.homesystem.models.devices.actor.DimmableLight;
+import ch.akop.homesystem.models.devices.actor.RollerShutter;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.sensor.MotionSensor;
 import ch.akop.homesystem.persistence.model.animation.Animation;
@@ -91,6 +92,7 @@ public class MotionSensorService {
         .onlyTurnOnWhenDarkerAs(config.getOnlyTurnOnWhenDarkerAs())
         .selfLightNoise(config.getSelfLightNoise())
         .turnLightOnWhenMovement(config.isTurnLightOnWhenMovement())
+        .turnOnWhenRollerShutterIsClosed(config.getTurnOnWhenRollerShutterIsClosed())
         .notBefore(config.getNotBefore())
         .animation(Optional.ofNullable(config.getAnimationId())
             .flatMap(animationService::findById)
@@ -194,6 +196,16 @@ public class MotionSensorService {
     private boolean isMatchingWeather(int lux) {
       if (config.getOnlyTurnOnWhenDarkerAs() == null) {
         return true;
+      }
+
+      if (config.getTurnOnWhenRollerShutterIsClosed() != null) {
+        var isLinkedRollerShutterClosed = deviceService.findDeviceByName(config.getTurnOnWhenRollerShutterIsClosed(), RollerShutter.class)
+            .map(rollerShutter -> !rollerShutter.isOpen())
+            .orElseThrow(() -> new IllegalArgumentException("RollerShutter " + config.getTurnOnWhenRollerShutterIsClosed() + " cannot be found"));
+
+        if (isLinkedRollerShutterClosed) {
+          return true;
+        }
       }
 
       var anyLightOn = getAffectedLights().anyMatch(SimpleLight::isCurrentStateIsOn);

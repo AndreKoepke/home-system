@@ -36,6 +36,16 @@
           Beim Sensor sind es {{ sensor().brightness }} kLux.
         }
       </div>
+
+      <sbb-form-field>
+        <label>immer einschalten, wenn Störe geschlossen ist</label>
+        <sbb-select formControlName="turnOnWhenRollerShutterIsClosed">
+          <sbb-option [value]="undefined"></sbb-option>
+          @for (rollerShutter of rollerShutters(); track rollerShutter.id) {
+            <sbb-option [value]="rollerShutter.name">{{ rollerShutter.name }}</sbb-option>
+          }
+        </sbb-select>
+      </sbb-form-field>
     </div>
   </sbb-selection-expansion-panel>
 

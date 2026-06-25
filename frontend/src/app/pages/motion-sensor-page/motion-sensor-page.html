@@ -9,6 +9,7 @@
       <sbb-expansion-panel-content>
         <app-motion-sensor-form [sensor]="motionSensor"
                                 [devices]="devices()"
+                                [rollerShutters]="rollerShutters()"
                                 [weather]="currentWeather()"
                                 [animations]="animations()"
                                 (onSave)="save.emit($event)"/>

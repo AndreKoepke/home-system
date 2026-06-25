@@ -56,6 +56,8 @@ public class MotionSensorDto implements Identable {
     private Integer selfLightNoise;
     private boolean turnLightOnWhenMovement;
     @Nullable
+    String turnOnWhenRollerShutterIsClosed;
+    @Nullable
     private LocalTime notBefore;
     @Nullable
     private UUID animationId;
@@ -69,6 +71,7 @@ public class MotionSensorDto implements Identable {
           .lightsAtNight(config.getLightsAtNight())
           .keepMovingFor(config.getKeepMovingFor())
           .onlyTurnOnWhenDarkerAs(config.getOnlyTurnOnWhenDarkerAs())
+          .turnOnWhenRollerShutterIsClosed(config.getTurnOnWhenRollerShutterIsClosed())
           .selfLightNoise(config.getSelfLightNoise())
           .turnLightOnWhenMovement(config.isTurnLightOnWhenMovement())
           .notBefore(config.getNotBefore())

@@ -58,6 +58,9 @@ public class MotionSensorConfig {
   private Integer onlyTurnOnWhenDarkerAs;
 
   @Nullable
+  private String turnOnWhenRollerShutterIsClosed;
+
+  @Nullable
   private Boolean onlyAtNormalState;
 
   @Nullable

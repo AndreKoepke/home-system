@@ -7,6 +7,7 @@ import {MotionSensorPage} from "./motion-sensor-page";
 import {combineLatestWith, map} from "rxjs";
 import {DevicesService} from "../../services/devices.service";
 import {AnimationService} from "../../services/animation.service";
+import {RollerShutterService} from "../../services/roller-shutter.service";
 
 
 @Component({
@@ -22,6 +23,7 @@ import {AnimationService} from "../../services/animation.service";
         [motionSensors]="container.sensors"
         [currentWeather]="container.weather"
         [devices]="container.lights"
+        [rollerShutters]="container.rollerShutters"
         [animations]="container.animations"
         (save)="motionSensorService.saveConfig($event)"
       />
@@ -35,14 +37,16 @@ export class MotionSensorContainer {
   public motionSensorService = inject(MotionSensorService);
   private weatherService = inject(WeatherService);
   private deviceService = inject(DevicesService);
+  private rollerShutterService = inject(RollerShutterService);
   private animationService = inject(AnimationService);
 
   public container$ = this.motionSensorService.sensors$.pipe(
     combineLatestWith(this.weatherService.weather$,
       this.deviceService.lights$,
-      this.animationService.getAnimations$()),
-    map(([sensors, weather, lights, animations]) => {
-      return {sensors, weather, animations, lights: [...lights.values()]}
+      this.animationService.getAnimations$(),
+      this.rollerShutterService.rollerShutters$.pipe(map(rollerShutterMap => [...rollerShutterMap.values()]))),
+    map(([sensors, weather, lights, animations, rollerShutters]) => {
+      return {sensors, weather, animations, rollerShutters, lights: [...lights.values()]}
     }),
   )
 
