@@ -156,13 +156,31 @@ public class MotionSensorService {
     public Observable<Boolean> getIsBright$() {
       if (sensor.getLightLevel() != null) {
         return sensor.getLightLevel().getLux$()
+            .withLatestFrom(shouldCloseBecauseOfRollerShutter(), WeatherAndRollerShutter::new)
             .map(this::isMatchingWeather)
             .throttleFirst(1, TimeUnit.MINUTES);
       }
 
       return weatherService.getWeather()
           .map(weather -> weather.getLight().getAs(KILO_LUX).intValue())
+          .withLatestFrom(shouldCloseBecauseOfRollerShutter(), WeatherAndRollerShutter::new)
           .map(this::isMatchingWeather);
+    }
+
+    private record WeatherAndRollerShutter(int lux, boolean shouldCloseBecauseOfRollerShutter) {
+
+    }
+
+    private Observable<Boolean> shouldCloseBecauseOfRollerShutter() {
+      if (config.getTurnOnWhenRollerShutterIsClosed() == null) {
+        return Observable.just(false);
+      }
+
+      return deviceService.findDeviceByName(config.getTurnOnWhenRollerShutterIsClosed(), RollerShutter.class)
+          .map(rollerShutter -> rollerShutter.getLift$()
+              .map(lift -> lift < 10)
+              .distinctUntilChanged())
+          .orElse(Observable.just(false));
     }
 
     private Stream<SimpleLight> getAffectedLights() {
@@ -193,24 +211,21 @@ public class MotionSensorService {
           && isMatchingState();
     }
 
-    private boolean isMatchingWeather(int lux) {
+    private boolean isMatchingWeather(WeatherAndRollerShutter luxAndRollerShutter) {
       if (config.getOnlyTurnOnWhenDarkerAs() == null) {
         return true;
       }
 
-      if (config.getTurnOnWhenRollerShutterIsClosed() != null) {
-        var isLinkedRollerShutterClosed = deviceService.findDeviceByName(config.getTurnOnWhenRollerShutterIsClosed(), RollerShutter.class)
-            .map(rollerShutter -> !rollerShutter.isOpen())
-            .orElseThrow(() -> new IllegalArgumentException("RollerShutter " + config.getTurnOnWhenRollerShutterIsClosed() + " cannot be found"));
-
-        if (isLinkedRollerShutterClosed) {
-          return true;
-        }
+      if (luxAndRollerShutter.shouldCloseBecauseOfRollerShutter) {
+        return true;
       }
 
       var anyLightOn = getAffectedLights().anyMatch(SimpleLight::isCurrentStateIsOn);
+      int lux;
       if (config.getSelfLightNoise() != null && anyLightOn) {
-        lux -= config.getSelfLightNoise();
+        lux = luxAndRollerShutter.lux - config.getSelfLightNoise();
+      } else {
+        lux = luxAndRollerShutter.lux;
       }
 
       return lux < config.getOnlyTurnOnWhenDarkerAs();
