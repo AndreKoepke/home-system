@@ -3,6 +3,7 @@ package ch.akop.homesystem.authentication;
 import ch.akop.homesystem.services.impl.TelegramMessageService;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -43,6 +44,7 @@ public class AuthenticationService {
                 + host + "?api-key=" + savedAuth.getToken()));
   }
 
+  @Transactional
   public boolean isAuthenticated(String token) {
     return authenticationRepository.findByToken(token)
         .map(foundToken -> {

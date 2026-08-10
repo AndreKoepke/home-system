@@ -4,10 +4,8 @@ import {toSignal} from "@angular/core/rxjs-interop";
 import {filter, map, Subscription, timer} from "rxjs";
 import {isPlatformBrowser} from "@angular/common";
 import {SbbClock} from "@sbb-esta/lyne-angular/clock";
-import {SbbNavigation} from "@sbb-esta/lyne-angular/navigation/navigation";
-import {SbbNavigationMarker} from "@sbb-esta/lyne-angular/navigation/navigation-marker";
-import {SbbNavigationButton} from "@sbb-esta/lyne-angular/navigation/navigation-button";
-import {SbbBreadcrumb} from "@sbb-esta/lyne-angular/breadcrumb/breadcrumb";
+import {SbbNavigation, SbbNavigationButton, SbbNavigationMarker} from "@sbb-esta/lyne-angular/navigation";
+import {SbbBreadcrumb} from "@sbb-esta/lyne-angular/breadcrumb";
 
 @Component({
   selector: 'app-root',
@@ -24,10 +22,10 @@ export class AppComponent {
     {text: 'Home', link: '/'},
     {text: 'Animationen', link: '/animation'},
     {text: 'Störe', link: '/roller-shutter'},
+    {text: 'Bewegungsmelder', link: '/motion-sensor'},
     {text: 'Zug', link: '/train'},
     {text: 'Wetter', link: '/weather'},
     {text: 'Roggen', link: '/livecam'},
-    {text: 'Trello', link: '/trello'},
     {text: 'Timer', link: '/timer'}
   ];
   public activeRoute: Signal<string | undefined>;

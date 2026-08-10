@@ -1,16 +1,19 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
+import ch.akop.homesystem.authentication.AuthenticationService;
 import ch.akop.homesystem.controller.dtos.LightDto;
 import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.services.impl.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.ConsumeEvent;
+import io.quarkus.websockets.next.OnClose;
+import io.quarkus.websockets.next.OnError;
+import io.quarkus.websockets.next.OnOpen;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+import io.quarkus.websockets.next.WebSocketConnection;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.websocket.OnClose;
-import jakarta.websocket.OnError;
-import jakarta.websocket.OnOpen;
-import jakarta.websocket.Session;
-import jakarta.websocket.server.ServerEndpoint;
+import jakarta.inject.Inject;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -18,11 +21,16 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ApplicationScoped
-@ServerEndpoint("/secured/ws/v1/devices/lights")
+@WebSocket(path = "/secured/ws/v1/devices/lights")
 @RequiredArgsConstructor
 public class LightsChangedSocket extends AbstractBaseSocket {
 
   private final DeviceService deviceService;
+  @Inject
+  WebSocketConnection webSocketConnection;
+
+  @Getter
+  private final AuthenticationService authenticationService;
 
   @Getter
   private final ObjectMapper objectMapper;
@@ -35,19 +43,25 @@ public class LightsChangedSocket extends AbstractBaseSocket {
   }
 
   @OnOpen
-  public void onOpen(Session session) {
-    registerSession(session);
-    sendAllLightsToSession(session.getId());
+  public void onOpen(WebSocketConnection session) {
+
+  }
+
+  @OnTextMessage
+  public void onMessage(String message, WebSocketConnection connection) {
+    if (registerSession(connection, message)) {
+      sendAllLightsToSession(webSocketConnection.id());
+    }
   }
 
   @OnClose
-  public void onClose(Session session) {
-    deregisterSession(session.getId());
+  public void onClose(WebSocketConnection session) {
+    deregisterSession(session.id());
   }
 
   @OnError
-  public void onError(Session session, Throwable throwable) {
-    deregisterSession(session.getId());
+  public void onError(WebSocketConnection session, Throwable throwable) {
+    deregisterSession(session.id());
   }
 
   @SneakyThrows

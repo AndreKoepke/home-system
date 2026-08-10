@@ -1,8 +1,9 @@
 package ch.akop.homesystem.controller.for_private.websocket;
 
 import ch.akop.homesystem.authentication.AuthenticationService;
-import ch.akop.homesystem.controller.dtos.RollerShutterDto;
-import ch.akop.homesystem.models.devices.actor.RollerShutter;
+import ch.akop.homesystem.controller.dtos.MotionSensorDto;
+import ch.akop.homesystem.models.devices.sensor.MotionSensor;
+import ch.akop.homesystem.persistence.repository.config.MotionSensorConfigRepository;
 import ch.akop.homesystem.services.impl.DeviceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.ConsumeEvent;
@@ -13,6 +14,7 @@ import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketConnection;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -20,11 +22,12 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @ApplicationScoped
-@WebSocket(path = "/secured/ws/v1/devices/roller-shutters")
+@WebSocket(path = "/secured/ws/v1/devices/sensors/motion-sensors")
 @RequiredArgsConstructor
-public class RollerShutterChangedSocket extends AbstractBaseSocket {
+public class MotionSensorsChangedSocket extends AbstractBaseSocket {
 
   private final DeviceService deviceService;
+  private final MotionSensorConfigRepository motionSensorConfigRepository;
 
   @Getter
   private final AuthenticationService authenticationService;
@@ -32,10 +35,15 @@ public class RollerShutterChangedSocket extends AbstractBaseSocket {
   @Getter
   private final ObjectMapper objectMapper;
 
-  @ConsumeEvent(value = "devices/roller-shutters/update", blocking = true)
-  void updateLight(String updatedDeviceId) {
-    deviceService.findDeviceById(updatedDeviceId, RollerShutter.class)
-        .map(RollerShutterDto::from)
+  @Transactional
+  @ConsumeEvent(value = "devices/sensors/update", blocking = true)
+  void updateSensor(String updatedDeviceId) {
+    deviceService.findDeviceById(updatedDeviceId, MotionSensor.class)
+            .map(MotionSensorDto::from)
+            .map(motionSensorDto -> motionSensorConfigRepository
+                    .findByName(motionSensorDto.getName())
+                    .map(motionSensorDto::appendConfig)
+                    .orElse(motionSensorDto))
         .ifPresent(this::broadcast);
   }
 
@@ -45,9 +53,10 @@ public class RollerShutterChangedSocket extends AbstractBaseSocket {
   }
 
   @OnTextMessage
+  @Transactional
   public void onMessage(String message, WebSocketConnection session) {
     if (registerSession(session, message)) {
-      sendAllRollerShuttersToSession(session.id());
+      sendAllSensorsToSession(session.id());
     }
   }
 
@@ -63,10 +72,14 @@ public class RollerShutterChangedSocket extends AbstractBaseSocket {
   }
 
   @SneakyThrows
-  private void sendAllRollerShuttersToSession(String sessionId) {
-    deviceService.getDevicesOfType(RollerShutter.class)
+  private void sendAllSensorsToSession(String sessionId) {
+    deviceService.getDevicesOfType(MotionSensor.class)
         .stream()
-        .map(RollerShutterDto::from)
-        .forEach(rollerShutter -> sendMessage(sessionId, rollerShutter));
+            .map(MotionSensorDto::from)
+            .map(motionSensorDto -> motionSensorConfigRepository
+                    .findByName(motionSensorDto.getName())
+                    .map(motionSensorDto::appendConfig)
+                    .orElse(motionSensorDto))
+        .forEach(motionSensor -> sendMessage(sessionId, motionSensor));
   }
 }

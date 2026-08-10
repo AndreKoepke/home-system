@@ -17,8 +17,8 @@ import {filter, Observable, take} from "rxjs";
 })
 export class AnimationEditorComponent {
 
-  animation = input.required<AnimationDto>();
-  sortedSteps = computed(() => this.animation().steps.sort(step => step.sortOrder));
+  animationId = input.required<AnimationDto>();
+  sortedSteps = computed(() => this.animationId().steps.sort(step => step.sortOrder));
 
   @Output('createStep')
   public createStep = new OutputEmitterRef<{

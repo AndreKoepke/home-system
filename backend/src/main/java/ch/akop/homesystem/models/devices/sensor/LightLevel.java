@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LightLevel extends Sensor<LightLevel> {
 
-  private final Subject<Integer> lux$ = ReplaySubject.createWithSize(1);
+  private final ReplaySubject<Integer> lux$ = ReplaySubject.createWithSize(1);
   private final Subject<Integer> lightLevel$ = ReplaySubject.createWithSize(1);
   private final Subject<Boolean> dayLight$ = ReplaySubject.createWithSize(1);
 

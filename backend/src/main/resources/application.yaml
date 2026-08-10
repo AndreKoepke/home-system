@@ -33,7 +33,8 @@ quarkus:
     cors:
       ~: true
       origins: "*"
-      methods: "GET,OPTIONS"
+      methods: "GET,OPTIONS,POST"
       exposed-headers: "prompt"
+      enabled: true
 
     root-path: backend

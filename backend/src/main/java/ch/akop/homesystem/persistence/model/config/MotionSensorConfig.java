@@ -17,7 +17,10 @@ import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 
@@ -25,6 +28,9 @@ import lombok.Setter;
 @Table(name = "config_motion_sensor")
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MotionSensorConfig {
 
   @Id
@@ -50,6 +56,9 @@ public class MotionSensorConfig {
 
   @Nullable
   private Integer onlyTurnOnWhenDarkerAs;
+
+  @Nullable
+  private String turnOnWhenRollerShutterIsClosed;
 
   @Nullable
   private Boolean onlyAtNormalState;

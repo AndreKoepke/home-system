@@ -1,0 +1,101 @@
+<form [formGroup]="form">
+
+  <sbb-form-field>
+    <label>Bezeichnung des Bewegungsmelder</label>
+    <input formControlName="name" required readonly/>
+  </sbb-form-field>
+
+  <sbb-form-field>
+    <label>Nicht vor dieser Uhrzeit einschalten:</label>
+    <sbb-time-input formControlName="notBefore"></sbb-time-input>
+  </sbb-form-field>
+
+  <div class="flex">
+    <sbb-form-field>
+      <label>Nachlaufzeit (in Sekunden):</label>
+      <input type="number" formControlName="keepMovingForSeconds">
+    </sbb-form-field>
+    <span class="grey">{{ keepMovingHumanReadable$ | async }}</span>
+  </div>
+
+  <sbb-selection-expansion-panel>
+    <sbb-checkbox-panel formControlName="turnLightOnWhenMovement" size="m" [style.color]="'white'">
+      Bei Bewegung Licht anschalten
+    </sbb-checkbox-panel>
+
+    <div slot="content">
+      <sbb-form-field>
+        <label>Nur wenn dunkler als</label>
+        <input type="number" formControlName="onlyTurnOnWhenDarkerAs"/>
+        <span slot="suffix">kLux</span>
+      </sbb-form-field>
+      <div class="grey">
+        Draussen sind es {{ weather().outerLight | weatherValue }}.
+        @if (sensor().brightness != undefined) {
+          <br>
+          Beim Sensor sind es {{ sensor().brightness }} kLux.
+        }
+      </div>
+
+      <sbb-form-field>
+        <label>immer einschalten, wenn Störe geschlossen ist</label>
+        <sbb-select formControlName="turnOnWhenRollerShutterIsClosed">
+          <sbb-option [value]="undefined"></sbb-option>
+          @for (rollerShutter of rollerShutters(); track rollerShutter.id) {
+            <sbb-option [value]="rollerShutter.name">{{ rollerShutter.name }}</sbb-option>
+          }
+        </sbb-select>
+      </sbb-form-field>
+    </div>
+  </sbb-selection-expansion-panel>
+
+  <sbb-tab-group initial-selected-index="1" fixed-height style="height: 200px">
+
+    <sbb-tab-label>Modus bei Tag</sbb-tab-label>
+    <sbb-tab>
+      <span>Halli</span>
+      <sbb-form-field>
+        <label>Lichter</label>
+        <sbb-select formControlName="lights" multiple="multiple">
+          @for (device of devices(); track device.id) {
+            <sbb-option [value]="device.name">{{ device.name }}</sbb-option>
+          }
+        </sbb-select>
+      </sbb-form-field>
+
+      <sbb-form-field>
+        <label>Animation </label>
+        <sbb-select formControlName="animationId">
+          @for (animation of animations(); track animation.id) {
+            <sbb-option [value]="animation.id">{{ animation.name }}</sbb-option>
+          }
+        </sbb-select>
+      </sbb-form-field>
+    </sbb-tab>
+
+
+    <sbb-tab-label>Modus bei Nacht</sbb-tab-label>
+    <sbb-tab>
+      <sbb-form-field>
+        <label>Lichter:</label>
+        <sbb-select formControlName="lightsAtNight" multiple="multiple">
+          @for (device of devices(); track device.id) {
+            <sbb-option [value]="device.name">{{ device.name }}</sbb-option>
+          }
+        </sbb-select>
+      </sbb-form-field>
+
+
+      <sbb-form-field>
+        <label>Animation:</label>
+        <sbb-select formControlName="animationAtNightId">
+          @for (animation of animations(); track animation.id) {
+            <sbb-option [value]="animation.id">{{ animation.name }}</sbb-option>
+          }
+        </sbb-select>
+      </sbb-form-field>
+    </sbb-tab>
+  </sbb-tab-group>
+
+
+</form>

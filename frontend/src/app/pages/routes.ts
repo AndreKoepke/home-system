@@ -9,6 +9,7 @@ import {TrelloPageComponent} from "./trello-page/trello-page.component";
 import {AnimationPageContainerComponent} from "./animation-page/animation-page-container.component";
 import {RollerShutterPageContainerComponent} from "./roller-shutter-page/roller-shutter-page-container.component";
 import {TimerPageComponentContainer} from "./timer-page/timer-page.component.container";
+import {MotionSensorContainer} from "./motion-sensor-page/motion-sensor-container";
 
 export const routes: Routes = [
   {
@@ -49,6 +50,11 @@ export const routes: Routes = [
   {
     path: 'timer',
     component: TimerPageComponentContainer,
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'motion-sensor',
+    component: MotionSensorContainer,
     canActivate: [AuthGuard]
   },
   {

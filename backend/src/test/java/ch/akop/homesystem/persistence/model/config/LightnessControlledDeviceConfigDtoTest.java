@@ -9,7 +9,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class LightnessControlledDeviceConfigTest {
+class LightnessControlledDeviceConfigDtoTest {
 
   private static final LocalTime TWELVE_O_CLOCK = LocalTime.of(12, 0);
   private static final LocalTime ELEVEN_O_CLOCK = LocalTime.of(11, 0);

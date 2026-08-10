@@ -3,15 +3,13 @@ import {RollerShutter} from "../../../models/devices/roller-shutter.dto";
 import {CompassPipe} from "../../../core/pipes/compass.pipe";
 import {AsyncPipe, DatePipe} from "@angular/common";
 import {IsDateInFuturePipePipe} from "../../../core/pipes/is-date-in-future.pipe";
-import {SbbFlipCard} from "@sbb-esta/lyne-angular/flip-card/flip-card";
-import {SbbFlipCardSummary} from "@sbb-esta/lyne-angular/flip-card/flip-card-summary";
-import {SbbFlipCardDetails} from "@sbb-esta/lyne-angular/flip-card/flip-card-details";
 import {SbbButton} from "@sbb-esta/lyne-angular/button/button";
-import {SbbFormField} from "@sbb-esta/lyne-angular/form-field/form-field";
 import {SbbSlider} from "@sbb-esta/lyne-angular/slider";
 import {debounceTime, ReplaySubject} from "rxjs";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {SbbIcon} from "@sbb-esta/lyne-angular/icon";
+import {SbbFlipCard, SbbFlipCardDetails, SbbFlipCardSummary} from "@sbb-esta/lyne-angular/flip-card";
+import {SbbFormField} from "@sbb-esta/lyne-angular/form-field";
 
 @Component({
   selector: 'app-roller-shutter-cell',
