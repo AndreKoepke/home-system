@@ -75,7 +75,8 @@ public class UserService {
   }
 
   private void startCheckPresence() {
-    userConfigRepository.findAll().forEach(user -> executor.runAsync(() -> updatePresence(user)));
+    userConfigRepository.findAll()
+        .forEach(user -> executor.runAsync(() -> updatePresence(user)));
   }
 
   @SneakyThrows
