@@ -1,8 +1,5 @@
 package ch.akop.homesystem.services.impl;
 
-import static ch.akop.weathercloud.scraper.weathercloud.Scraper.scrape$;
-import static java.time.temporal.ChronoUnit.MINUTES;
-
 import ch.akop.homesystem.persistence.model.config.BasicConfig;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
 import ch.akop.weathercloud.Weather;
@@ -10,6 +7,8 @@ import ch.akop.weathercloud.light.LightUnit;
 import ch.akop.weathercloud.scraper.weathercloud.Scraper;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -60,10 +59,7 @@ public class WeatherService {
     }
 
     active = true;
-    scrape$(nearestWeatherCloudStation, Duration.of(5, MINUTES), new Scraper())
-        .doOnError(throwable -> log.error("There was an error while scraping data from weather cloud", throwable))
-        .retryWhen(this::tryAgainAndInformUser)
-        .subscribe(this::handleWeatherUpdate);
+    scrape$(nearestWeatherCloudStation);
 
     weather.subscribe(weatherUpdate -> {
       log.info("Got weather-update " + weatherUpdate);
@@ -75,6 +71,17 @@ public class WeatherService {
     log.info("WeatherService is up");
   }
 
+  private void scrape$(String deviceId) {
+    var scraper = new Scraper();
+    var rate = Duration.ofMinutes(5);
+    var weatherUpdate$ = Single.fromSupplier(() -> scraper.scrape(deviceId)).toFlowable();
+
+    Flowable.interval(0, rate.toMillis(), TimeUnit.MILLISECONDS, Schedulers.io())
+        .switchMap(ignored -> weatherUpdate$)
+        .doOnError(throwable -> log.error("There was an error while scraping data from weather cloud", throwable))
+        .retryWhen(this::tryAgainAndInformUser)
+        .subscribe(this::handleWeatherUpdate);
+  }
 
   public Observable<CurrentAndPreviousWeather> getCurrentAndPreviousWeather() {
     var previousUpdate = new AtomicReference<Weather>();
