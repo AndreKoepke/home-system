@@ -1,6 +1,7 @@
 package ch.akop.homesystem.deconz.rest.models;
 
 import ch.akop.homesystem.deconz.rest.State;
+import jakarta.annotation.Nullable;
 import lombok.Data;
 
 @Data
@@ -17,5 +18,11 @@ public abstract class BaseDevice {
   private String swversion;
   private String type;
   private String uniqueid;
+
+  /**
+   * Stand for endpoint.
+   */
+  @Nullable
+  private Integer ep;
 
 }
