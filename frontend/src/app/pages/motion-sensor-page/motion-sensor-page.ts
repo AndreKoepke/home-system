@@ -30,7 +30,20 @@ import {RollerShutter} from "../../models/devices/roller-shutter.dto";
 })
 export class MotionSensorPage {
 
-  motionSensors = input.required<Map<string, MotionSensor>>();
+  motionSensors = input.required<MotionSensor[], Map<string, MotionSensor>>({
+    transform: (sensors) => [...sensors.values()]
+      .sort((a, b) => {
+        if (a.config !== undefined && b.config === undefined) {
+          return -1;
+        }
+
+        if (a.config === undefined && b.config !== undefined) {
+          return 1;
+        }
+
+        return a.name.localeCompare(b.name);
+      })
+  });
   currentWeather = input.required<Weather>();
   devices = input.required<Light[]>();
   animations = input.required<AnimationDto[]>();

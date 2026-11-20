@@ -156,7 +156,7 @@ public class DeconzConnector {
     }
 
     newDevice.setId(id);
-    if (sensor.getEp() != null) {
+    if (sensor.getEp() != null && sensor.getEp() != 1) {
       newDevice.setName(sensor.getName() + "#" + sensor.getEp());
     } else {
       newDevice.setName(sensor.getName());
