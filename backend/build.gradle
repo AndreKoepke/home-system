@@ -50,7 +50,9 @@ dependencies {
   testImplementation 'org.assertj:assertj-core:3.24.2'
 
   // test
-  testImplementation 'org.mockito:mockito-core:5.20.0'
+  testImplementation 'org.mockito:mockito-core:5.24.0'
+  testImplementation 'org.mockito:mockito-junit-jupiter:5.24.0'
+  testImplementation 'com.squareup.okhttp3:mockwebserver:5.5.1'
 
   // flyway
   implementation 'io.quarkus:quarkus-flyway'

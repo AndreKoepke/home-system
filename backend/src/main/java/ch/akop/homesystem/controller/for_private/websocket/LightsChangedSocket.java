@@ -61,7 +61,7 @@ public class LightsChangedSocket extends AbstractBaseSocket {
 
   @OnError
   public void onError(WebSocketConnection session, Throwable throwable) {
-    deregisterSession(session.id());
+    super.onError(session, throwable);
   }
 
   @SneakyThrows

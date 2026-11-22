@@ -5,6 +5,7 @@ import ch.akop.homesystem.controller.dtos.Identable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.WebSocketConnection;
+import io.vertx.core.http.HttpClosedException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,5 +62,14 @@ public abstract class AbstractBaseSocket {
 
     var payload = getObjectMapper().writeValueAsString(message);
     session.sendTextAndAwait(payload);
+  }
+
+  protected void onError(WebSocketConnection session, Throwable throwable) {
+    deregisterSession(session.id());
+    if (throwable instanceof HttpClosedException closedException && closedException.goAway() == null) {
+      log.info("Session closed: {}", session.id());
+    } else {
+      log.error("Error on session: {}", session.id(), throwable);
+    }
   }
 }

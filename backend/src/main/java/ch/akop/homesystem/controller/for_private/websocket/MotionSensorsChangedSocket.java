@@ -39,11 +39,11 @@ public class MotionSensorsChangedSocket extends AbstractBaseSocket {
   @ConsumeEvent(value = "devices/sensors/update", blocking = true)
   void updateSensor(String updatedDeviceId) {
     deviceService.findDeviceById(updatedDeviceId, MotionSensor.class)
-            .map(MotionSensorDto::from)
-            .map(motionSensorDto -> motionSensorConfigRepository
-                    .findByName(motionSensorDto.getName())
-                    .map(motionSensorDto::appendConfig)
-                    .orElse(motionSensorDto))
+        .map(MotionSensorDto::from)
+        .map(motionSensorDto -> motionSensorConfigRepository
+            .findByName(motionSensorDto.getName())
+            .map(motionSensorDto::appendConfig)
+            .orElse(motionSensorDto))
         .ifPresent(this::broadcast);
   }
 
@@ -67,19 +67,18 @@ public class MotionSensorsChangedSocket extends AbstractBaseSocket {
 
   @OnError
   public void onError(WebSocketConnection session, Throwable throwable) {
-    log.error("Error on session: {}", session.id(), throwable);
-    deregisterSession(session.id());
+    super.onError(session, throwable);
   }
 
   @SneakyThrows
   private void sendAllSensorsToSession(String sessionId) {
     deviceService.getDevicesOfType(MotionSensor.class)
         .stream()
-            .map(MotionSensorDto::from)
-            .map(motionSensorDto -> motionSensorConfigRepository
-                    .findByName(motionSensorDto.getName())
-                    .map(motionSensorDto::appendConfig)
-                    .orElse(motionSensorDto))
+        .map(MotionSensorDto::from)
+        .map(motionSensorDto -> motionSensorConfigRepository
+            .findByName(motionSensorDto.getName())
+            .map(motionSensorDto::appendConfig)
+            .orElse(motionSensorDto))
         .forEach(motionSensor -> sendMessage(sessionId, motionSensor));
   }
 }

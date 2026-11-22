@@ -63,8 +63,7 @@ public class WeatherChangedSocket extends AbstractBaseSocket {
 
   @OnError
   public void onError(WebSocketConnection session, Throwable throwable) {
-    log.error("Error on session: {}", session.id(), throwable);
-    deregisterSession(session.id());
+    super.onError(session, throwable);
   }
 
   @SneakyThrows
