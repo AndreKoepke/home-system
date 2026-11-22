@@ -26,6 +26,7 @@ import ch.akop.homesystem.persistence.repository.config.DeconzConfigRepository;
 import ch.akop.homesystem.persistence.repository.config.RollerShutterConfigRepository;
 import ch.akop.homesystem.services.impl.AutomationService;
 import ch.akop.homesystem.services.impl.DeviceService;
+import ch.akop.homesystem.services.impl.TelegramMessageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.runtime.Startup;
 import io.vertx.core.eventbus.EventBus;
@@ -33,10 +34,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -60,7 +63,9 @@ public class DeconzConnector {
   private final AtomicBoolean isConnected = new AtomicBoolean(false);
 
   private final LinkedBlockingQueue<UpdateLightParams> updateActions = new LinkedBlockingQueue<>(1000);
+  private Thread workerThread;
   private final ObjectMapper objectMapper;
+  private final TelegramMessageService telegramMessageService;
 
   DeconzService deconzService;
 
@@ -99,9 +104,18 @@ public class DeconzConnector {
     registerDevices();
     automationService.discoverNewDevices();
 
-    new Thread(this::sendUpdateActions, "deconz-notifier").start();
-
+    restartWorkerThread();
     log.info("deCONZ is up");
+  }
+
+  private void restartWorkerThread() {
+    var newThread = new Thread(this::sendUpdateActions, "deconz-notifier");
+    newThread.start();
+
+    if (workerThread != null) {
+      workerThread.interrupt();
+    }
+    workerThread = newThread;
   }
 
   @SneakyThrows
@@ -271,7 +285,14 @@ public class DeconzConnector {
     }
 
     if (!updateActions.offer(new UpdateLightParams(id, newState))) {
-      throw new IllegalStateException("Too many updates pending");
+      var list = new ArrayList<UpdateLightParams>();
+      updateActions.drainTo(list);
+      log.warn("Too many update actions \n\t" + list.stream()
+          .map(UpdateLightParams::toString)
+          .collect(Collectors.joining("\n\t")));
+      restartWorkerThread();
+      telegramMessageService.sendFunnyMessageToMainChannel("Hey es tut mir Leid. Aber ich wollte zu viele Lichter gleichzeitig schalten. "
+          + "Ich vergesse jetzt ganz viele Schaltbefehle.");
     }
   }
 

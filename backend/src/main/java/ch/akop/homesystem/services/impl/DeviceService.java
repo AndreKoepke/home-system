@@ -1,6 +1,5 @@
 package ch.akop.homesystem.services.impl;
 
-import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 import ch.akop.homesystem.models.devices.Device;
@@ -9,7 +8,6 @@ import ch.akop.homesystem.models.devices.actor.SimpleLight;
 import ch.akop.homesystem.models.devices.other.Group;
 import ch.akop.homesystem.models.devices.other.Scene;
 import ch.akop.homesystem.persistence.repository.config.BasicConfigRepository;
-import ch.akop.homesystem.util.SleepUtil;
 import io.quarkus.runtime.Startup;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
@@ -86,10 +84,6 @@ public class DeviceService {
         .filter(this::isLightUsableForCentralFunctions)
         .filter(Device::isReachable)
         .forEach(light -> {
-          // see #74, if the commands are coming to fast, then maybe lights are not correctly off
-          // if this workaround helps, then this should be removed for a rate-limit (see #3)
-          SleepUtil.sleep(Duration.of(25, MILLIS));
-
           if (light instanceof DimmableLight dimmable) {
             dimmable.setBrightness(0, Duration.of(10, SECONDS));
           } else {
