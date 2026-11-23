@@ -6,7 +6,7 @@ on:
       - 'backend/src/**'
       - 'backend/build.gradle'
       - 'deploy/backend/**'
-      - 'deploy/connection-with-wireguard/**'
+      - 'deploy/connect-with-wireguard/**'
       - '.github/workflows/publish-backend-feature.yml'
 jobs:
   publish:
