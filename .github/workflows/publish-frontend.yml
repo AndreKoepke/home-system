@@ -41,13 +41,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: wireguard
-        uses: ./deploy/connect-with-wireguard
+        uses: egor-tensin/setup-wireguard@v1
         with:
-          client-private-key: ${{ secrets.WIREGUARD_CLIENT_PRIVATE_KEY }}
-          client-ip: ${{ secrets.WIREGUARD_CLIENT_IP }}
-          allowed-ips: ${{ secrets.WIREGUARD_ALLOWED_IPS }}
-          server-public-key: ${{ secrets.WIREGUARD_SERVER_PUBLIC_KEY }}
           endpoint: ${{ secrets.WIREGUARD_ENDPOINT }}
+          endpoint_public_key: ${{ secrets.WIREGUARD_SERVER_PUBLIC_KEY }}
+          ips: ${{ secrets.WIREGUARD_CLIENT_IP }}
+          private_key: ${{ secrets.WIREGUARD_CLIENT_PRIVATE_KEY }}
+          allowed_ips: ${{ secrets.WIREGUARD_ALLOWED_IPS }}
       - name: Deploy
         uses: WyriHaximus/github-action-helm3@v3
         with:
