@@ -27,13 +27,13 @@ runs:
       shell: bash
     - run: umask 0666
       shell: bash
-    - run: echo "${{ inputs.client-private-key }}" > /etc/wireguard/privatekey
+    - run: echo "${{ inputs.client-private-key }}" > /etc/wireguard/private.key
       shell: bash
     - run: sudo ip link add dev wg0 type wireguard
       shell: bash
     - run: sudo ip address add dev wg0 ${{ inputs.client-ip }} peer ${{ inputs.allowed-ips }}
       shell: bash
-    - run: sudo wg set wg0 private-key /etc/wireguard/privatekey peer ${{ inputs.server-public-key }} allowed-ips ${{ inputs.allowed-ips }} endpoint ${{ inputs.endpoint }}
+    - run: sudo wg set wg0 private-key /etc/wireguard/private.key peer ${{ inputs.server-public-key }} allowed-ips ${{ inputs.allowed-ips }} endpoint ${{ inputs.endpoint }}
       shell: bash
     - run: sudo ip link set up dev wg0
       shell: bash
