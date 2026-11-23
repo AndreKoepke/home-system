@@ -5,6 +5,7 @@ on:
     paths:
       - 'frontend/**'
       - 'deploy/frontend/**'
+      - 'deploy/connection-with-wireguard/**'
       - '.github/workflows/publish-frontend.yml'
 jobs:
   publish:
