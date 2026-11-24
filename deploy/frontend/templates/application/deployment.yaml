@@ -38,6 +38,8 @@ spec:
               protocol: TCP
           env:
  {{ with .Values.backend }}
+            - name: NG_ALLOWED_HOSTS
+              value: "{{ .host }}"
             - name: protocol
               value: "{{ .protocol }}"
             - name: wsProtocol
