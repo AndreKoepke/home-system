@@ -30,19 +30,25 @@ import {RollerShutter} from "../../models/devices/roller-shutter.dto";
 })
 export class MotionSensorPage {
 
-  motionSensors = input.required<MotionSensor[], Map<string, MotionSensor>>({
-    transform: (sensors) => [...sensors.values()]
-      .sort((a, b) => {
-        if (a.config !== undefined && b.config === undefined) {
-          return -1;
-        }
+  motionSensors = input.required<{
+    configured: MotionSensor[];
+    unconfigured: MotionSensor[]
+  }, Map<string, MotionSensor>>({
+    transform: (sensors) => {
 
-        if (a.config === undefined && b.config !== undefined) {
-          return 1;
-        }
+      const configured = new Array<MotionSensor>();
+      const unconfigured = new Array<MotionSensor>();
 
-        return a.name.localeCompare(b.name);
-      })
+      [...sensors.values()]
+        .forEach(sensor => sensor.config === undefined
+          ? unconfigured.push(sensor)
+          : configured.push(sensor))
+
+      return {
+        configured: configured.toSorted(this.sortMotionSensors),
+        unconfigured: unconfigured.toSorted(this.sortMotionSensors),
+      };
+    }
   });
   currentWeather = input.required<Weather>();
   devices = input.required<Light[]>();
@@ -51,4 +57,8 @@ export class MotionSensorPage {
 
   save = output<MotionSensorConfig>();
 
+
+  private sortMotionSensors(a: MotionSensor, b: MotionSensor): number {
+    return a.name.localeCompare(b.name);
+  }
 }

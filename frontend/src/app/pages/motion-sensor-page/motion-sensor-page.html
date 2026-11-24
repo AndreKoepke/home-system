@@ -1,5 +1,5 @@
 <sbb-accordion>
-  @for (motionSensor of motionSensors().values(); track motionSensor.name) {
+  @for (motionSensor of motionSensors().configured; track motionSensor.name) {
     <sbb-expansion-panel>
       <sbb-expansion-panel-header>
         <sbb-icon [class.red]="!motionSensor.presence" [class.green]="motionSensor.presence" name="run-medium"/>
@@ -14,6 +14,18 @@
                                 [animations]="animations()"
                                 (onSave)="save.emit($event)"/>
       </sbb-expansion-panel-content>
+    </sbb-expansion-panel>
+  }
+</sbb-accordion>
+
+
+<sbb-accordion class="unconfigured-list">
+  @for (motionSensor of motionSensors().unconfigured; track motionSensor.name) {
+    <sbb-expansion-panel [disabled]="true">
+      <sbb-expansion-panel-header>
+        <sbb-icon [class.red]="!motionSensor.presence" [class.green]="motionSensor.presence" name="run-medium"/>
+        <span>{{ motionSensor.name }}</span>
+      </sbb-expansion-panel-header>
     </sbb-expansion-panel>
   }
 </sbb-accordion>
