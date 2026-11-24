@@ -36,8 +36,7 @@ export class TimerPageComponentContainer {
   public isLoading = signal(false);
 
   public timers$ = this.timerService.getConfigs();
-  public devices$ = this.deviceService.lights$
-    .pipe(map(map => [...map.values()]));
+  public devices$ = this.deviceService.lights$;
 
   public viewContainer$ = combineLatest([this.timers$, this.devices$])
     .pipe(map(([timer, devices]) => {

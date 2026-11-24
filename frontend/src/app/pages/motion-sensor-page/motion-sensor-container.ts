@@ -44,9 +44,9 @@ export class MotionSensorContainer {
     combineLatestWith(this.weatherService.weather$,
       this.deviceService.lights$,
       this.animationService.getAnimations$(),
-      this.rollerShutterService.rollerShutters$.pipe(map(rollerShutterMap => [...rollerShutterMap.values()]))),
+      this.rollerShutterService.rollerShutters$),
     map(([sensors, weather, lights, animations, rollerShutters]) => {
-      return {sensors, weather, animations, rollerShutters, lights: [...lights.values()]}
+      return {sensors, weather, animations, rollerShutters, lights}
     }),
   )
 

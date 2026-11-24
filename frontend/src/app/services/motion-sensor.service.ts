@@ -19,7 +19,7 @@ export class MotionSensorService {
   constructor(private readonly destroyRef: DestroyRef) {
   }
 
-  public get sensors$(): Observable<Map<string, MotionSensor>> {
+  public get sensors$(): Observable<Array<MotionSensor>> {
     return this.sensorListener.subject$;
   }
 

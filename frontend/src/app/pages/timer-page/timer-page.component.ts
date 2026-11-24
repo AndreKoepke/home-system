@@ -2,12 +2,22 @@ import {ChangeDetectionStrategy, Component, input, output} from '@angular/core';
 import {TimerConfig} from "../../models/timer-config.dto";
 import {TimerFormComponent} from "./timer-form/timer-form.component";
 import {Light} from "../../models/devices/light.dto";
+import {
+  SbbExpansionPanel,
+  SbbExpansionPanelContent,
+  SbbExpansionPanelHeader
+} from "@sbb-esta/lyne-angular/expansion-panel";
+import {SbbAccordion} from "@sbb-esta/lyne-angular/accordion";
 
 @Component({
   selector: 'app-timer-page',
   standalone: true,
   imports: [
     TimerFormComponent,
+    SbbExpansionPanelContent,
+    SbbExpansionPanelHeader,
+    SbbExpansionPanel,
+    SbbAccordion
   ],
   templateUrl: './timer-page.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,

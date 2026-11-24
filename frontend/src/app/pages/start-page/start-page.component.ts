@@ -2,12 +2,12 @@ import {ChangeDetectionStrategy, Component, computed, input} from '@angular/core
 import {Light} from "../../models/devices/light.dto";
 import {Weather} from "../../models/devices/weather.dto";
 import {MotionSensor} from "../../models/devices/motion-sensor.dto";
-import {SbbTeaserProduct} from "@sbb-esta/lyne-angular/teaser-product/teaser-product";
 import {SbbImage} from "@sbb-esta/lyne-angular/image";
 import {SbbTitle} from "@sbb-esta/lyne-angular/title";
 import {WeatherValuePipe} from "../../core/pipes/weahter-value.pipe";
 import {DateAgoPipe} from "../../core/pipes/date-ago.pipe";
 import {AsyncPipe} from "@angular/common";
+import {SbbTeaserProduct} from "@sbb-esta/lyne-angular/teaser-product";
 
 @Component({
   selector: 'app-start-page',

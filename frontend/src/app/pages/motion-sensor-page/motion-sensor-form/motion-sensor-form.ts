@@ -15,8 +15,8 @@ import {AsyncPipe} from "@angular/common";
 import {takeUntilDestroyed, toObservable} from "@angular/core/rxjs-interop";
 import {SbbTab, SbbTabGroup, SbbTabLabel} from "@sbb-esta/lyne-angular/tabs";
 import {SbbSelectionExpansionPanel} from "@sbb-esta/lyne-angular/selection-expansion-panel";
-import {SbbCheckboxPanel} from "@sbb-esta/lyne-angular/checkbox/checkbox-panel";
 import {RollerShutter} from "../../../models/devices/roller-shutter.dto";
+import {SbbCheckboxPanel} from "@sbb-esta/lyne-angular/checkbox-panel";
 
 @Component({
   selector: 'app-motion-sensor-form',

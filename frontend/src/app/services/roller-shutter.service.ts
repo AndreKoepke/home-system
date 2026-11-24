@@ -51,7 +51,7 @@ export class RollerShutterService {
       .pipe(mergeMap(() => EMPTY));
   }
 
-  public get rollerShutters$(): Observable<Map<string, RollerShutter>> {
+  public get rollerShutters$(): Observable<Array<RollerShutter>> {
     return this.rollerShutterListener.subject$;
   }
 }

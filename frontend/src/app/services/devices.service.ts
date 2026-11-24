@@ -18,7 +18,7 @@ export class DevicesService {
   constructor(private readonly destroyRef: DestroyRef) {
   }
 
-  public get lights$(): Observable<Map<string, Light>> {
+  public get lights$(): Observable<Array<Light>> {
     return this.lightListener.subject$;
   }
 }
@@ -27,7 +27,9 @@ export class Listener<T extends Device> {
 
   private readonly authService = inject(AuthService);
 
-  private devices = new Map<string, T>();
+  private devicesMap = new Map<string, T>();
+  private devices: T[] = [];
+
   private readonly websocket$ = webSocket<T | ControlMessage>({
     url: `${getWebsocketBaseUrl()}${this.path}`,
     openObserver: {
@@ -37,7 +39,7 @@ export class Listener<T extends Device> {
     }
   });
 
-  public subject$: Subject<Map<string, T>> = new BehaviorSubject(this.devices);
+  public subject$: Subject<Array<T>> = new BehaviorSubject(this.devices);
 
   constructor(private readonly path: string, destroyRef: DestroyRef) {
     this.websocket$
@@ -53,8 +55,14 @@ export class Listener<T extends Device> {
   }
 
   private deviceUpdate(message: T): void {
-    this.devices.set(message.id, message);
-    this.devices = new Map(this.devices);
+    if (this.devicesMap.has(message.id)) {
+      this.devicesMap.set(message.id, message);
+      this.devices = [...this.devices];
+    } else {
+      this.devicesMap.set(message.id, message);
+      this.devices = [...this.devicesMap.values()].toSorted((a, b) => a.name.localeCompare(b.name));
+    }
+
     this.subject$.next(this.devices);
   }
 

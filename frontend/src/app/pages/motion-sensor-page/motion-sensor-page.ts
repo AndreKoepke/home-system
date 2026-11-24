@@ -33,20 +33,19 @@ export class MotionSensorPage {
   motionSensors = input.required<{
     configured: MotionSensor[];
     unconfigured: MotionSensor[]
-  }, Map<string, MotionSensor>>({
+  }, Array<MotionSensor>>({
     transform: (sensors) => {
 
       const configured = new Array<MotionSensor>();
       const unconfigured = new Array<MotionSensor>();
 
-      [...sensors.values()]
-        .forEach(sensor => sensor.config === undefined
-          ? unconfigured.push(sensor)
-          : configured.push(sensor))
+      sensors.forEach(sensor => sensor.config === undefined
+        ? unconfigured.push(sensor)
+        : configured.push(sensor))
 
       return {
-        configured: configured.toSorted(this.sortMotionSensors),
-        unconfigured: unconfigured.toSorted(this.sortMotionSensors),
+        configured,
+        unconfigured
       };
     }
   });
@@ -57,8 +56,4 @@ export class MotionSensorPage {
 
   save = output<MotionSensorConfig>();
 
-
-  private sortMotionSensors(a: MotionSensor, b: MotionSensor): number {
-    return a.name.localeCompare(b.name);
-  }
 }
