@@ -35,7 +35,7 @@ jobs:
           context: frontend/
           file: frontend/Dockerfile
           push: true
-          platforms: ${{ matrix.runner}}
+          platforms: ${{ matrix.platform}}
           cache-from: akop/home-system-frontend:unstable
           tags: akop/home-system-frontend:unstable
 
