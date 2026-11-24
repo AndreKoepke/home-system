@@ -52,7 +52,7 @@
       <sbb-icon slot="suffix" name="sunshine-medium"></sbb-icon>
     </sbb-form-field>
 
-    @if (rollerShutter().config?.noAutomaticsUntil | isDateInFuturePipe | async) {
+    @if ($safeNavigationMigration(rollerShutter().config?.noAutomaticsUntil) | isDateInFuturePipe | async) {
       <sbb-button (click)="unblock.emit()">Entsperren</sbb-button>
     } @else {
       <sbb-button (click)="block.emit()">Sperren für 24h</sbb-button>

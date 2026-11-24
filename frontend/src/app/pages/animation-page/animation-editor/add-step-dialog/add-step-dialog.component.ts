@@ -1,7 +1,6 @@
-import {Component} from '@angular/core';
+import {ChangeDetectionStrategy, Component} from '@angular/core';
 import {MatFormField, MatLabel} from "@angular/material/form-field";
-import {MatButton} from "@angular/material/button";
-import {MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from "@angular/material/dialog";
+import {MatDialogRef} from "@angular/material/dialog";
 import {MatOption, MatSelect} from "@angular/material/select";
 
 @Component({
@@ -9,15 +8,12 @@ import {MatOption, MatSelect} from "@angular/material/select";
   standalone: true,
   imports: [
     MatFormField,
-    MatButton,
-    MatDialogActions,
-    MatDialogContent,
-    MatDialogTitle,
     MatSelect,
     MatOption,
     MatLabel
   ],
   templateUrl: './add-step-dialog.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './add-step-dialog.component.scss'
 })
 export class AddStepDialogComponent {
