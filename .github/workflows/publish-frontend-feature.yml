@@ -28,7 +28,8 @@ jobs:
           file: frontend/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64/v8
-          cache-from: akop/home-system-frontend:unstable
+          cache-from: type=gha,scope=akops-frontend
+          cache-to: type=gha,mode=max,scope=akops-frontend
           tags: akop/home-system-frontend:unstable
 
   deploy:
