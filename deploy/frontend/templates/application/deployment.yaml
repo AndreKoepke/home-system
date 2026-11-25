@@ -39,7 +39,7 @@ spec:
           env:
  {{ with .Values.backend }}
             - name: NG_ALLOWED_HOSTS
-              value: "{{ .host }}"
+              value: "{{ $.Values.host }}"
             - name: protocol
               value: "{{ .protocol }}"
             - name: wsProtocol
