@@ -38,7 +38,7 @@ jobs:
           platforms: ${{ matrix.platform}}
           cache-from: akop/home-system-frontend:unstable
           outputs: type=image,name=akop/home-system-frontend,push-by-digest=true,name-canonical=true,push=true
-          tags: unstable
+          tags: akop/home-system-frontend:unstable
 
   deploy:
     name: Deploy frontend
