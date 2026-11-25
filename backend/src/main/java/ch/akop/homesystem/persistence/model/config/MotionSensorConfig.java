@@ -48,7 +48,7 @@ public class MotionSensorConfig {
   @ElementCollection(fetch = FetchType.LAZY)
   @CollectionTable(name = "config_motion_sensor_lights_night",
       joinColumns = @JoinColumn(name = "motion_sensor_config_name"))
-  @Column(name = "lightsAtNight")
+  @Column(name = "lights")
   private Set<String> lightsAtNight;
 
   @Nullable
